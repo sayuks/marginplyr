@@ -13,20 +13,17 @@ bare_column_lines <- function(columns, written) {
     paste0(
       "i ", columns, " must be wrapped in a constructor, for example ",
       "`rollup(", written, ")` or `grouping_sets(", written, ")`."
-    ),
-    "Caused by error:"
+    )
   )
 }
 
-expect_bare_column_refusal <- function(call, columns, written, missing) {
+# The failed lookup of the column is what the refusal explains, so it is not
+# carried as a cause that would repeat it (#1703).
+expect_bare_column_refusal <- function(call, columns, written) {
   error <- expect_error(call, class = "marginplyr_error")
   lines <- strsplit(conditionMessage(error), "\n", fixed = TRUE)[[1L]]
-  expect_identical(lines[1:3], bare_column_lines(columns, written))
-  expect_false(inherits(error$parent, "marginplyr_error"))
-  expect_identical(
-    conditionMessage(error$parent),
-    paste0("object '", missing, "' not found")
-  )
+  expect_identical(lines, bare_column_lines(columns, written))
+  expect_null(error$parent)
   invisible(error)
 }
 
@@ -35,16 +32,16 @@ test_that("a bare column as .grouping is refused on every entry point", {
   for (verb in names(forwarded_verbs)) {
     expect_bare_column_refusal(
       forwarded_verbs[[verb]](data, NULL, region),
-      "Column `region`", "region", "region"
+      "Column `region`", "region"
     )
     expect_bare_column_refusal(
       forwarded_verbs[[verb]](data, NULL, c(region, store)),
-      "Columns `region` and `store`", "region, store", "region"
+      "Columns `region` and `store`", "region, store"
     )
   }
 })
 
-test_that("the bare-column refusal names the call and its cause", {
+test_that("the bare-column refusal names the call", {
   data <- bare_column_data()
   expect_snapshot(error = TRUE, {
     summarize_with_margins(data, n = dplyr::n(), .grouping = region)
@@ -66,7 +63,7 @@ test_that("a lazy input is refused from its metadata alone", {
   for (verb in lazy_verbs) {
     expect_bare_column_refusal(
       forwarded_verbs[[verb]](remote, NULL, c(region, store)),
-      "Columns `region` and `store`", "region, store", "region"
+      "Columns `region` and `store`", "region, store"
     )
   }
 })
@@ -77,7 +74,7 @@ test_that("a dtplyr input is refused the same way", {
   for (verb in names(forwarded_verbs)) {
     expect_bare_column_refusal(
       forwarded_verbs[[verb]](lazy, NULL, region),
-      "Column `region`", "region", "region"
+      "Column `region`", "region"
     )
   }
 })
@@ -88,7 +85,7 @@ test_that("an Arrow input is refused the same way", {
   for (verb in c("summarize_with_margins", "inspect_grouping")) {
     expect_bare_column_refusal(
       forwarded_verbs[[verb]](table, NULL, region),
-      "Column `region`", "region", "region"
+      "Column `region`", "region"
     )
   }
 })
@@ -109,7 +106,7 @@ test_that("a column passed as a quosure is refused the same way", {
   for (grouping in list(column, rlang::new_quosure(column))) {
     expect_bare_column_refusal(
       rlang::inject(inspect_grouping(data, .grouping = !!grouping)),
-      "Column `region`", "region", "region"
+      "Column `region`", "region"
     )
   }
 })
@@ -130,4 +127,49 @@ test_that("other failures in .grouping propagate unchanged", {
     )
     expect_false(inherits(error, "marginplyr_error"))
   }
+})
+
+# A string names a column as `all_of()` reads it, so the refusal echoes it and
+# gives the constructor spelling that selects it (#1703).
+test_that("a string as .grouping is answered with an all_of() rewrite", {
+  data <- bare_column_data()
+  cases <- list(
+    list(
+      grouping = "region",
+      supplied = "i A character vector was supplied: \"region\".",
+      rewrite = "`rollup(all_of(\"region\"))`"
+    ),
+    list(
+      grouping = c("region", "store"),
+      supplied = "i A character vector was supplied: \"region\" and \"store\".",
+      rewrite = "`rollup(all_of(c(\"region\", \"store\")))`"
+    )
+  )
+  for (verb in names(forwarded_verbs)) {
+    for (case in cases) {
+      error <- expect_error(
+        forwarded_verbs[[verb]](data, NULL, case$grouping),
+        class = "marginplyr_error"
+      )
+      lines <- strsplit(conditionMessage(error), "\n", fixed = TRUE)[[1L]]
+      expect_identical(lines[[1L]], bare_column_lines("", "")[[1L]])
+      expect_identical(lines[[2L]], case$supplied, info = verb)
+      expect_identical(
+        lines[[3L]],
+        paste0(
+          "i Select the columns it names inside a constructor, for example ",
+          case$rewrite, "."
+        ),
+        info = verb
+      )
+    }
+  }
+
+  rewritten <- inspect_grouping(
+    data, .grouping = rollup(all_of(c("region", "store")))
+  )
+  expect_identical(
+    rewritten$included,
+    inspect_grouping(data, .grouping = rollup(region, store))$included
+  )
 })

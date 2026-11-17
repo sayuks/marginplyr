@@ -3,6 +3,10 @@ validate_grouping_spec_early <- function(grouping_spec) {
     return(invisible(NULL))
   }
   if (!inherits(grouping_spec, "margin_grouping_spec")) {
+    if (is.character(grouping_spec) && length(grouping_spec) > 0L &&
+          !anyNA(grouping_spec)) {
+      abort_grouping_strings(grouping_spec)
+    }
     abort_marginplyr(paste0(
       "{.arg .grouping} must be created with ",
       "{.or {.fun {grouping_constructor_names()}}}."
@@ -31,7 +35,8 @@ validate_grouping_spec_early <- function(grouping_spec) {
 
 # The value of a nonempty `.grouping`. A failed evaluation of a column written
 # where a specification belongs -- `region`, or `c(region, store)` -- is
-# answered with the constructor remedy; every other failure, including one
+# answered with the constructor remedy, which carries no cause: the failed
+# lookup of the column is what it explains. Every other failure, including one
 # raised inside a caller's own specification builder, propagates untouched,
 # which is why the handler is a calling one. It runs only after evaluation has
 # failed, so a specification bound to a name that is also a column still
@@ -42,7 +47,7 @@ eval_grouping_argument <- function(grouping_quo, .data) {
     error = function(cnd) {
       columns <- written_grouping_columns(grouping_quo, .data)
       if (!is.null(columns)) {
-        abort_grouping_columns(columns, cnd)
+        abort_grouping_columns(columns)
       }
     }
   )
@@ -79,7 +84,29 @@ written_grouping_columns <- function(grouping_quo, .data) {
   columns
 }
 
-abort_grouping_columns <- function(columns, parent) {
+# Column names given as strings where a specification belongs. The rewrite is
+# the constructor call that selects them, deparsed from the values rather than
+# from the caller's expression, which may be a variable.
+abort_grouping_strings <- function(values) {
+  attributes(values) <- NULL
+  # Read only from the cli template below, which codetools cannot see.
+  # nolint start: object_usage_linter.
+  rewrite <- deparse1(call("rollup", call("all_of", values)))
+  # nolint end
+  abort_marginplyr(c(
+    paste0(
+      "{.arg .grouping} must be created with ",
+      "{.or {.fun {grouping_constructor_names()}}}."
+    ),
+    i = "A character vector was supplied: {.val {values}}.",
+    i = paste0(
+      "Select the columns it names inside a constructor, for example ",
+      "{.code {rewrite}}."
+    )
+  ))
+}
+
+abort_grouping_columns <- function(columns) {
   # Read only from the cli template below, which codetools cannot see.
   written <- paste( # nolint: object_usage_linter.
     vapply(lapply(columns, as.name), rlang::as_label, character(1)),
@@ -96,8 +123,7 @@ abort_grouping_columns <- function(columns, parent) {
         "wrapped in a constructor, for example {.code rollup({written})} or ",
         "{.code grouping_sets({written})}."
       )
-    ),
-    parent = parent
+    )
   )
 }
 
