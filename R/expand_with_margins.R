@@ -56,10 +56,15 @@
 #'   [margin_verbs].
 #'
 #'   With a character `.margin_label`, the default, a Margin dimension that
-#'   is not a factor becomes character so that it can hold the label. A factor
-#'   dimension instead gains the label as a new level. `.margin_label = NULL`
-#'   or `NA_character_` keeps every dimension's type and marks margin copies
-#'   with a missing value.
+#'   is not a factor becomes character so that it can hold the label. On a lazy
+#'   input the text is the backend's own cast, which can differ from a local
+#'   result's; *Converted dimension text* in the [database guide][db]
+#'   tabulates it. When the text matters, give the column the type you want
+#'   with [dplyr::mutate()] first. A factor dimension instead gains the label
+#'   as a new level. `.margin_label = NULL` or `NA_character_` keeps every
+#'   dimension's type and marks margin copies with a missing value.
+#'
+#'   [db]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html
 #' @family summarize and expand data with margins
 #' @export
 #' @examples

@@ -36,8 +36,9 @@ such as \code{where(~ any(.x == "x"))} can silently select different columns on
 a lazy input than on a local one; marginplyr does not detect it. To select
 on values, call \code{\link[dplyr:collect]{dplyr::collect()}} first, and set \code{.check_margin_label}
 explicitly, since its default changes to \code{TRUE} for the collected data.
-Where a lazy backend cannot supply typed metadata without reading data, a
-predicate is refused; select the columns by name, or collect first.
+DuckDB, Arrow, and \code{dtplyr} inputs supply those types; SQLite, PostgreSQL,
+and every other SQL connection cannot without a query, so a predicate is
+refused there. Select the columns by name, or collect first.
 }
 
 \section{Grouped and row-wise inputs}{
@@ -247,7 +248,11 @@ Most summaries on DuckDB and PostgreSQL use one native
 and the summaries listed under \emph{Portable fallback SQL} in the
 \href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html}{database guide} use a portable \verb{UNION ALL} query with one branch per
 grouping set and the same result. Asking for a Margin order never changes
-which of the two runs.
+which of the two runs. The text of a converted dimension is each backend's
+own cast, so it can differ from a local result's; \emph{Converted dimension
+text} in the database guide tabulates it. The \emph{Backend support matrix}
+there sets each backend family's answers side by side, including what
+becomes of a factor dimension.
 
 Continuous integration executes Margin queries on these backends:
 \itemize{
@@ -267,11 +272,6 @@ Teradata, and for generic DBI and ODBC connections.
 On SQLite and DuckDB, identifiers differing only in ASCII letter case name
 the same column, so a result refuses two public columns that would collide
 under that rule and names both spellings.
-
-DuckDB stores a factor as an \code{ENUM}, which marginplyr rebuilds with its
-levels; an \code{ENUM} carries no ordered flag, so an ordered factor returns
-unordered. Other SQL backends store a factor as text before marginplyr
-reads it.
 
 A lazy result's Margin order is the outermost query's \verb{ORDER BY}, which
 \code{\link[dplyr:collect]{dplyr::collect()}} and \code{\link[dplyr:compute]{dplyr::compute()}} observe. Whether it survives

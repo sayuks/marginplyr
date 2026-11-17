@@ -110,9 +110,16 @@
 #'   With a character `.margin_label`, the default, a Margin dimension that
 #'   is not a factor becomes character so that it can hold the label:
 #'   `.grouping = rollup(year)` over an integer `year` returns `year` as
-#'   character, with `"Total"` on the margin row. A factor dimension instead
-#'   gains the label as a new level. `.margin_label = NULL` or `NA_character_`
-#'   keeps every dimension's type and marks margin rows with a missing value.
+#'   character, with `"Total"` on the margin row. On a lazy input the text is
+#'   the backend's own cast, so a double `10` reads `"10.0"` on DuckDB and
+#'   SQLite and a logical `TRUE` reads `"true"` or `"1"`; *Converted
+#'   dimension text* in the [database guide][db] tabulates them. When the
+#'   text matters, give the column the type you want with [dplyr::mutate()]
+#'   first. A factor dimension instead gains the label as a new level.
+#'   `.margin_label = NULL` or `NA_character_` keeps every dimension's type and
+#'   marks margin rows with a missing value.
+#'
+#'   [db]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html
 #'
 #' @details
 #' [grouping_sets()] forms a union of grouping families. [grouping_spec()]

@@ -730,8 +730,8 @@ postgres_sales |>
 
 The result remains lazy. Continue with [Database and lazy
 backends](https://sayuks.github.io/marginplyr/vignettes/database_backends.html)
-for `collect()`, live DuckDB execution, portable `UNION ALL` SQL, backend
-verification levels, and practical guidance for inspecting a query.
+for a backend support matrix, `collect()`, live DuckDB execution, portable
+`UNION ALL` SQL, and practical guidance for inspecting a query.
 
 ## Keep the detail rows
 

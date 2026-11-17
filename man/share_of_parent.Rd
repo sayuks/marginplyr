@@ -377,6 +377,9 @@ exactly-one-value cardinality rule is established with it:\tabular{ll}{
 }
 
 
+The \emph{Backend support matrix} in the \href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html}{database guide} sets each backend
+family's share support beside its other answers.
+
 Arrow inputs reject both helpers after expression planning and common
 Margin-operation validation but before constructing a summary query. The
 reason belongs to the source summary they share, so it applies to both, and
