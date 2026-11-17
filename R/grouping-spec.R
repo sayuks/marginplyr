@@ -153,6 +153,14 @@
 #' `rollup(region, .by = year)` reports `.by` as a named constructor argument.
 #' Pass `.by = year` to the Margin verb.
 #'
+#' data.table exports its own `rollup()` and `cube()`, so attaching it after
+#' marginplyr masks these two constructors. A `.grouping` that reaches
+#' data.table's function, directly or nested inside another constructor, is
+#' refused with an error naming `data.table::rollup()` or
+#' `data.table::cube()`. Write `marginplyr::rollup()` and
+#' `marginplyr::cube()`, or attach marginplyr after data.table and write
+#' `data.table::rollup()` for data.table's own.
+#'
 #' @family grouping plans and grouping identity
 #' @seealso [summarize_with_margins()], [expand_with_margins()],
 #'   [nest_with_margins()], and [nest_by_with_margins()], the Margin verbs

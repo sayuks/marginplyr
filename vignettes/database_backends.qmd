@@ -864,6 +864,12 @@ show_query(dt_query)
 collect(dt_query)
 ```
 
+Loading dtplyr does not attach data.table, but a session that also calls
+`library(data.table)` after marginplyr gets data.table's `rollup()` and
+`cube()` in place of marginplyr's. The call above is then refused with an
+error naming `data.table::rollup()`. Write `marginplyr::rollup()` and
+`marginplyr::cube()`, or attach marginplyr last.
+
 A derived dtplyr step can compute column types or factor levels from its source
 values. A request for zero output rows can still run that upstream calculation
 over every source row before discarding them. marginplyr therefore reads the
