@@ -543,8 +543,8 @@ the label.
 
 Naming rules, ordered-factor preservation, level positioning, and the complete
 eight-case `NA_character_`/`NULL` factor contract live in *Display labels and
-grouping identity* in the [`summarize_with_margins()`
-reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html).
+grouping identity* in the [`margin_verbs`
+reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html).
 
 ## Compare a summary with its rollup parent
 
@@ -674,9 +674,9 @@ Everything else is shared with `share_of_parent()` — eligible sources, the
 [`share_of_parent()` reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html)
 documents both helpers.
 
-Which rows the denominator covers is decided by the fixed `.by` keys. [Compare
-each row with the right
-total](https://sayuks.github.io/marginplyr/vignettes/recipes.html#compare-each-row-with-the-right-total) works
+Which rows the denominator covers is decided by the fixed `.by` keys. [Show each
+row as a percent of the
+total](https://sayuks.github.io/marginplyr/vignettes/recipes.html#show-each-row-as-a-percent-of-the-total) works
 through that choice.
 
 ## Complete absent keys before summarizing
@@ -751,8 +751,8 @@ in the database guide shows that query and explains its branches.
 
 Expanded rows are also the way to compute something one aggregation pass
 cannot express, which is a real limit on a database rather than a local one.
-[Compute what the summary pass cannot
-express](https://sayuks.github.io/marginplyr/vignettes/recipes.html#compute-what-the-summary-pass-cannot-express) works
+[Fix a nested-aggregate error on a
+database](https://sayuks.github.io/marginplyr/vignettes/recipes.html#fix-a-nested-aggregate-error-on-a-database) works
 through that case.
 
 ### Nest locally or with dtplyr
@@ -1051,8 +1051,8 @@ This invariant is shared by local data frames and supported lazy backends.
 The nesting functions support local data frames and dtplyr because SQL and
 Arrow tables cannot contain their list-column result.
 
-*Grouped and row-wise inputs* in the [`summarize_with_margins()`
-reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html)
+*Grouped and row-wise inputs* in the [`margin_verbs`
+reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html)
 states the rule for all four verbs.
 
 ### Intentional differences from `dplyr::summarize()`

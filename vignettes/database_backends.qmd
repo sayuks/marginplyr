@@ -132,8 +132,7 @@ execute the query, with `collect()`, `compute()`, or a printed preview, and
 when you ask marginplyr to look for an observed label with
 `.check_margin_label = TRUE`. Building the query may still send internal
 queries that read no source values; *When marginplyr queries your data* in the
-[`summarize_with_margins()`
-reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html)
+[`margin_verbs` reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html)
 enumerates them, and *Record the SQL marginplyr prepares* below shows how to
 see them. The one exception is `nest_by_with_margins()` on dtplyr, described
 under *Other lazy backends*.
@@ -227,8 +226,7 @@ The `arrange()` above orders by the labels, so `"Total"` falls wherever that
 string does among a dimension's values. `.sort` orders by the structure of the
 Grouping plan instead, so each subtotal lands with the rows it summarizes. It
 is an argument of the verb rather than a step after it; *Margin order* in the
-[`summarize_with_margins()`
-reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html)
+[`margin_verbs` reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html)
 states the key it builds and what a later verb can do to it:
 
 ```{r}
@@ -251,10 +249,10 @@ by `mutate()`, `transmute()`, a `select()` that drops a grouping column, a
 join, `count()`, and `summarise()`, each of which reads the ordered query as a
 subquery; dbplyr then warns that *ORDER BY is ignored in subqueries without
 LIMIT*. So `collect()` first and continue locally, or call `arrange()` last
-with a key you write: [Write the sort key
-yourself](https://sayuks.github.io/marginplyr/vignettes/recipes.html#write-the-sort-key-yourself)
-gives the key, and [Lay the report out
-wide](https://sayuks.github.io/marginplyr/vignettes/recipes.html#lay-the-report-out-wide)
+with a key you write: [Sort the newest year
+first](https://sayuks.github.io/marginplyr/vignettes/recipes.html#sort-the-newest-year-first)
+gives the key, and [Pivot a lazy result after
+collecting](https://sayuks.github.io/marginplyr/vignettes/recipes.html#pivot-a-lazy-result-after-collecting)
 and [The same join against a lazy
 table](https://sayuks.github.io/marginplyr/vignettes/recipes.html#the-same-join-against-a-lazy-table)
 work it through for a pivot and a join.
@@ -284,8 +282,8 @@ DuckDB's own scalar macros, such as `nullif()`, is refused too, even when it
 never calls yours: your macro could replace a name inside their bodies, so
 marginplyr cannot rule out source work hidden in the input. Call
 `compute()` on the input first, and the Margin verb reads the stored table
-instead. *When marginplyr queries your data* in the [`summarize_with_margins()`
-reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html)
+instead. *When marginplyr queries your data* in the [`margin_verbs`
+reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html)
 states the full rule.
 
 ```{r}
@@ -307,8 +305,8 @@ gives up is not free: an *observed* collision — a real value already in the
 data equal to `.margin_label` — goes undetected, so the result carries one
 row for that value and one row for the margin, and neither the row itself nor
 code reading the result afterward can tell which is which. *When marginplyr
-queries your data* in the [`summarize_with_margins()`
-reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html)
+queries your data* in the [`margin_verbs`
+reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html)
 states the rule this default follows.
 
 Two protections hold at no added query. The first applies wherever marginplyr
@@ -359,8 +357,8 @@ DBI::dbDisconnect(con)
 
 Arrow is different. A factor grouping dimension there returns as character,
 so Arrow does not expose its declared levels to this check; see *Arrow
-inputs* in the [`summarize_with_margins()`
-reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html).
+inputs* in the [`margin_verbs`
+reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html).
 An unused declared level therefore does not make two result rows look alike.
 An observed collision still does, and `.check_margin_label = TRUE` rejects it.
 
@@ -622,11 +620,11 @@ diagnostic for marginplyr's own work, with caller-controlled export.
 
 The [`last_sent_queries()` reference][sent-queries] states the no-record and
 unaudited-call refusals, typed empty views, and nested-call ownership.
-*When marginplyr queries your data* in the [`summarize_with_margins()`
-reference][summary-reference] enumerates the operations and applicable backends.
+*When marginplyr queries your data* in the [`margin_verbs`
+reference][shared-reference] enumerates the operations and applicable backends.
 
 [sent-queries]: https://sayuks.github.io/marginplyr/man/last_sent_queries.html
-[summary-reference]: https://sayuks.github.io/marginplyr/man/summarize_with_margins.html
+[shared-reference]: https://sayuks.github.io/marginplyr/man/margin_verbs.html
 
 ```{r}
 #| eval: !expr has_duckdb
@@ -861,8 +859,8 @@ postgres_sales |>
 
 `nest_by_with_margins()` is the row-wise counterpart. On dtplyr it is the one
 Margin verb that collects a lazy input without being asked: a row-wise data
-frame is a local object, so it has nothing lazy to return. Its own *When
-marginplyr queries your data* section in the [`nest_by_with_margins()`
+frame is a local object, so it has nothing lazy to return. Its own *dtplyr
+inputs* section in the [`nest_by_with_margins()`
 reference](https://sayuks.github.io/marginplyr/man/nest_by_with_margins.html)
 states this. Its detail tables are the ones dtplyr built, so each cell is a
 `data.table`:
@@ -1015,8 +1013,7 @@ simulator-only backend as SQL-generation support, and report server-specific
 behavior with a minimal query and the backend version.
 
 Which claim rests on which is stated in one place: *Database backend coverage*
-in the [`summarize_with_margins()`
-reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html).
+in the [`margin_verbs` reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html).
 
 ## Practical rules for remote analysis
 

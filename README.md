@@ -478,8 +478,8 @@ subtotal, explicit dplyr code may be easier.
 ## Backend verification
 
 What is verified on each backend, and how, is stated in one place:
-*Database backend coverage* in the [`summarize_with_margins()`
-reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html).
+*Database backend coverage* in the [`margin_verbs`
+reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html).
 
 ## Code of Conduct
 
