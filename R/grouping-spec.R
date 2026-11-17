@@ -67,7 +67,9 @@
 #' `grouping_sets(c(a, b), c(b, a))` also repeats one set, while a column
 #' written twice within one set counts once: `grouping_set(a, a)` is the
 #' single set (a). Margin verbs and [inspect_grouping()] refuse a repeated set
-#' unless `.duplicates` says to drop or keep it.
+#' unless `.duplicates` says to drop or keep it, naming the set; a column one
+#' [rollup()] or [cube()] selects in more than one argument is refused as that
+#' instead.
 #'
 #' A column that belongs in every grouping set, such as a reporting month, is
 #' best passed as the Margin verb's `.by`. Written inside [grouping_spec()]

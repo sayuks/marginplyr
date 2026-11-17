@@ -106,7 +106,9 @@ gives (a) twice. Column order within a set does not distinguish it, so
 \code{grouping_sets(c(a, b), c(b, a))} also repeats one set, while a column
 written twice within one set counts once: \code{grouping_set(a, a)} is the
 single set (a). Margin verbs and \code{\link[=inspect_grouping]{inspect_grouping()}} refuse a repeated set
-unless \code{.duplicates} says to drop or keep it.
+unless \code{.duplicates} says to drop or keep it, naming the set; a column one
+\code{\link[=rollup]{rollup()}} or \code{\link[=cube]{cube()}} selects in more than one argument is refused as that
+instead.
 
 A column that belongs in every grouping set, such as a reporting month, is
 best passed as the Margin verb's \code{.by}. Written inside \code{\link[=grouping_spec]{grouping_spec()}}
