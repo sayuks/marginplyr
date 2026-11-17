@@ -3306,6 +3306,15 @@ resolve_grouping_selection <- function(arg, data_proxy) {
         if (is_grouping_spec_predicate(selection_frame, nested_arg_expr(arg))) {
           predicate <<- cnd
         }
+      },
+      # tidyselect's deprecation of an external vector advises `all_of()`,
+      # which refuses a specification as well, so it is not passed on where
+      # the vector is one; the refusal that follows names it.
+      warning = function(cnd) {
+        if (inherits(cnd, "lifecycle_warning_deprecated") &&
+              selection_names_grouping_spec(arg)) {
+          invokeRestart("muffleWarning")
+        }
       }
     ),
     error = function(cnd) {
@@ -3330,6 +3339,23 @@ resolve_grouping_selection <- function(arg, data_proxy) {
       abort_nested_grouping_spec(label)
     }
   )
+}
+
+# Whether a name `arg` reads is bound, where its quosure looks it up, to a
+# Grouping specification. A binding is read only where reading it evaluates
+# nothing tidyselect has not: an active binding is passed over, since reading
+# it would call it again.
+selection_names_grouping_spec <- function(arg) {
+  env <- rlang::quo_get_env(arg)
+  any(vapply(all.vars(nested_arg_expr(arg)), function(name) {
+    owner <- env
+    while (!identical(owner, emptyenv()) && !rlang::env_has(owner, name)) {
+      owner <- parent.env(owner)
+    }
+    !identical(owner, emptyenv()) &&
+      !rlang::env_binding_are_active(owner, name) &&
+      inherits(rlang::env_get(owner, name), "margin_grouping_spec")
+  }, logical(1)))
 }
 
 # Whether the failure now unwinding is a specification tidyselect took for a

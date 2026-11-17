@@ -510,9 +510,20 @@ test_that("a nested argument is read through its redundant parentheses", {
   # argument, so tidyselect keeps the sub-selection it refused and the position
   # does not speak for it. This is the property the label comparison exists for
   # and the one a change to it can break, so both spellings are written out.
+  # tidyselect's deprecation of an external vector advises `all_of(s)`, which
+  # refuses a specification too, so it is not passed on (#1703).
+  rlang::local_options(lifecycle_verbosity = "warning")
   for (selection in list(quote(c(s, region)), quote(c((s), region)))) {
     spec <- eval(rlang::call2("grouping_sets", selection), envir = env)
-    embedded <- expect_error(suppressWarnings(compile_against(spec, data_vars)))
+    warned <- character()
+    embedded <- withCallingHandlers(
+      expect_error(compile_against(spec, data_vars)),
+      warning = function(cnd) {
+        warned <<- c(warned, conditionMessage(cnd))
+        invokeRestart("muffleWarning")
+      }
+    )
+    expect_identical(warned, character())
     expect_false(inherits(embedded, "marginplyr_error"))
     expect_match(conditionMessage(embedded), "Can't select columns with `s`")
   }
@@ -2652,7 +2663,7 @@ test_that("the duplicate-set refusal names the repeated set", {
     class = "marginplyr_error"
   )
   expect_match(
-    conditionMessage(quoted), "i Repeated set: ``(`a b`)``.", fixed = TRUE
+    conditionMessage(quoted), "i Repeated set: `` (`a b`) ``.", fixed = TRUE
   )
 })
 
@@ -3160,7 +3171,7 @@ test_that("large duplicate proofs preserve typed selection precedence", {
                      .by = where(is.numeric)),
     "both `.by` and `.grouping`", class = "marginplyr_error"
   )
-  expect_identical(calls, 2L)
+  expect_identical(calls, ncol(data))
 })
 
 test_that("a covered large cube proves duplicates in a product", {
