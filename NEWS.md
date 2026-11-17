@@ -59,7 +59,8 @@ Initial CRAN release.
   `"marginplyr_error"` class; see `?marginplyr_conditions`.
 
 * Guides cover getting started, common reporting recipes, Grouping identity,
-  completing absent keys, and database and lazy backends.
+  completing absent keys, and database and lazy backends. `?margin_verbs`
+  states once the rules every Margin verb shares.
 
 * `retail_sales` is a small synthetic monthly sales data set used throughout
   the examples.

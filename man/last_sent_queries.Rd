@@ -254,8 +254,8 @@ if (
 }
 }
 \seealso{
-\emph{\link[=summarize_with_margins]{When marginplyr queries your data}} for
-the queries a Margin verb sends without being asked,
+\emph{\link[=margin_verbs]{When marginplyr queries your data}} in
+\link{margin_verbs} for the queries a Margin verb sends without being asked,
 \code{\link[dplyr:show_query]{dplyr::show_query()}} for the result query alone, and \emph{Record the SQL
 marginplyr prepares} in the \href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html}{database-backends guide} for the record
 read against a live connection.

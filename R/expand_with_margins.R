@@ -9,8 +9,9 @@
 #' such as a window function over every copy.
 #'
 #' @section Differences from mutate() and union_all():
-#' - The result is always ungrouped, whatever groups the input had; see
-#'   *Grouped and row-wise inputs*.
+#' - The result is always ungrouped, whatever groups the input had, because
+#'   a result combining several grouping sets has no single grouping to
+#'   retain.
 #' - Row order is unspecified. Use `.sort` for margins next to the rows they
 #'   cover, or [dplyr::arrange()] for any other order.
 #' - A character `.margin_label` changes a non-factor grouping dimension to
@@ -30,23 +31,29 @@
 #' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
 #'
 #' @inheritParams summarize_with_margins
-#' @inheritSection summarize_with_margins Fixed columns and grouping dimensions
-#' @inheritSection summarize_with_margins Grouped and row-wise inputs
-#' @inheritSection summarize_with_margins Option arguments
-#' @inheritSection summarize_with_margins Result metadata
-#' @inheritSection summarize_with_margins Grouping set identifiers
-#' @inheritSection summarize_with_margins Margin order
-#' @inheritSection summarize_with_margins Display labels and grouping identity
-#' @inheritSection summarize_with_margins Arrow inputs
-#' @inheritSection summarize_with_margins Database backend coverage
-#' @inheritSection summarize_with_margins When marginplyr queries your data
+#' @section Behavior shared with the other Margin verbs:
+#' These rules are stated once, in [margin_verbs], for every Margin verb:
+#'
+#' - [Fixed columns and grouping dimensions][margin_verbs]
+#' - [Grouped and row-wise inputs][margin_verbs]
+#' - [Option arguments][margin_verbs]
+#' - [Result metadata][margin_verbs]
+#' - [Grouping set identifiers][margin_verbs]
+#' - [Margin order][margin_verbs]
+#' - [Display labels and grouping identity][margin_verbs]
+#' - [Arrow inputs][margin_verbs]
+#' - [Database backend coverage][margin_verbs]
+#' - [When marginplyr queries your data][margin_verbs]
+#'
 #' @return An ungrouped data frame, or a lazy table when `.data` is lazy,
 #'   with one row per input row per grouping set. Its columns are the fixed
 #'   `.by` keys, then the grouping dimensions, then `.id` when supplied, then
 #'   the remaining input columns in input order. Its class follows
 #'   [dplyr::mutate()] combined with [dplyr::union_all()], except for the
 #'   leading class described in
-#'   *[SQLite materialization][summarize_with_margins]*; see *Result metadata*.
+#'   *[SQLite materialization][summarize_with_margins]* in
+#'   [summarize_with_margins()]; see *[Result metadata][margin_verbs]* in
+#'   [margin_verbs].
 #'
 #'   With a character `.margin_label`, the default, a grouping dimension that
 #'   is not a factor becomes character so that it can hold the label. A factor

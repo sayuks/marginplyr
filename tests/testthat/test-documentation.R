@@ -163,6 +163,85 @@ test_that("the SQLite compute() contract has exactly one canonical home", {
   )
 })
 
+# `?margin_verbs` is the one address for what the Margin verbs share, so the
+# titles it owns are read off the topic rather than listed: a section moved
+# there later is covered by this without an edit.
+test_that("the behavior every Margin verb shares has exactly one home", {
+  topics <- rd_topics()
+  skip_if(is.null(topics), "No Rd sources available")
+
+  shared <- rd_section_titles(topics[["margin_verbs.Rd"]])
+  expect_true(all(c("Margin order", "Result metadata") %in% shared))
+
+  others <- setdiff(names(topics), "margin_verbs.Rd")
+  repeated <- unlist(lapply(others, function(topic) {
+    found <- intersect(rd_section_titles(topics[[topic]]), shared)
+    if (length(found) == 0L) NULL else paste0(topic, ": ", found)
+  }))
+
+  expect_equal(repeated, NULL)
+})
+
+# Text help renders a section reference to another topic exactly like one to a
+# section of the same page, so the reference has to say which page it means.
+test_that("a section reference to another topic names that topic", {
+  topics <- rd_topics()
+  skip_if(is.null(topics), "No Rd sources available")
+
+  linked <- "\\\\emph\\{\\\\link\\[=([^][]+)\\]\\{([^{}]+)\\}\\}"
+  unnamed <- unlist(lapply(names(topics), function(topic) {
+    text <- gsub("\\s+", " ", topics[[topic]])
+    at <- gregexpr(linked, text)[[1]]
+    if (at[[1]] == -1L) {
+      return(NULL)
+    }
+    refs <- regmatches(text, list(at))[[1]]
+    targets <- sub(linked, "\\1", refs)
+    following <- substring(text, at + attr(at, "match.length"))
+    names_page <- startsWith(following, paste0(" in \\link{", targets, "}")) |
+      startsWith(
+        following,
+        paste0(" in \\code{\\link[=", targets, "]{", targets, "()}}")
+      )
+    keep <- !names_page & paste0(targets, ".Rd") != topic
+    if (!any(keep)) NULL else paste0(topic, ": ", refs[keep])
+  }))
+
+  expect_equal(unnamed, NULL)
+})
+
+# A verb page that names an argument its function does not have is describing
+# another verb, which is how an inherited section reads on the wrong page. An
+# argument written as a link to the function that has it, as
+# `?inspect_grouping` names `.id`, is a reference to that function instead.
+test_that("Margin verb pages name only arguments their function has", {
+  topics <- rd_topics()
+  skip_if(is.null(topics), "No Rd sources available")
+
+  verbs <- c(sub("[.]Rd$", "", margin_verb_pages), "inspect_grouping")
+  formal_names <- lapply(
+    stats::setNames(verbs, verbs),
+    function(verb) names(formals(getExportedValue("marginplyr", verb)))
+  )
+  every_option <- unique(unlist(formal_names))
+
+  foreign <- unlist(lapply(verbs, function(verb) {
+    text <- topics[[paste0(verb, ".Rd")]]
+    named <- regmatches(text, gregexpr("\\\\code\\{\\.[A-Za-z_]+", text))[[1]]
+    named <- unique(sub("^\\\\code\\{", "", named))
+    found <- setdiff(intersect(named, every_option), formal_names[[verb]])
+    if (!"..." %in% formal_names[[verb]]) {
+      helpers <- c("share_of_parent", "share_of_total")
+      found <- c(found, helpers[vapply(
+        helpers, grepl, logical(1), x = text, fixed = TRUE
+      )])
+    }
+    if (length(found) == 0L) NULL else paste0(verb, ": ", found)
+  }))
+
+  expect_equal(foreign, NULL)
+})
+
 test_that("Margin verb pages describe only backends their verb accepts", {
   topics <- rd_topics()
   skip_if(is.null(topics), "No Rd sources available")
@@ -184,7 +263,7 @@ test_that("Margin verb pages cite no design record a reader cannot reach", {
   skip_if(is.null(topics), "No Rd sources available")
 
   cites_adr <- vapply(
-    topics[margin_verb_pages],
+    topics[c(margin_verb_pages, "margin_verbs.Rd")],
     function(text) grepl("ADR [0-9]{4}", text),
     logical(1)
   )
