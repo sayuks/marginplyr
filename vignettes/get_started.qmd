@@ -177,9 +177,13 @@ january_sales |>
 
 `.sort = "last"` places each subtotal after the rows it summarizes, and
 `"first"` places it before them. `"none"`, the default, leaves row order
-unspecified, for local and lazy inputs alike. The order comes from which
-dimensions each row keeps, not from the displayed values, so neither the
-`"Total"` label nor the source `NA` store decides where a row goes.
+unspecified, for local and lazy inputs alike. Where a subtotal goes comes from
+which dimensions each row keeps, so the `"Total"` label's text never decides
+it. Within a level, rows sort ascending by value, with the source `NA` store
+after the named stores. A label does make a non-factor dimension character,
+so a numeric one then sorts as text; [Keep a numeric dimension in numeric
+order](https://sayuks.github.io/marginplyr/vignettes/recipes.html#keep-a-numeric-dimension-in-numeric-order)
+gives both remedies.
 [Put each subtotal with the rows it
 summarizes](https://sayuks.github.io/marginplyr/vignettes/recipes.html#put-each-subtotal-with-the-rows-it-summarizes)
 shows what `.sort` does not promise; use `arrange()` for any other
@@ -362,7 +366,9 @@ retail_sales |>
 The last two rows are the `()` set of each rollup. The same dimensions are
 absent from both, so only `occurrence` tells them apart. `.sort` keeps them
 next to each other: `.id` breaks the remaining ties in that order, so a kept
-duplicate sits beside the occurrence it repeats.
+duplicate sits beside the occurrence it repeats. `month` is character, so
+`"Feb"` sorts above `"Jan"`; make it a factor with the calendar's levels for
+calendar order.
 
 `grouping_spec()` combines the same two rollups by Cartesian product instead,
 as SQL combines comma-separated grouping items: every time level crossed with
@@ -847,7 +853,8 @@ The nesting verbs share the result shapes of `tidyr::nest()` and
 reference](https://sayuks.github.io/marginplyr/man/nest_with_margins.html) and
 of the [`nest_by_with_margins()`
 reference](https://sayuks.github.io/marginplyr/man/nest_by_with_margins.html)
-lists each verb's differences.
+lists each verb's differences. Both take `.sort`, which orders the outer keys
+as it orders a summary; use `arrange()` for any order `.sort` does not express.
 
 Nesting rejects `.duplicates = "keep"`, with or without `.id`, where the value
 is written rather than where a duplicate first appears:

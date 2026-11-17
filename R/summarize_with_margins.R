@@ -93,8 +93,10 @@
 #'   nothing else; see *[Option arguments][margin_verbs]* in [margin_verbs].
 #'   `"none"` leaves row order unspecified. `"last"` places each margin row
 #'   after the rows it summarizes and `"first"` before them, within each fixed
-#'   `.by` key, with missing values last. See *[Margin order][margin_verbs]* in
-#'   [margin_verbs].
+#'   `.by` key, with missing values last. A non-missing `.margin_label` makes a
+#'   non-factor dimension character, so a numeric one sorts as text; use
+#'   `.margin_label = NULL` or a factor to keep numeric order. See
+#'   *[Margin order][margin_verbs]* in [margin_verbs].
 #' @param .id `NULL`, or one non-missing, non-empty character string naming an
 #'   integer output column of one-based Grouping set identifiers. Each value
 #'   identifies one occurrence in the resolved Grouping plan. The name must not

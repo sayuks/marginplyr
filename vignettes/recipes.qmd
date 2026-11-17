@@ -157,8 +157,11 @@ retail_sales |>
 
 `"first"` puts each subtotal above its rows instead, as [Put the totals above
 the rows they summarize](#put-the-totals-above-the-rows-they-summarize) shows.
-Neither choice looks at `.margin_label`, so the placement does not change if
-the label does, and it does not depend on the locale. The `NA` store sorts after the named stores but
+The label's text never decides where a subtotal goes, so changing it moves
+nothing, and neither does the locale; whether there is a label does decide how
+a non-factor dimension sorts, as [Keep a numeric dimension in numeric
+order](#keep-a-numeric-dimension-in-numeric-order) shows. Within a level, rows
+sort ascending by value. The `NA` store sorts after the named stores but
 still ahead of the region subtotal: each dimension contributes its Grouping
 bit before its missingness, so a margin outranks a missing value rather than
 competing with one.

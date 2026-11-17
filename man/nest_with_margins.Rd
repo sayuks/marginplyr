@@ -98,8 +98,10 @@ collide with source columns, grouping keys, or other output columns. See
 nothing else; see \emph{\link[=margin_verbs]{Option arguments}} in \link{margin_verbs}.
 \code{"none"} leaves row order unspecified. \code{"last"} places each margin row
 after the rows it summarizes and \code{"first"} before them, within each fixed
-\code{.by} key, with missing values last. See \emph{\link[=margin_verbs]{Margin order}} in
-\link{margin_verbs}.}
+\code{.by} key, with missing values last. A non-missing \code{.margin_label} makes a
+non-factor dimension character, so a numeric one sorts as text; use
+\code{.margin_label = NULL} or a factor to keep numeric order. See
+\emph{\link[=margin_verbs]{Margin order}} in \link{margin_verbs}.}
 
 \item{.key}{A string naming the list column. As in \code{\link[tidyr:nest]{tidyr::nest()}},
 \code{NULL} uses \code{"data"}.}
