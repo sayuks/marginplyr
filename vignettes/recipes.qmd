@@ -996,8 +996,9 @@ contiguous by grouping set instead, which is the order the expansion builds its
 branches in.
 
 The cost is in the row count: expansion produces one copy of the input per
-grouping set, so a plan with many sets multiplies the rows the database has to
-scan. Reach for this when the
+grouping set, so a plan with many sets multiplies the rows every later step
+processes. On most backends each copy also reads the input again; the guide
+below says which share one read. Reach for this when the
 aggregation pass genuinely cannot express the calculation, not to avoid
 writing a summary.
 
