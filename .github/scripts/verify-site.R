@@ -19,6 +19,10 @@
 # succeeds while executing nothing. A page absent from `markers` still gets
 # everything above. A `markers` key naming no derived page is an error, so
 # renaming a vignette cannot quietly drop its markers instead of moving them.
+#
+# Every link into the site that names a fragment must also land on an element
+# carrying that id. The links are read from the rendered pages, so a fragment
+# added to any source is covered without an edit here either.
 
 source(".github/scripts/ci-helpers.R")
 
@@ -548,11 +552,8 @@ for (page in pages) {
   }
 }
 
-# Every link into the site that names a fragment must land on an element
-# carrying that id, so a renamed heading fails here instead of sending the
-# reader to the top of the page. The links are read from the rendered pages
-# rather than listed, so a fragment added to any source is covered without an
-# edit here. A link is into the site when it is relative or starts with the
+# A renamed heading fails here instead of sending the reader to the top of the
+# page. A link is into the site when it is relative or starts with the
 # site root DESCRIPTION's `URL` names, which is how a README link and a
 # roxygen `\href` reach a page.
 site_root <- grep(
@@ -622,8 +623,7 @@ if (length(dangling) > 0L) {
   )
 }
 
-# The one assertion about a page's structure rather than its text: the first
-# tabset must open on the Total tab, which no marker can express.
+# The first tabset must open on the Total tab, which no marker can express.
 article <- texts[["docs/vignettes/get_started.html"]]
 first_tabset <- strsplit(
   article,
