@@ -98,8 +98,11 @@ An ungrouped data frame, or a lazy table when \code{.data} is lazy,
 with one row per input row per grouping set. Its columns are the fixed
 \code{.by} keys, then the grouping dimensions, then \code{.id} when supplied, then
 the remaining input columns in input order. Its class follows
-\code{\link[dplyr:mutate]{dplyr::mutate()}} combined with \code{\link[dplyr:union_all]{dplyr::union_all()}}; see
-\emph{\link[=margin_verbs]{Result metadata}} in \link{margin_verbs}.
+\code{\link[dplyr:mutate]{dplyr::mutate()}} combined with \code{\link[dplyr:union_all]{dplyr::union_all()}}, except for the
+leading class described in
+\emph{\link[=summarize_with_margins]{SQLite materialization}} in
+\code{\link[=summarize_with_margins]{summarize_with_margins()}}; see \emph{\link[=margin_verbs]{Result metadata}} in
+\link{margin_verbs}.
 
 With a character \code{.margin_label}, the default, a grouping dimension that
 is not a factor becomes character so that it can hold the label. A factor
@@ -127,8 +130,7 @@ cover, or \code{\link[dplyr:arrange]{dplyr::arrange()}} for any other order.
 \item A character \code{.margin_label} changes a non-factor grouping dimension to
 character in every copy, detail rows included; see Value. Use
 \code{.margin_label = NULL} or \code{NA_character_} to keep its type.
-\item The result is one row per input row per grouping set, so it grows with
-the number of grouping sets.
+\item The result has \code{nrow(.data)} times the number of grouping sets rows.
 }
 }
 
@@ -183,7 +185,7 @@ grouped_expansion <- january_sales |>
 dplyr::group_vars(grouped_expansion)
 
 # A simulated SQLite table shows the portable UNION ALL translation: one
-# branch per grouping set, after a `WHERE (0)` branch that only fixes the
+# branch per grouping set, after two `WHERE (0)` branches that only fix the
 # column types. Runs only when RSQLite is installed, which renders SQLite
 # SQL.
 source(system.file("suggests", "guard.R", package = "marginplyr"))

@@ -100,9 +100,9 @@ marginplyr records prepared SQL representations only when you ask for them.
 \if{html}{\out{<div class="sourceCode r">}}\preformatted{# `sales_db` is a lazy table on a SQL connection.
 old <- options(marginplyr.audit_sql = TRUE)
 
-summarize_with_margins(
+report <- summarize_with_margins(
   sales_db,
-  revenue = sum(revenue),
+  revenue = sum(revenue, na.rm = TRUE),
   .grouping = rollup(region, store)
 )
 

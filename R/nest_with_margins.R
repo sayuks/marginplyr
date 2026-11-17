@@ -25,9 +25,9 @@
 #'   does.
 #'
 #' @section Nested data frames:
-#' The list column is a list of data frames holding the input's non-key
-#' columns; its exact `vctrs_list_of` subclass is not part of the API, and
-#' neither is the class of its elements, which is a tibble for a local input
+#' The list column is a regular list of data frames holding the input's
+#' non-key columns; a `vctrs::list_of` subclass is not promised. Nor is the
+#' class of its elements, which is a tibble for a local input
 #' and a data table under `dtplyr`. Call `lapply(result$data,
 #' tibble::as_tibble)` when one element class is needed across backends.
 #'
@@ -197,9 +197,8 @@ nest_with_margins <- function(.data,
   )
 }
 
-# The nesting verbs narrow the Margin `.duplicates` vocabulary: nested
-# duplicate sets would share indistinguishable outer keys, so `"keep"` is not
-# offered. See the note in R/margin-operation.R on why the formals still spell
+# The nesting verbs narrow the Margin `.duplicates` vocabulary and do not offer
+# `"keep"`. See the note in R/margin-operation.R on why the formals still spell
 # it out.
 nest_duplicates_choices <- c("error", "drop")
 

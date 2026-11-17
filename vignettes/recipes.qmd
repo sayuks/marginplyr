@@ -58,6 +58,10 @@ package.
 ```{r}
 #| include: false
 
+# Base R translates its own diagnostics, and a rejected call shows them, so
+# the page carries English whatever locale it is rendered in.
+Sys.setenv(LANGUAGE = "en")
+
 # `marginplyr_suggest_available()` answers what a bare installation check
 # could not: whether the installed package satisfies the version DESCRIPTION
 # requires. AGENTS.md is authoritative for which guards must go through it.
@@ -202,12 +206,47 @@ retail_sales |>
     .grouping = rollup(region, store)
   ) |>
   mutate(
-    .by = region,
+    .by = c(rb, region),
     region_revenue = max(ifelse(sb == 1, revenue, NA), na.rm = TRUE)
   ) |>
   arrange(rb, desc(region_revenue), region, sb, desc(revenue), store) |>
   select(region, store, revenue)
 ```
+
+The `mutate()` groups by `rb` as well as `region` because a displayed value
+does not say which grouping set a row came from. With `.margin_label = NULL`,
+the grand-total row and the rows whose region is missing in the source both
+show `NA`. Grouped on `region` alone they share one group, and the region
+with no name is ranked by the grand total. A source region equal to the label
+meets the grand-total row the same way. Keying on the Grouping bit and the
+value together is the rule [Compare a row with an ancestor
+level](#compare-a-row-with-an-ancestor-level) states for a join key.
+
+A fixed `.by` key on the verb belongs in both steps. Add `year` to the
+`mutate()`'s `.by`, so that each year's regions are ranked by that year's
+subtotal, and put `year` first in the `arrange()`, so that the years do not
+interleave:
+
+```{r}
+retail_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    rb = grouping_bit(region),
+    sb = grouping_bit(store),
+    .by = year,
+    .grouping = rollup(region, store)
+  ) |>
+  mutate(
+    .by = c(year, rb, region),
+    region_revenue = max(ifelse(sb == 1, revenue, NA), na.rm = TRUE)
+  ) |>
+  arrange(year, rb, desc(region_revenue), region, sb, desc(revenue), store) |>
+  select(year, region, store, revenue)
+```
+
+A deeper rollup needs one such helper per level that is ordered by a measure.
+For example, in `rollup(region, store, product)`, ranking stores within their
+region needs a store-level helper keyed on `rb`, `region`, `sb` and `store`.
 
 **On a lazy backend, dropping a helper column can cost the order.** Whether
 it does is decided by the query dbplyr builds, which this package does not own
@@ -217,7 +256,10 @@ longer in it.
 
 A Grouping bit usually survives, because the bits of a `rollup()` are computed
 in the query underneath the one the ordering sits in. The reversed-year recipe runs on
-a database unchanged:
+a database unchanged. It writes `na.rm = TRUE` in both places so that the
+results match: locally a missing measure makes every subtotal and total that
+includes it `NA`, while a SQL aggregate always drops missing values, and
+dbplyr warns when `na.rm = TRUE` is absent:
 
 ```{r}
 #| eval: !expr has_duckdb
@@ -257,7 +299,7 @@ duckdb_sales |>
     .grouping = rollup(region, store)
   ) |>
   mutate(
-    .by = region,
+    .by = c(rb, region),
     region_revenue = max(ifelse(sb == 1, revenue, NA), na.rm = TRUE)
   ) |>
   arrange(rb, desc(region_revenue), region, sb, desc(revenue), store) |>
@@ -279,7 +321,7 @@ duckdb_sales |>
     .grouping = rollup(region, store)
   ) |>
   mutate(
-    .by = region,
+    .by = c(rb, region),
     region_revenue = max(ifelse(sb == 1, revenue, NA), na.rm = TRUE)
   ) |>
   arrange(rb, desc(region_revenue), region, sb, desc(revenue), store) |>
@@ -303,10 +345,11 @@ states the whole key.
 ## Lay the report out wide
 
 A cross-tabulation puts one dimension down the side, another across the top,
-and a total on both edges: regions as rows, channels as columns, a `Total`
+and a total on both edges: products as rows, stores as columns, a `Total`
 column on the right and a `Total` row at the bottom. `cube()` produces every
-cell of that table, including both sets of totals and their corner, and
-`tidyr::pivot_wider()` lays it out:
+cell of that table, including both sets of totals and their corner,
+`tidyr::pivot_wider()` lays it out, and `relocate()` puts the `Total` column
+last:
 
 ```{r}
 #| eval: !expr has_tidyr
@@ -314,17 +357,24 @@ cell of that table, including both sets of totals and their corner, and
 retail_sales |>
   summarize_with_margins(
     revenue = sum(revenue),
-    .grouping = cube(region, channel),
+    .grouping = cube(product, store),
     .sort = "last"
   ) |>
-  tidyr::pivot_wider(names_from = channel, values_from = revenue)
+  tidyr::pivot_wider(names_from = store, values_from = revenue) |>
+  relocate(Total, .after = last_col())
 ```
 
-**The column order is the row order.** `pivot_wider()` creates a column for
-each channel in the order it first meets that channel in the rows, so the
-`.sort = "last"` that puts the `Total` row at the bottom is also what puts the
-`Total` column on the right. Without a Margin order the columns come in
-whatever order the summary returned its rows.
+**The row order does not place the columns.** `pivot_wider()` creates a
+column for each store in the order it first meets that store in the rows.
+`.sort = "last"` puts the `Total` row at the bottom, but the first product's
+rows name only the stores that sold it, so without the `relocate()` the
+`Total` column lands after those stores, ahead of the rest.
+
+Two kinds of empty cell come out of the pivot. A store that is missing in the
+source becomes a column named `NA`, beside the named stores. A product and
+store with no rows between them is `NA` in the wide table, because there is
+no summary row for that cell; pass `values_fill = 0` to `pivot_wider()` when
+such a cell should read as zero revenue.
 
 **Pivot after collecting.** On a lazy table `pivot_wider()` builds the wide
 table in SQL. That query reads the sorted summary as a subquery, so dbplyr
@@ -342,12 +392,12 @@ duckdb_sales <- dplyr::copy_to(con, retail_sales, "retail_sales")
 duckdb_crosstab <- duckdb_sales |>
   summarize_with_margins(
     revenue = sum(revenue, na.rm = TRUE),
-    .grouping = cube(region, channel),
+    .grouping = cube(product, store),
     .sort = "last"
   )
 
 duckdb_crosstab |>
-  tidyr::pivot_wider(names_from = channel, values_from = revenue) |>
+  tidyr::pivot_wider(names_from = store, values_from = revenue) |>
   collect()
 ```
 
@@ -359,7 +409,8 @@ local pivot then reads the rows in Margin order:
 
 duckdb_crosstab |>
   collect() |>
-  tidyr::pivot_wider(names_from = channel, values_from = revenue)
+  tidyr::pivot_wider(names_from = store, values_from = revenue) |>
+  relocate(Total, .after = last_col())
 ```
 
 ```{r}
@@ -406,6 +457,14 @@ retail_sales |>
 Now every row is a share of all four region-years together, and the year rows
 are subtotals rather than partitions. Both calls are correct; they answer
 different questions, and `.by` is what distinguishes them.
+
+**On SQLite and on a simulated connection, either call is refused until it sets
+`.check_share_source = FALSE`.** marginplyr establishes that a share's source
+is a number by asking the dialect, and SQLite answers `sum()` of text with a
+number while a simulator executes nothing to ask. [Parent shares use a staged
+lazy
+query](https://sayuks.github.io/marginplyr/vignettes/database_backends.html#parent-shares-use-a-staged-lazy-query)
+states the rule; DuckDB runs both calls unchanged.
 
 For a denominator one rollup level up rather than at the top, use
 `share_of_parent()`. The
@@ -480,7 +539,9 @@ store_totals <- retail_sales |>
 store_totals
 ```
 
-Then summarize the whole rollup, retain the same bits, and divide:
+Then summarize the whole rollup, retain the same bits, and divide. The
+division is ordinary R, so a zero denominator gives `NaN` where the share
+helpers give `NA`:
 
 ```{r}
 retail_sales |>
@@ -646,13 +707,15 @@ label can be changed or set to `NULL`. The obstacle is knowing which value to as
 order is easy to get backwards.
 
 Do not guess. `inspect_grouping()` prints the answer for every set in the plan
-before any data is summarized:
+before any data is summarized. Selecting the two columns read below prints
+them in full:
 
 ```{r}
 inspect_grouping(
   .data = retail_sales,
   .grouping = cube(region, channel)
-)
+) |>
+  select(grouping_bits, grouping_id)
 ```
 
 Read `grouping_bits` beside `grouping_id`: the last dimension is the least
@@ -966,6 +1029,11 @@ duckdb_sales |>
   collect()
 ```
 
+`set` is in the `group_by()` because the dimensions alone do not identify a
+grouping set. Under `.margin_label = NULL`, a store that is missing in the
+source and the region's store margin both show `NA`, and without `set` their
+copies would merge into one group.
+
 ```{r}
 #| include: false
 #| eval: !expr has_duckdb
@@ -991,13 +1059,13 @@ retail_sales |>
 ```
 
 Each region's detail copies now sit above its margin copies, and the
-all-regions copies come last. Without `.sort` the same call returns rows
-contiguous by grouping set instead, which is the order the expansion builds its
-branches in.
+all-regions copies come last. Without `.sort` the expansion promises no row
+order.
 
 The cost is in the row count: expansion produces one copy of the input per
-grouping set, so a plan with many sets multiplies the rows the database has to
-scan. Reach for this when the
+grouping set, so a plan with many sets multiplies the rows every later step
+processes. On most backends each copy also reads the input again; the guide
+below says which share one read. Reach for this when the
 aggregation pass genuinely cannot express the calculation, not to avoid
 writing a summary.
 
