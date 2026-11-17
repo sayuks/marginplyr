@@ -14,9 +14,12 @@ date: last-modified
 ---
 
 The other guides are organized by concept. This one is organized by task: each
-section states a reporting question, answers it with one worked pipeline, and
-stops. Read them in any order and skip the rest — no recipe uses a value
-another recipe defined, so every one starts from
+recipe opens with the report it builds and a local pipeline that builds it.
+Variants, pitfalls and what changes on a database come after that output, the
+longer ones under a sub-heading of their own, so you can stop at the first
+sub-heading when the local answer is all you need. Read the recipes in any
+order and skip the rest — no recipe uses a value another recipe defined, so
+every one starts from
 [`retail_sales`](https://sayuks.github.io/marginplyr/man/retail_sales.html),
 the package's 24-row example sales table, or from its own lazy table.
 
@@ -24,6 +27,42 @@ Read [Get
 started](https://sayuks.github.io/marginplyr/vignettes/get_started.html) first
 if Grouping specifications are new to you. Each recipe links to the concept
 guide that explains why its answer works.
+
+## Task index
+
+On this page:
+
+- [Put each subtotal with the rows it
+  summarizes](#put-each-subtotal-with-the-rows-it-summarizes)
+- [Keep a numeric dimension in numeric
+  order](#keep-a-numeric-dimension-in-numeric-order) once it carries a label
+- [Sort the newest year first](#sort-the-newest-year-first)
+- [Sort regions and stores by revenue](#sort-regions-and-stores-by-revenue)
+- [Make a crosstab (pivot table) with totals on both
+  edges](#make-a-crosstab-pivot-table-with-totals-on-both-edges)
+- [Show each row as a percent of the
+  total](#show-each-row-as-a-percent-of-the-total)
+- [Show each row as a percent of a level further
+  up](#show-each-row-as-a-percent-of-a-level-further-up)
+- [Show only the subtotals of one
+  level](#show-only-the-subtotals-of-one-level)
+- [Add a level column: detail, subtotal or
+  total](#add-a-level-column-detail-subtotal-or-total)
+- [Fix a nested-aggregate error on a
+  database](#fix-a-nested-aggregate-error-on-a-database)
+
+On other pages:
+
+- Label the total rows, each kind of total its own way, with a named
+  `.margin_label`: [Labels and column types](https://sayuks.github.io/marginplyr/vignettes/get_started.html#labels-and-column-types)
+  in Get started.
+- Show each row as a percent of the level directly above it: [Compare a
+  summary with its rollup
+  parent](https://sayuks.github.io/marginplyr/vignettes/get_started.html#compare-a-summary-with-its-rollup-parent)
+  in Get started.
+- Keep a failure of your own warning callback separate from the summary's
+  error or cancellation: *R's handler boundary* in the [condition
+  contract](https://sayuks.github.io/marginplyr/man/marginplyr_conditions.html).
 
 ## Installation
 
@@ -35,8 +74,8 @@ Install marginplyr from GitHub:
 install.packages("pak")
 pak::pkg_install("sayuks/marginplyr")
 
-# Used for the sections of this guide that execute against a database, and
-# for the one that lays a report out wide.
+# Used for the parts of this guide that execute against a database, and for
+# the crosstab.
 install.packages(c("DBI", "duckdb", "tidyr"))
 ```
 
@@ -47,10 +86,10 @@ library(marginplyr)
 library(dplyr)
 ```
 
-Nothing beyond marginplyr's own dependencies is required. Five recipes execute
-against DuckDB and one reshapes its result with tidyr, so those chunks evaluate
-only when the package they need is installed at the version marginplyr asks
-for. Where a package is missing or too old the code is
+Nothing beyond marginplyr's own dependencies is required. The chunks that run
+against a database use DuckDB, and the crosstab reshapes its result with tidyr,
+so those chunks evaluate only when the package they need is installed at the
+version marginplyr asks for. Where a package is missing or too old the code is
 still shown, but its output is absent. Everything else runs either locally or
 against `dbplyr::simulate_postgres()`, which needs no database and no optional
 package.
@@ -106,16 +145,25 @@ competing with one.
 
 **A Margin order belongs to the object the verb returned, not to anything
 derived from it.** Any later verb is free to reorder, and on a lazy backend
-one usually does — see [Name the grouping set on every
-row](#name-the-grouping-set-on-every-row) for a join that drops it, and the
+one usually does — see [The same join against a lazy
+table](#the-same-join-against-a-lazy-table) for a join that drops it, and the
 warning dbplyr gives when it does.
-When some other presentation order is what you want, write the key yourself:
-[Write the sort key yourself](#write-the-sort-key-yourself) shows it as an
-`arrange()` you control.
+When some other presentation order is what you want, write the key yourself as
+an `arrange()` you control: [Sort the newest year
+first](#sort-the-newest-year-first) reverses one dimension, and [Sort regions
+and stores by revenue](#sort-regions-and-stores-by-revenue) orders by a
+measure.
 
-**A dimension with a label sorts as text.** A non-missing `.margin_label` turns
-the dimension into character, and the Margin order sorts the values the result
-holds, so a numeric dimension comes back in text order ([ADR 0018][adr18]):
+[Grouping
+identity](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html)
+explains why Grouping-plan order and a Margin order answer different
+questions.
+
+### Keep a numeric dimension in numeric order
+
+A non-missing `.margin_label` turns the dimension into character, and the
+Margin order sorts the values the result holds, so a numeric dimension comes
+back in text order:
 
 ```{r}
 months <- tibble(month = c(2L, 9L, 10L), revenue = c(100, 200, 300))
@@ -154,19 +202,15 @@ months |>
   )
 ```
 
-[Grouping
-identity](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html)
-explains why Grouping-plan order and a Margin order answer different
-questions.
+## Sort the newest year first
 
-[adr18]: https://github.com/sayuks/marginplyr/blob/main/design/adr/0018-order-margin-results-by-grouping-structure.md
-
-## Write the sort key yourself
-
-A Margin order leaves every dimension's values ascending, so a report that
-wants the newest year at the top asks for the same key with one term changed.
-`grouping_bit()` exposes the same Grouping bits the key uses, and the
-`arrange()` is then the key above with `desc()` on the term you are reversing:
+`.sort = "last"` lists every dimension's values in ascending order, so 2025
+comes before 2026. To put the newest year at the top and keep each subtotal
+under its own rows, write that order out as an `arrange()` and reverse one
+term. The order takes each dimension in turn and sorts on its Grouping bit —
+the `0`/`1` flag `grouping_bit()` returns, `1` where aggregation removed the
+dimension — then on whether its value is missing, then on the value. Retain
+the bits in the summary, and put `desc()` on the year's value:
 
 ```{r}
 retail_sales |>
@@ -184,14 +228,56 @@ retail_sales |>
 everything ahead of the reversed term is what it was. `desc(year)` gets the
 years right only because the label has made `year` text and every year has
 four digits; for a numeric dimension whose values differ in length, give the
-key a factor or use `.margin_label = NULL`, as in [Put each subtotal with the
-rows it summarizes](#put-each-subtotal-with-the-rows-it-summarizes).
+key a factor or use `.margin_label = NULL`, as in [Keep a numeric dimension in
+numeric order](#keep-a-numeric-dimension-in-numeric-order).
 
-An order no sort key can express is written the same way, with one more
-column. Ordering regions by revenue, and the stores inside each region by
-revenue, needs each region's own revenue on every one of its rows; that number
-is already in the result as the region's subtotal row, so a grouped `mutate()`
-can put it there, and the `sb` term keeps each subtotal under its own stores:
+The [`summarize_with_margins()`
+reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html)
+states the whole key under *Margin order*.
+
+### Sort a lazy table the same way
+
+The Grouping bits of a `rollup()` are computed in the query underneath the one
+the ordering sits in, so dropping them with `select()` keeps the order, and the
+pipeline runs on a database unchanged:
+
+```{r}
+#| eval: !expr has_duckdb
+
+# `shared_home = FALSE` keeps DuckDB's extension cache and stored secrets in
+# the session's temporary directory rather than in `~/.duckdb`.
+con <- DBI::dbConnect(duckdb::duckdb(shared_home = FALSE))
+duckdb_sales <- dplyr::copy_to(con, retail_sales, "retail_sales")
+
+duckdb_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    yb = grouping_bit(year),
+    rb = grouping_bit(region),
+    .grouping = rollup(year, region)
+  ) |>
+  arrange(yb, is.na(year), desc(year), rb, is.na(region), region) |>
+  select(-yb, -rb) |>
+  collect()
+```
+
+```{r}
+#| include: false
+#| eval: !expr has_duckdb
+
+DBI::dbDisconnect(con, shutdown = TRUE)
+```
+
+## Sort regions and stores by revenue
+
+A report that lists the largest region first, and the largest store first
+within each region, orders on a number no column holds yet: each region's
+revenue, on every one of its rows. That number is already in the result as the
+region's subtotal row, so a grouped `mutate()` can copy it onto the region's
+rows before the `arrange()`. `rb` and `sb` are the region's and the store's
+Grouping bits — the `0`/`1` flag `grouping_bit()` returns, `1` where
+aggregation removed the dimension — and the `sb` term keeps each subtotal
+under its own stores:
 
 ```{r}
 retail_sales |>
@@ -215,8 +301,8 @@ the grand-total row and the rows whose region is missing in the source both
 show `NA`. Grouped on `region` alone they share one group, and the region
 with no name is ranked by the grand total. A source region equal to the label
 meets the grand-total row the same way. Keying on the Grouping bit and the
-value together is the rule [Compare a row with an ancestor
-level](#compare-a-row-with-an-ancestor-level) states for a join key.
+value together is the rule [Show each row as a percent of a level further
+up](#show-each-row-as-a-percent-of-a-level-further-up) states for a join key.
 
 A fixed `.by` key on the verb belongs in both steps. Add `year` to the
 `mutate()`'s `.by`, so that each year's regions are ranked by that year's
@@ -244,39 +330,25 @@ A deeper rollup needs one such helper per level that is ordered by a measure.
 For example, in `rollup(region, store, product)`, ranking stores within their
 region needs a store-level helper keyed on `rb`, `region`, `sb` and `store`.
 
-**On a lazy backend, dropping a helper column can cost the order.** Whether
-it does is decided by the query dbplyr builds, which this package does not own
-— but you are told when it happens, either by dbplyr warning that it discarded
+### Keep the helper column on a lazy table
+
+On a lazy backend, dropping a helper column can cost the order. Whether it
+does is decided by the query dbplyr builds, which this package does not own —
+but you are told when it happens, either by dbplyr warning that it discarded
 an `ORDER BY` or by the database refusing a query that orders on a column no
 longer in it.
 
-A Grouping bit usually survives, because the bits of a `rollup()` are computed
-in the query underneath the one the ordering sits in. The reversed-year recipe runs on
-a database unchanged:
+A Grouping bit can be dropped, because it is computed in the query underneath
+the one the ordering sits in. `region_revenue` cannot: you computed it after
+the summary, so it is in the same query as the ordering, and dropping it
+leaves an `ORDER BY` naming a column that is gone:
 
 ```{r}
 #| eval: !expr has_duckdb
 
-# `shared_home = FALSE` keeps DuckDB's extension cache and stored secrets in
-# the session's temporary directory rather than in `~/.duckdb`.
 con <- DBI::dbConnect(duckdb::duckdb(shared_home = FALSE))
 duckdb_sales <- dplyr::copy_to(con, retail_sales, "retail_sales")
-
-duckdb_sales |>
-  summarize_with_margins(
-    revenue = sum(revenue, na.rm = TRUE),
-    yb = grouping_bit(year),
-    rb = grouping_bit(region),
-    .grouping = rollup(year, region)
-  ) |>
-  arrange(yb, is.na(year), desc(year), rb, is.na(region), region) |>
-  select(-yb, -rb) |>
-  collect()
 ```
-
-`region_revenue` does not survive it. You computed it after the summary, so it
-is in the same query as the ordering rather than underneath it, and dropping it
-leaves an `ORDER BY` naming a column that is gone:
 
 ```{r}
 #| label: dropping-a-computed-sort-term
@@ -331,14 +403,10 @@ get a report with no helper columns in it.
 DBI::dbDisconnect(con, shutdown = TRUE)
 ```
 
-The [`summarize_with_margins()`
-reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html)
-states the whole key under *Margin order*.
+## Make a crosstab (pivot table) with totals on both edges
 
-## Lay the report out wide
-
-A cross-tabulation puts one dimension down the side, another across the top,
-and a total on both edges: products as rows, stores as columns, a `Total`
+A crosstab, or pivot table, puts one dimension down the side, another across
+the top, and a total on both edges: products as rows, stores as columns, a `Total`
 column on the right and a `Total` row at the bottom. `cube()` produces every
 cell of that table, including both sets of totals and their corner,
 `tidyr::pivot_wider()` lays it out, and `relocate()` puts the `Total` column
@@ -369,10 +437,12 @@ store with no rows between them is `NA` in the wide table, because there is
 no summary row for that cell; pass `values_fill = 0` to `pivot_wider()` when
 such a cell should read as zero revenue.
 
-**Pivot after collecting.** On a lazy table `pivot_wider()` builds the wide
+### Pivot a lazy result after collecting
+
+On a lazy table `pivot_wider()` builds the wide
 table in SQL. That query reads the sorted summary as a subquery, so dbplyr
-drops the Margin order and warns, as in [Name the grouping set on every
-row](#name-the-grouping-set-on-every-row). The columns and rows then come in
+drops the Margin order and warns, as in [The same join against a lazy
+table](#the-same-join-against-a-lazy-table). The columns and rows then come in
 whatever order the database produces them, so neither `Total` has to land on
 its edge:
 
@@ -413,12 +483,14 @@ duckdb_crosstab |>
 DBI::dbDisconnect(con, shutdown = TRUE)
 ```
 
-## Compare each row with the right total
+## Show each row as a percent of the total
 
-`share_of_total()` divides a summary by the same summary on the Grand total
-set. Which rows that set covers is decided by the fixed `.by` keys, and that
-is the whole of the choice. With `.by = year`, each year is its own
-denominator:
+A percent-of-total column divides each row by a total, and the report decides
+which one: each year's own total, or the whole table's. `share_of_total()`
+divides a summary by the same summary on the Grand total set and returns the
+fraction; multiply it by 100 for a percent. Which rows that set covers is
+decided by the fixed `.by` keys, and that is the whole of the choice. With
+`.by = year`, each year is its own denominator:
 
 ```{r}
 retail_sales |>
@@ -457,17 +529,18 @@ For a denominator one rollup level up rather than at the top, use
 reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html)
 documents both helpers, and [Compare a summary with the
 whole](https://sayuks.github.io/marginplyr/vignettes/get_started.html#compare-a-summary-with-the-whole)
-compares them side by side. For a level between the two, [Compare a row with
-an ancestor level](#compare-a-row-with-an-ancestor-level) runs the same `.by`
+compares them side by side. For a level between the two, [Show each row as a
+percent of a level further
+up](#show-each-row-as-a-percent-of-a-level-further-up) runs the same `.by`
 lever the other way.
 
-## Compare a row with an ancestor level
+## Show each row as a percent of a level further up
 
-`share_of_parent()` reaches the level immediately above and `share_of_total()`
-reaches the top. In a three-level report the question in between is an
-ordinary one: what fraction of its *region* is a channel row? A store's parent
-is its region, but a channel's is its store, so neither helper answers it as
-written.
+In a three-level report an ordinary question sits between the parent and the
+top: what fraction of its *region* is a channel row? `share_of_parent()`
+divides by the level immediately above and `share_of_total()` by the top. A
+store's parent is its region, but a channel's is its store, so neither helper
+answers it as written.
 
 Move the ancestor dimension into `.by`. The Grand total set of a fixed
 partition is that partition's own total, so `share_of_total()` measures
@@ -484,9 +557,9 @@ retail_sales |>
   )
 ```
 
-Placement is what chooses a denominator, and this is the lever from [Compare
-each row with the right total](#compare-each-row-with-the-right-total) run the
-other way: move a column out of `.by` to pool partitions, move it in to
+Placement is what chooses a denominator, and this is the lever from [Show each
+row as a percent of the total](#show-each-row-as-a-percent-of-the-total) run
+the other way: move a column out of `.by` to pool partitions, move it in to
 measure against it.
 
 What the move costs is the levels above the ancestor. `region` is a fixed key,
@@ -548,11 +621,19 @@ retail_sales |>
 
 The store with no name gets its own denominator, and the two levels that have
 no store — the region subtotals and the grand total — get `NA` rather than a
-number. Two things make that come out right, and neither announces itself.
+number.
 
-**The key is Grouping identity, not the displayed value.** The level is
+The share helpers take no argument naming an ancestor level, so this join is
+how a report reaches one together with the levels above it. Two things make
+the join come out right, and neither announces itself: the Grouping bits in
+its key, and `na_matches = "na"` on a database.
+
+### Key the join on Grouping identity
+
+The level is
 selected by `grouping_bit()` rather than by a Margin label, for the reason
-[Keep only one grouping set](#keep-only-one-grouping-set) gives: a source
+[Show only the subtotals of one level](#show-only-the-subtotals-of-one-level)
+gives: a source
 value can equal the label. The same argument reaches the join key, which is
 why each dimension's bit travels beside its value. Without the bits, a row
 whose store is *omitted* joins to the row whose store is *missing in the
@@ -597,8 +678,10 @@ identity](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html)
 sets out the three kinds of apparent missingness this confuses, and why
 `share_of_parent()` cannot make the same mistake internally.
 
-**`na_matches = "na"` is written explicitly because the default differs by
-backend.** `dplyr::left_join()` matches `NA` to `NA`, so a local pipeline is
+### The join on a database
+
+`na_matches = "na"` is written explicitly because the default differs by
+backend. `dplyr::left_join()` matches `NA` to `NA`, so a local pipeline is
 right without the argument. dbplyr's method does not. The same pipeline
 therefore drops the unnamed store's share against a database, and nothing
 reports that it did. Both halves are below — the join as written, then the
@@ -674,22 +757,18 @@ DBI::dbDisconnect(con, shutdown = TRUE)
 
 The unnamed store keeps its share in the first and loses it in the second, and
 the two calls differ by one argument. Neither DuckDB summary asks for `.sort`:
-as [Name the grouping set on every row](#name-the-grouping-set-on-every-row)
-shows, dbplyr drops a Margin order a join reads, so `arrange()` after the join,
-or collect first.
+as [The same join against a lazy
+table](#the-same-join-against-a-lazy-table) shows, dbplyr drops a Margin order
+a join reads, so `arrange()` after the join, or collect first.
 
-Reaching an ancestor level is not part of the helpers' API.
-[ADR 0010][adr10] records why.
+## Show only the subtotals of one level
 
-[adr10]: https://github.com/sayuks/marginplyr/blob/main/design/adr/0010-compute-parent-shares-as-a-contextual-summary.md
-
-## Keep only one grouping set
-
-To show only the region subtotals of a cube — every region, with the channels
-pooled — keep the rows of that one grouping set. Filter on Grouping identity
+A report that shows only the region subtotals of a cube — every region, with
+the channels pooled — keeps the rows of that one grouping set. Filter on
+Grouping identity
 rather than on a Margin label: a source value can equal the label, and the
-label can be changed or set to `NULL`. The obstacle is knowing which value to ask for — and guessing the bit
-order is easy to get backwards.
+label can be changed or set to `NULL`. The obstacle is knowing which value to
+ask for — and guessing the bit order is easy to get backwards.
 
 Do not guess. `inspect_grouping()` prints the answer for every set in the plan
 before any data is summarized. Selecting the two columns read below prints
@@ -761,17 +840,17 @@ all four identity values and states their duplicate-occurrence rules, and the
 guide](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html)
 works through what that comparison means in practice.
 
-## Name the grouping set on every row
+## Add a level column: detail, subtotal or total
 
-`.id` numbers the grouping-set occurrence behind each row, and
-`inspect_grouping()` returns one row per occurrence keyed by the same number.
-Joining them attaches whatever name you care to write.
+A report often needs a column saying what each row is — store detail, a region
+subtotal, or the all-regions total — so that a reader, a later `filter()` or a
+table's styling can tell them apart. `.id` numbers the grouping-set occurrence
+behind each row, and `inspect_grouping()` returns one row per occurrence keyed
+by the same number. Joining them attaches whatever name you care to write.
 
 Build the name on the plan first. `inspect_grouping()` returns an ordinary
-tibble with no custom class ([ADR 0013][adr13]), so ordinary dplyr applies,
-and cutting
-it down to two columns keeps the plan's five description columns out of the
-report:
+tibble with no custom class, so ordinary dplyr applies, and cutting it down to
+two columns keeps the plan's five description columns out of the report:
 
 ```{r}
 sales_levels <- retail_sales |>
@@ -808,12 +887,9 @@ retail_sales |>
 ### The same join against a lazy table
 
 `inspect_grouping()` is local even when `.data` is not: it reads captured
-column metadata and the Grouping plan, never the source rows
-([ADR 0013][adr13]). A lazy result and a local tibble have no common source,
-so dbplyr refuses the join outright, and its message names the two `copy`
-routes out of the refusal:
-
-[adr13]: https://github.com/sayuks/marginplyr/blob/main/design/adr/0013-inspect-grouping-plans-as-ordinary-tibbles.md
+column metadata and the Grouping plan, never the source rows. A lazy result
+and a local tibble have no common source, so dbplyr refuses the join
+outright, and its message names the two `copy` routes out of the refusal:
 
 ```{r}
 postgres_sales <- dbplyr::tbl_lazy(
@@ -940,12 +1016,13 @@ DBI::dbDisconnect(con, shutdown = TRUE)
 backends](https://sayuks.github.io/marginplyr/vignettes/database_backends.html)
 covers query shape and execution for lazy inputs generally.
 
-## Compute what the summary pass cannot express
+## Fix a nested-aggregate error on a database
 
-A summary expression can do more than call one aggregate. On a local data
-frame dplyr hands it the whole group, so a calculation that needs both a
-group-level value and the rows behind it works directly — here, the share of
-revenue coming from rows above their own set's mean:
+A calculation that compares each row with an aggregate of its own group — here,
+the share of revenue coming from rows above their own set's mean — works on a
+local data frame and fails on a database with a nested-aggregate error. On a
+local data frame dplyr hands the summary expression the whole group, so it
+works directly:
 
 ```{r}
 retail_sales |>
@@ -1057,19 +1134,3 @@ writing a summary.
 backends](https://sayuks.github.io/marginplyr/vignettes/database_backends.html)
 shows the SQL `expand_with_margins()` generates, which is the portable
 `UNION ALL` form on every backend.
-
-## Recipes elsewhere
-
-Three more tasks have their recipe on another page:
-
-- Giving each kind of total row its own label, with a named `.margin_label`:
-  [Labels and column
-  types](https://sayuks.github.io/marginplyr/vignettes/get_started.html#labels-and-column-types)
-  in Get started.
-- Dividing each row by the level directly above it: [Compare a summary with
-  its rollup
-  parent](https://sayuks.github.io/marginplyr/vignettes/get_started.html#compare-a-summary-with-its-rollup-parent)
-  in Get started.
-- Keeping a failure of your own warning callback separate from the summary's
-  error or cancellation: *R's handler boundary* in the [condition
-  contract](https://sayuks.github.io/marginplyr/man/marginplyr_conditions.html).

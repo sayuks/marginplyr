@@ -305,7 +305,7 @@ total set, the grouping set in which every dimension is omitted, so it is
 defined for any plan containing one rather than for a rollup alone. See the
 [`share_of_parent()` reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html)
 for both helpers' value, source-summary, ordering, and `across()` rules, and
-[Compare a row with an ancestor
-level](https://sayuks.github.io/marginplyr/vignettes/recipes.html#compare-a-row-with-an-ancestor-level)
+[Show each row as a percent of a level further
+up](https://sayuks.github.io/marginplyr/vignettes/recipes.html#show-each-row-as-a-percent-of-a-level-further-up)
 for a denominator neither helper reaches, which a caller assembles from the
 same identity values.
