@@ -251,6 +251,17 @@
 #'   )
 #' )
 #'
+#' # A function of your own forwards its caller's columns into a constructor,
+#' # here through `...`; `{{ }}` and `all_of()` work the same way.
+#' revenue_report <- function(data, ...) {
+#'   summarize_with_margins(
+#'     data,
+#'     revenue = sum(revenue),
+#'     .grouping = rollup(...)
+#'   )
+#' }
+#' revenue_report(retail_sales, region, store)
+#'
 #' # A simulated PostgreSQL table shows the native GROUPING SETS translation
 #' # without requiring a database server.
 #' postgres_sales <- dbplyr::tbl_lazy(

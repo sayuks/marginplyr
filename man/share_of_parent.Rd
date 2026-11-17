@@ -345,14 +345,22 @@ database error when the staged query executes. \emph{Parent shares use a
 staged lazy query} in the \href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html}{database guide} describes how a dialect is
 asked, which answers are reused, and what that sends; its \emph{Backend support
 matrix} sets each backend family's share support beside its other answers.
+}
 
-A function of your own may forward the name its caller wrote by injecting
-it: \code{!!rlang::enquo(name)} is accepted wherever a bare name is, and so is
-\code{!!rlang::ensym(name)}. Only the name is read. It is resolved among the
-preceding summaries, as every bare name here is, so the environment
-\code{\link[rlang:enquo]{rlang::enquo()}} captured is not consulted and an injection carrying
+\section{Forwarding a name from your own function}{
+
+A function of your own forwards the name its caller wrote by embracing it,
+as it would for dplyr: \code{share_of_parent({{ name }})}. The spellings \code{{{ }}}
+abbreviates, \code{!!rlang::enquo(name)} and \code{!!rlang::ensym(name)}, are
+accepted too, and a name held as a string is injected as
+\code{!!rlang::sym(name)}. Only the name is read. It is resolved among the
+preceding summaries, as every bare name here is, so the environment the
+caller's expression came from is not consulted and an injection carrying
 anything but a name is refused exactly where writing that expression out
 would be.
+
+\emph{Call a Margin verb from your own function} in the \href{https://sayuks.github.io/marginplyr/vignettes/recipes.html}{Recipes guide}
+names a summary after the caller's measure and forwards that name here.
 }
 
 \examples{

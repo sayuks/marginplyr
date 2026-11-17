@@ -335,13 +335,21 @@
 #'
 #' [db]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html
 #'
-#' A function of your own may forward the name its caller wrote by injecting
-#' it: `!!rlang::enquo(name)` is accepted wherever a bare name is, and so is
-#' `!!rlang::ensym(name)`. Only the name is read. It is resolved among the
-#' preceding summaries, as every bare name here is, so the environment
-#' [rlang::enquo()] captured is not consulted and an injection carrying
+#' @section Forwarding a name from your own function:
+#' A function of your own forwards the name its caller wrote by embracing it,
+#' as it would for dplyr: `share_of_parent({{ name }})`. The spellings `{{ }}`
+#' abbreviates, `!!rlang::enquo(name)` and `!!rlang::ensym(name)`, are
+#' accepted too, and a name held as a string is injected as
+#' `!!rlang::sym(name)`. Only the name is read. It is resolved among the
+#' preceding summaries, as every bare name here is, so the environment the
+#' caller's expression came from is not consulted and an injection carrying
 #' anything but a name is refused exactly where writing that expression out
 #' would be.
+#'
+#' *Call a Margin verb from your own function* in the [Recipes guide][recipes]
+#' names a summary after the caller's measure and forwards that name here.
+#'
+#' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
 #'
 #' @param x The bare name of one preceding eligible ordinary summary.
 #'

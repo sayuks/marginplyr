@@ -92,14 +92,23 @@ contract is \emph{\link[=margin_verbs]{Display labels and grouping identity}} in
 
 The \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide} works through these values with
 executable examples.
+}
 
-A function of your own may forward the column its caller wrote by injecting
-it: \code{!!rlang::enquo(col)} is accepted wherever a bare column is, and so is
-\code{!!rlang::ensym(col)}. Only the name is read. It is resolved against the
-Grouping plan, as every bare column here is, so the environment
-\code{\link[rlang:enquo]{rlang::enquo()}} captured is not consulted and an injection carrying
+\section{Forwarding a column from your own function}{
+
+A function of your own forwards the column its caller wrote by embracing
+it, as it would for dplyr: \code{grouping_bit({{ col }})}. The spellings \code{{{ }}}
+abbreviates, \code{!!rlang::enquo(col)} and \code{!!rlang::ensym(col)}, are accepted
+too, and a column name held as a string is injected as
+\code{!!rlang::sym(name)}. Only the name is read. It is resolved against the
+Grouping plan, as every bare column here is, so the environment the
+caller's expression came from is not consulted and an injection carrying
 anything but a name is refused exactly where writing that expression out
 would be.
+
+\emph{Call a Margin verb from your own function} in the \href{https://sayuks.github.io/marginplyr/vignettes/recipes.html}{Recipes guide}
+forwards grouping columns, a measure, and a fixed key into a Margin verb by
+each of these routes, and passes a Grouping specification as an argument.
 }
 
 \section{How the value is computed}{

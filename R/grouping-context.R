@@ -69,13 +69,22 @@
 #'
 #' [guide]: https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html
 #'
-#' A function of your own may forward the column its caller wrote by injecting
-#' it: `!!rlang::enquo(col)` is accepted wherever a bare column is, and so is
-#' `!!rlang::ensym(col)`. Only the name is read. It is resolved against the
-#' Grouping plan, as every bare column here is, so the environment
-#' [rlang::enquo()] captured is not consulted and an injection carrying
+#' @section Forwarding a column from your own function:
+#' A function of your own forwards the column its caller wrote by embracing
+#' it, as it would for dplyr: `grouping_bit({{ col }})`. The spellings `{{ }}`
+#' abbreviates, `!!rlang::enquo(col)` and `!!rlang::ensym(col)`, are accepted
+#' too, and a column name held as a string is injected as
+#' `!!rlang::sym(name)`. Only the name is read. It is resolved against the
+#' Grouping plan, as every bare column here is, so the environment the
+#' caller's expression came from is not consulted and an injection carrying
 #' anything but a name is refused exactly where writing that expression out
 #' would be.
+#'
+#' *Call a Margin verb from your own function* in the [Recipes guide][recipes]
+#' forwards grouping columns, a measure, and a fixed key into a Margin verb by
+#' each of these routes, and passes a Grouping specification as an argument.
+#'
+#' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
 #'
 #' @param x A bare Margin dimension -- a column `.grouping` selects -- or a
 #'   fixed `.by` key, whose bit is always `0L`.

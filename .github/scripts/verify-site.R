@@ -333,6 +333,7 @@ markers <- list(
     "Report a mean, a median or a distinct count",
     "Report a weighted mean",
     "Fix a nested-aggregate error on a database",
+    "Call a Margin verb from your own function",
     "Make a crosstab (pivot table) with totals on both edges",
     "Show each crosstab cell as a percent of its row or column",
     "share_of_total",
