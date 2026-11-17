@@ -522,7 +522,10 @@ orders |>
   mutate(
     year = as.integer(format(date, "%Y")),
     quarter = quarters(date),
-    month = factor(month.abb[as.integer(format(date, "%m"))], levels = month.abb)
+    month = factor(
+      month.abb[as.integer(format(date, "%m"))],
+      levels = month.abb
+    )
   ) |>
   summarize_with_margins(
     revenue = sum(revenue),
@@ -1524,8 +1527,8 @@ bare names or strings:
 report_by_dots <- function(data, ...) {
   data |>
     summarize_with_margins(
-      revenue = sum(revenue),
-      .by = year,
+      revenue = sum(.data$revenue),
+      .by = "year",
       .grouping = rollup(...),
       .sort = "last"
     )
@@ -1568,8 +1571,8 @@ it as an argument, which `.grouping` takes as it stands:
 report_by_spec <- function(data, spec) {
   data |>
     summarize_with_margins(
-      revenue = sum(revenue),
-      .by = year,
+      revenue = sum(.data$revenue),
+      .by = "year",
       .grouping = spec,
       .sort = "last"
     )
