@@ -27,7 +27,9 @@ Initial CRAN release.
 
 * `share_of_parent()` divides a summary by the same summary one `rollup()`
   level up, and `share_of_total()` divides it by the grand total, within each
-  fixed `.by` partition.
+  fixed `.by` partition. Where a SQL dialect converts other types to numbers,
+  as SQLite does, a share is refused unless `.check_share_source = FALSE`
+  vouches for its source summary.
 
 * `inspect_grouping()` returns the resolved Grouping plan as a tibble without
   running a Margin operation, for checking what a specification asks for.
@@ -35,15 +37,17 @@ Initial CRAN release.
 * `.margin_label` sets the display label of removed dimensions (`"Total"` by
   default, one label per dimension, or `NULL` for typed missing values),
   `.margin_label_position` places that label in a factor's levels, and
-  `.check_margin_label` refuses a label that collides with a source value.
+  `.check_margin_label` refuses a label that collides with a source value, by
+  default on local data only.
   `.sort` puts each subtotal next to the rows it summarizes, and
   `.duplicates` chooses whether repeated grouping sets are an error, dropped,
   or kept.
 
 * Local data frames, dtplyr, dbplyr, and Arrow inputs are supported, and lazy
-  inputs stay lazy. Most DuckDB and PostgreSQL summaries use native
-  `GROUP BY GROUPING SETS`; other SQL backends, every row expansion, and the
-  summaries listed under [Portable fallback
+  inputs stay lazy, except that `nest_by_with_margins()` collects a dtplyr
+  input to return a row-wise data frame. Most DuckDB and PostgreSQL summaries
+  use native `GROUP BY GROUPING SETS`; other SQL backends, every row
+  expansion, and the summaries listed under [Portable fallback
   SQL](https://sayuks.github.io/marginplyr/vignettes/database_backends.html#portable-fallback-sql)
   use a portable `UNION ALL` translation. The nesting verbs support local data
   frames and dtplyr.
@@ -55,7 +59,8 @@ Initial CRAN release.
   `"marginplyr_error"` class; see `?marginplyr_conditions`.
 
 * Guides cover getting started, common reporting recipes, Grouping identity,
-  completing absent keys, and database and lazy backends.
+  completing absent keys, and database and lazy backends. `?margin_verbs`
+  states once the rules every Margin verb shares.
 
 * `retail_sales` is a small synthetic monthly sales data set used throughout
   the examples.

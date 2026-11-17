@@ -54,8 +54,8 @@
 #' Margin label, and a source missing value can print exactly like a
 #' typed-missing Margin value, so retain one of these helpers or `.id` when
 #' structural identity matters. The complete label, factor, and missing-value
-#' contract is *[Display labels and grouping identity][summarize_with_margins]*
-#' in [summarize_with_margins()].
+#' contract is *[Display labels and grouping identity][margin_verbs]* in
+#' [margin_verbs].
 #'
 #' The [grouping identity guide][guide] works through these values with
 #' executable examples.
@@ -100,7 +100,9 @@
 #' `sum(grouping_id(a, b))`, aggregates a constant and follows its
 #' backend: it counts the constant once per group on a local data frame and
 #' in `dtplyr`, and once per row wherever the helper is a query literal, as
-#' plain `sum(1)` differs between a data frame and a database table. Combine
+#' plain `sum(1)` differs between a data frame and a database table. Arrow is
+#' the exception: it cannot aggregate the constant, so the summary is refused
+#' until the Arrow input is collected. Combine
 #' the helper with a column that varies by row, as in
 #' `sum(v * grouping_id(a, b))`, or put it outside the aggregate, as in
 #' `n() * grouping_id(a, b)`, for a value that agrees everywhere.

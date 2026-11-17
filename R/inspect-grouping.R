@@ -19,29 +19,22 @@
 #'   name the input also has a column for is refused rather than read either
 #'   way; see [grouping_set()].
 #' @param .duplicates One of `"error"`, `"drop"`, or `"keep"`, and nothing
-#'   else, controlling duplicate grouping-set occurrences; see *Option
-#'   arguments*.
+#'   else, controlling duplicate grouping-set occurrences; see
+#'   *[Option arguments][margin_verbs]* in [margin_verbs].
 #' @param .format `"text"` for compact display values or `"list"` for exact
-#'   character and integer vectors, and nothing else; see *Option arguments*.
+#'   character and integer vectors, and nothing else; see
+#'   *[Option arguments][margin_verbs]* in [margin_verbs].
 #'   Text values are display-only; use `"list"` when column names contain
 #'   separators or other non-syntactic characters.
 #'
 #' @return A local, ungrouped tibble with columns `set_id`, `fixed`,
 #'   `included`, `omitted`, `grouping_bits`, and `grouping_id`.
 #'
-#' @section Option arguments:
-#' `.duplicates` and `.format` each take one of their listed strings, spelled
-#' in full. An abbreviation is not shorthand for the value it begins, and
-#' `NULL` is not shorthand for the default: both are errors naming the values
-#' the argument accepts. For the default, leave the argument out or pass the
-#' whole vocabulary as the signature spells it, such as
-#' `.format = c("text", "list")`; any other vector of more than one value is
-#' an error.
-#'
 #' @section Grouping identity:
-#' `set_id` is the one-based Grouping set identifier exposed by `.id` for the
-#' same resolved plan. `grouping_bits` instead describes whether each variable
-#' dimension is included (`0L`) or omitted (`1L`), and `grouping_id` encodes
+#' `set_id` is the one-based Grouping set identifier a Margin verb's
+#' [`.id`][summarize_with_margins] column holds for the same resolved plan.
+#' `grouping_bits` instead describes whether each variable dimension is
+#' included (`0L`) or omitted (`1L`), and `grouping_id` encodes
 #' that absence pattern as a bit mask. `grouping_id` is `NA_integer_` beyond
 #' 31 variable dimensions, while `grouping_bits` remains complete.
 #'
@@ -71,8 +64,8 @@
 #' Grouping plan. Predicates in `.by` and `.grouping` use that metadata, not
 #' source values; collect explicitly before inspecting a plan whose selections
 #' depend on values. See
-#' *[Fixed columns and grouping dimensions][summarize_with_margins]* for
-#' type-based and value-dependent examples.
+#' *[Fixed columns and grouping dimensions][margin_verbs]* in [margin_verbs]
+#' for type-based and value-dependent examples.
 #' A derived dtplyr step whose typed metadata cannot be
 #' established without processing source rows is refused when inspection needs
 #' those types. Name-only inspection on dtplyr and DuckDB uses the input's
@@ -93,6 +86,9 @@
 #' receipt or completion. Add
 #' `details = TRUE` for each internal operation's outcome and conditions.
 #'
+#' Every tabular Arrow input is accepted, including a `RecordBatchReader`,
+#' which inspection does not consume. Non-tabular Arrow objects are refused.
+#'
 #' Because inspection builds no grouping-set branch, it also accepts a dtplyr
 #' step with an input rooted at `dtplyr::lazy_dt(immutable = FALSE)` and leaves
 #' every caller `data.table` unchanged. Margin verbs refuse the same Mutable
@@ -101,15 +97,14 @@
 #'
 #' The [grouping identity guide][guide] walks through inspecting a plan and
 #' reading it back off a Margin result. The [recipes guide][recipes] uses a
-#' plan to choose which grouping set to keep, and joins one against `.id` to
-#' name the set behind every row. Because the plan is local, that join needs a
+#' plan to choose which grouping set to keep, and joins one against a Margin
+#' result's [`.id`][summarize_with_margins] column to name the set behind
+#' every row. Because the plan is local, that join needs a
 #' `copy` argument when the Margin result is lazy, and it does not preserve a
 #' Margin order.
 #'
 #' [guide]: https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html
 #' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
-#'
-#' @inheritSection summarize_with_margins Arrow inputs
 #'
 #' @family grouping plans and grouping identity
 #' @seealso [summarize_with_margins()] to run a Margin operation on the
