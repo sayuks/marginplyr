@@ -108,7 +108,11 @@ manual_report
 
 This is valid dplyr code and can be the clearest choice for one small,
 one-off report. It becomes repetitive when the hierarchy grows, the requested
-levels change, or every branch must stay lazy on a remote source.
+levels change, or every branch must stay lazy on a remote source. [Choose
+the tool for the
+job](https://sayuks.github.io/marginplyr/#choose-the-tool-for-the-job) on the
+package home page compares it, data.table grouping sets, and the rollup
+package with marginplyr.
 
 ### One Grouping plan
 
@@ -414,24 +418,6 @@ retail_sales |>
 ```
 
 This two-step form works consistently for local and lazy tables.
-
-## When marginplyr fits
-
-Several R workflows can produce subtotals. The useful distinction is not
-whether they can calculate a total, but how the grouping levels are expressed
-and where the calculation runs.
-
-| Approach | Prefer it when | Tradeoff |
-|---|---|---|
-| Repeated `summarize()` plus `bind_rows()` | A one-off report has only a few levels and explicit branches are easiest to review | Every grouping level is authored and maintained separately |
-| [`data.table`](https://rdatatable.gitlab.io/data.table/reference/groupingsets.html) | The analysis is a local data.table workflow | It uses the data.table API rather than a dbplyr lazy query |
-| [`rollup`](https://cran.r-project.org/package=rollup) | Its list of grouped data frames is a natural intermediate representation | The workflow differs from marginplyr's single relational result |
-| marginplyr | One Grouping plan should work locally and through dbplyr, or grouping identity and margin-aware nesting matter | Its broader semantics add concepts that a single subtotal does not need |
-
-Use the simplest approach that preserves the shape and execution model your
-analysis needs. marginplyr is particularly useful when the report has many
-grains, must stay remote until `collect()`, or needs to distinguish source
-missing values from generated totals.
 
 ## Identify totals without guessing from labels
 
