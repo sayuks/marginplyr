@@ -54,8 +54,8 @@
 #' Margin label, and a source missing value can print exactly like a
 #' typed-missing Margin value, so retain one of these helpers or `.id` when
 #' the two must be told apart. The complete label, factor, and missing-value
-#' contract is *[Display labels and grouping identity][summarize_with_margins]*
-#' in [summarize_with_margins()].
+#' contract is *[Display labels and grouping identity][margin_verbs]* in
+#' [margin_verbs].
 #'
 #' The [grouping identity guide][guide] works through these values with
 #' executable examples.

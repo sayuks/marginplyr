@@ -235,9 +235,9 @@ four digits; for a numeric dimension whose values differ in length, give the
 key a factor or use `.margin_label = NULL`, as in [Keep a numeric dimension in
 numeric order](#keep-a-numeric-dimension-in-numeric-order).
 
-The [`summarize_with_margins()`
-reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html)
-states the whole key under *Margin order*.
+*Margin order* in the [`margin_verbs`
+reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html)
+states the whole key.
 
 ### Sort a lazy table the same way
 
