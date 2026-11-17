@@ -121,8 +121,7 @@ cover, or \code{\link[dplyr:arrange]{dplyr::arrange()}} for any other order.
 \item A character \code{.margin_label} changes a non-factor grouping dimension to
 character in every copy, detail rows included; see Value. Use
 \code{.margin_label = NULL} or \code{NA_character_} to keep its type.
-\item The result is one row per input row per grouping set, so it grows with
-the number of grouping sets.
+\item The result has \code{nrow(.data)} times the number of grouping sets rows.
 }
 }
 
@@ -369,16 +368,27 @@ and an observed collision is refused only when
 
 \section{Database backend coverage}{
 
-Summaries on DuckDB and PostgreSQL use one native \verb{GROUP BY GROUPING SETS}
-query. Other database backends, and every expansion, use a portable
-\verb{UNION ALL} query with one branch per grouping set and the same result.
-Asking for a Margin order never changes which of the two runs.
+Most summaries on DuckDB and PostgreSQL use one native
+\verb{GROUP BY GROUPING SETS} query. Other database backends, every expansion,
+and the summaries listed under \emph{Portable fallback SQL} in the
+\href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html}{database guide} use a portable \verb{UNION ALL} query with one branch per
+grouping set and the same result. Asking for a Margin order never changes
+which of the two runs.
 
-Results are executed and compared with local ones on DuckDB, SQLite, and
-Microsoft SQL Server. SQL generation, not execution, is verified for
-PostgreSQL, Access, SAP HANA, Hive, Impala, MariaDB, MySQL, Oracle, Amazon
-Redshift, Snowflake, Spark SQL, and Teradata, and for generic DBI and ODBC
-connections. Arrow and \code{dtplyr} are also supported lazy backends.
+Continuous integration executes Margin queries on these backends:
+\itemize{
+\item DuckDB, SQLite, Arrow, and \code{dtplyr}: the test suite.
+\item PostgreSQL, on a live server: Parent and Total shares, including inside
+a transaction the caller holds, typed missing dimensions, the observed
+label check, expansion input, and window-ordered input. The rest of its
+coverage is SQL generation.
+\item Microsoft SQL Server, on a live server: portable summaries, compared with
+the local result. Its expansion coverage is SQL generation.
+}
+
+SQL generation, not execution, is verified for Access, SAP HANA, Hive,
+Impala, MariaDB, MySQL, Oracle, Amazon Redshift, Snowflake, Spark SQL, and
+Teradata, and for generic DBI and ODBC connections.
 
 On SQLite and DuckDB, identifiers differing only in ASCII letter case name
 the same column, so a result refuses two public columns that would collide
@@ -466,7 +476,7 @@ grouped_expansion <- january_sales |>
 dplyr::group_vars(grouped_expansion)
 
 # A simulated SQLite table shows the portable UNION ALL translation: one
-# branch per grouping set, after a `WHERE (0)` branch that only fixes the
+# branch per grouping set, after two `WHERE (0)` branches that only fix the
 # column types. Runs only when RSQLite is installed, which renders SQLite
 # SQL.
 source(system.file("suggests", "guard.R", package = "marginplyr"))

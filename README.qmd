@@ -108,6 +108,10 @@ margins](https://sayuks.github.io/marginplyr/vignettes/completing_keys.html).
 Already working with remote data? See [Database and lazy
 backends](https://sayuks.github.io/marginplyr/vignettes/database_backends.html).
 
+The function reference contains executable examples for composite dimensions,
+tidy-select expressions, duplicate grouping sets, Cartesian products,
+computed grouping columns, simulated SQL dialects, DuckDB, and dtplyr.
+
 ## Grouping sets in plain language
 
 A normal grouped summary has one grain: for example, one row per store. A
@@ -352,10 +356,6 @@ dplyr code may be easier.
 What is verified on each backend, and how, is stated in one place: *Database
 backend coverage* in the [`summarize_with_margins()`
 reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html).
-
-The function reference contains executable examples for composite dimensions,
-tidy-select expressions, duplicate grouping sets, Cartesian products,
-computed grouping columns, simulated SQL dialects, DuckDB, and dtplyr.
 
 ## Code of Conduct
 
