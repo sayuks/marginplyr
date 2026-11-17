@@ -14,13 +14,10 @@ Initial CRAN release.
   `grouping_set()` for an exact list, and `grouping_spec()` for the Cartesian
   product SQL forms from comma-separated items. Specifications nest, accept
   tidy-select expressions, and support composite dimensions and empty sets.
-  `.grouping` takes one of these calls; a bare column, `c()`, or a string is
-  refused with the constructor call to write instead, a computed expression in
-  a constructor or `.by` with the `dplyr::mutate()` step to take first, a
-  specification written among the summaries with the `.grouping =` spelling
-  to use, and a `rollup()` or `cube()` another package masks, as data.table
-  does, with the `marginplyr::rollup()` spelling. A printed specification
-  shows the constructor call it was written as.
+  `.grouping` takes one of these calls, and anything else, such as a bare
+  column, a computed expression, or another package's `rollup()`, is refused
+  with the spelling to write instead. A printed specification shows the
+  constructor call it was written as.
 
 * Columns in `.by`, or existing `group_by()` columns, stay fixed in every
   grouping set, so one call produces an independent report per partition.

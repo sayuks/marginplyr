@@ -17,7 +17,6 @@ duplicate_example_lines <- function(positions) {
     paste0("i ", positions, "."))
 }
 
-#
 # The remedy is compared with the complete pass's. The repeated set is not: a
 # group proved from a prefix whose suffix is still unknown names no whole set,
 # so only a complete pass, or a group of completed sets, names one.
