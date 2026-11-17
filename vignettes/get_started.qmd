@@ -54,6 +54,10 @@ old the code is still shown, but its output is absent.
 ```{r}
 #| include: false
 
+# Base R translates its own diagnostics, and a rejected call shows them, so
+# the page carries English whatever locale it is rendered in.
+Sys.setenv(LANGUAGE = "en")
+
 # `marginplyr_suggest_available()` answers whether an optional package is
 # installed at the version marginplyr asks for.
 source(system.file("suggests", "guard.R", package = "marginplyr"))
@@ -64,8 +68,9 @@ has_tabsets <- marginplyr_suggest_available("quartabs")
 
 ## Start with the report question
 
-`retail_sales` contains two years of monthly sales for a fictional retail
-chain. Each row records one product, channel, and store combination.
+`retail_sales` contains January and February sales for 2025 and 2026 from a
+fictional retail chain, so each year's total covers those two months. Each row
+records one product, channel, and store combination.
 
 ```{r}
 retail_sales
@@ -204,7 +209,7 @@ doubles with every independent dimension.
 
 ### Extend the hierarchy through time
 
-The annual review also needs monthly, annual, and all-period totals. Moving
+The review also needs monthly, per-year, and all-period totals. Moving
 the period columns from `.by` into `rollup()` creates one longer hierarchy:
 
 ```{r}
@@ -224,11 +229,11 @@ The rollup expands to:
 (year, month, region, store)  store detail
 (year, month, region)         monthly region subtotal
 (year, month)                 monthly company total
-(year)                        annual company total
+(year)                        company total per year
 ()                            all-period company total
 ```
 
-Argument order defines the hierarchy. This rollup does not create an annual
+Argument order defines the hierarchy. This rollup does not create a per-year
 total for each region; arbitrary grouping sets can request that separately.
 
 ## Choose the grouping operation
@@ -654,8 +659,9 @@ retail_sales |>
   )
 ```
 
-A `grouping_sets()` specification qualifies only when it includes an empty
-`grouping_set()`; one without it is rejected:
+A `grouping_sets()` specification qualifies only when some member produces
+the empty set, such as an empty `grouping_set()` or a `rollup()`; one without
+such a member is rejected:
 
 ```{r}
 #| label: total-share-without-grand-total
@@ -679,9 +685,9 @@ Everything else is shared with `share_of_parent()` — eligible sources, the
 [`share_of_parent()` reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html)
 documents both helpers.
 
-Which rows the denominator covers is decided by the fixed `.by` keys. [Compare
-each row with the right
-total](https://sayuks.github.io/marginplyr/vignettes/recipes.html#compare-each-row-with-the-right-total) works
+Which rows the denominator covers is decided by the fixed `.by` keys. [Show each
+row as a percent of the
+total](https://sayuks.github.io/marginplyr/vignettes/recipes.html#show-each-row-as-a-percent-of-the-total) works
 through that choice.
 
 ## Complete absent keys before summarizing
@@ -703,7 +709,10 @@ fact markers for counts and means, same-connection dimension tables,
 
 The Grouping plan can be applied to a lazy table without first collecting its
 rows. This PostgreSQL simulation shows the native SQL without requiring a
-server:
+server. The call writes `na.rm = TRUE`, and a local call needs it too for the
+results to match: locally a missing measure makes every subtotal and total that
+includes it `NA`, while a SQL aggregate always drops missing values, and dbplyr
+warns when `na.rm = TRUE` is absent:
 
 ```{r}
 postgres_sales <- dbplyr::tbl_lazy(
@@ -753,8 +762,8 @@ in the database guide shows that query and explains its branches.
 
 Expanded rows are also the way to compute something one aggregation pass
 cannot express, which is a real limit on a database rather than a local one.
-[Compute what the summary pass cannot
-express](https://sayuks.github.io/marginplyr/vignettes/recipes.html#compute-what-the-summary-pass-cannot-express) works
+[Fix a nested-aggregate error on a
+database](https://sayuks.github.io/marginplyr/vignettes/recipes.html#fix-a-nested-aggregate-error-on-a-database) works
 through that case.
 
 ### Nest locally or with dtplyr
@@ -889,10 +898,9 @@ uses a logical argument instead of the full `...` interface because its
 Margin dimensions must remain visible outside to distinguish detail,
 subtotal, and total rows.
 
-Nesting accepts `.duplicates = "error"` or `"drop"`, but rejects `"keep"`.
-Unlike a summary or row expansion, two duplicate nested groups have no
-visible set identifier and would therefore be indistinguishable, so the value
-is refused where it is written rather than where a duplicate first appears:
+Nesting accepts `.duplicates = "error"` or `"drop"`, but rejects `"keep"`,
+with or without `.id`. The value is refused where it is written rather than
+where a duplicate first appears:
 
 ```{r}
 #| label: nesting-duplicates-keep
@@ -1129,7 +1137,7 @@ data.frame(region = c("East", "West"), value = c(1, 2)) |>
   )
 ```
 
-The two detail rows and Grand total row have `double_total` values 2, 4, and
+The two detail rows and the grand total have `double_total` values 2, 4, and
 6. On a lazy input, whether one summary can refer to an earlier one is decided
 by the backend; marginplyr does not collect the data to provide the local
 behavior.

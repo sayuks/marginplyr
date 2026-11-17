@@ -48,12 +48,16 @@ Nothing beyond marginplyr's own dependencies is required. The DuckDB, SQLite,
 dtplyr, and Arrow sections below need optional packages, so their chunks
 evaluate only when those packages are installed at the versions marginplyr asks
 for. Where a package is missing or too old the code is still shown, but its
-output is absent. One dtplyr chunk calls `data.table::as.data.table()` and the
+output is absent. Two dtplyr chunks call `data.table::as.data.table()` and the
 list above does not name data.table, because dtplyr imports it: installing
 dtplyr installs it.
 
 ```{r}
 #| include: false
+
+# Base R translates its own diagnostics, and a rejected call shows them, so
+# the page carries English whatever locale it is rendered in.
+Sys.setenv(LANGUAGE = "en")
 
 # `marginplyr_suggest_available()` answers what a bare installation check
 # could not: whether the installed package satisfies the version DESCRIPTION
@@ -65,8 +69,8 @@ has_duckdb <- marginplyr_suggest_available("DBI") &&
 # dbplyr's SQLite simulator opens no connection, but rendering its SQL reads
 # the installed driver version through RSQLite.
 has_sqlite_simulator <- marginplyr_suggest_available("RSQLite")
-# The one dtplyr chunk that calls `data.table::as.data.table()` is behind this
-# guard and needs none of its own, dtplyr importing data.table.
+# The dtplyr chunks that call `data.table::as.data.table()` are behind this
+# guard and need none of their own, dtplyr importing data.table.
 has_dtplyr <- marginplyr_suggest_available("dtplyr")
 has_arrow <- marginplyr_suggest_available("arrow")
 ```
@@ -90,7 +94,11 @@ local_result <- january_sales |>
 local_result
 ```
 
-The Grouping specification does not change when the input becomes a lazy table:
+The Grouping specification does not change when the input becomes a lazy
+table. Both calls write `na.rm = TRUE` so that their results match: locally a
+missing measure makes every subtotal and total that includes it `NA`, while a
+SQL aggregate always drops missing values, and dbplyr warns when
+`na.rm = TRUE` is absent:
 
 ```{r}
 postgres_sales <- dbplyr::tbl_lazy(
@@ -238,6 +246,21 @@ sales_db |>
   collect()
 ```
 
+The order survives a later verb only when dbplyr folds that verb into the same
+query. On DuckDB it is kept through `filter()`, `head()`, `rename()`,
+`distinct()`, and a `select()` that keeps every grouping column. It is dropped
+by `mutate()`, `transmute()`, a `select()` that drops a grouping column, a
+join, `count()`, and `summarise()`, each of which reads the ordered query as a
+subquery; dbplyr then warns that *ORDER BY is ignored in subqueries without
+LIMIT*. So `collect()` first and continue locally, or call `arrange()` last
+with a key you write: [Sort the newest year
+first](https://sayuks.github.io/marginplyr/vignettes/recipes.html#sort-the-newest-year-first)
+gives the key, and [Pivot a lazy result after
+collecting](https://sayuks.github.io/marginplyr/vignettes/recipes.html#pivot-a-lazy-result-after-collecting)
+and [The same join against a lazy
+table](https://sayuks.github.io/marginplyr/vignettes/recipes.html#the-same-join-against-a-lazy-table)
+work it through for a pivot and a join.
+
 Use `compute()` instead of `collect()` when the next stage should remain in the
 database. It executes the query and stores the result there as a remote table,
 so what reads it afterwards is still a lazy query against the connection:
@@ -257,6 +280,15 @@ On SQLite, direct `compute()` of a Margin result has a contract of its own,
 stated under [*SQLite
 materialization*](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html#sqlite-materialization)
 in the `summarize_with_margins()` reference.
+
+Once the database holds any macro you defined, an input that calls one of
+DuckDB's own scalar macros, such as `nullif()`, is refused too, even when it
+never calls yours: your macro could replace a name inside their bodies, so
+marginplyr cannot rule out source work hidden in the input. Call
+`compute()` on the input first, and the Margin verb reads the stored table
+instead. *When marginplyr queries your data* in the [`summarize_with_margins()`
+reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html)
+states the full rule.
 
 ```{r}
 #| eval: !expr has_duckdb
@@ -288,8 +320,8 @@ A label equal to a *declared* factor level is rejected there, because the
 level is already known from the column's metadata and finding the collision
 reads nothing. The enum preservation above is what makes this visible on
 DuckDB: `region` below declares `"Total"` as an unused level, and
-`.margin_label = "Total"` is rejected before any query is built, even though
-`.check_margin_label` is left at its lazy default:
+`.margin_label = "Total"` is rejected before the result query is built, even
+though `.check_margin_label` is left at its lazy default:
 
 ```{r}
 #| eval: !expr has_duckdb
@@ -345,8 +377,8 @@ your backend and workload: it scans every input row of the checked columns.
 ## Portable fallback SQL
 
 marginplyr emits native `GROUPING SETS` only for summaries on the DuckDB and
-PostgreSQL dialects. Everything else uses a portable query that joins one
-branch per grouping set with `UNION ALL`:
+PostgreSQL dialects, and no option requests it elsewhere. Everything else uses
+a portable query that joins one branch per grouping set with `UNION ALL`:
 
 - every other SQL dialect, even where the database itself supports
   `GROUPING SETS`; Redshift, Snowflake, SQL Server, Oracle, Spark SQL, and
@@ -359,12 +391,31 @@ branch per grouping set with `UNION ALL`:
   to the database untranslated;
 - every `expand_with_margins()` call, DuckDB and PostgreSQL included.
 
-The portable query begins with a branch that returns zero rows, `WHERE (0)` on
-SQLite below, that exists only to fix the result's column types. Each
-grouping-set branch then reads the source again, so the three-set rollup below
-names `` `df` `` four times: once per set and once in the zero-row branch.
-Inspect the database's query plan for large workloads; marginplyr
-does not claim that either translation is universally faster.
+How often the portable query reads its input depends on the verb and the
+backend:
+
+- A summary reads the source once per grouping set. On every dialect except
+  DuckDB and PostgreSQL it also begins with a branch that returns zero rows,
+  `WHERE (0)` on SQLite below, that exists only to fix the result's column
+  types, so the three-set rollup below names `` `df` `` four times. On a live
+  SQLite connection, `.sort` adds one more zero-row branch.
+- An expansion on DuckDB, PostgreSQL, or a live SQLite 3.35 or later
+  connection reads its input once into a common table expression, which
+  DuckDB and SQLite are told to materialize and PostgreSQL materializes
+  because every branch references it. The cost there is one materialized copy
+  of the input rather than one scan per set; SQLite still adds a zero-row
+  branch over the source.
+- An expansion on any other connection, including the SQLite simulator below,
+  reads the source once per grouping set after the zero-row branch, and SQLite
+  adds a second zero-row branch.
+
+A branch that reads the source repeats the input's whole lazy pipeline: on
+SQLite, a filtered and joined input under a `cube()` of two dimensions renders
+its join five times. The number of branches grows with the plan, and a
+`cube()` of n dimensions is 2^n grouping sets with no limit; on the SQLite
+simulator a `cube()` of eight dimensions takes seconds to build and renders
+about 450 KB of SQL. Inspect the database's query plan for large workloads;
+marginplyr does not claim that either translation is universally faster.
 
 ```{r}
 #| eval: !expr has_sqlite_simulator
@@ -440,8 +491,8 @@ scans every input row of the checked columns and retrieves one row, with one
 collision count per checked column. Recording does not request the label check;
 `.check_margin_label = TRUE` does, and recording sends no query of its own.
 
-Each `purpose` names why a row was sent. Only `"result"` is stable; the other
-names describe today's internal work and may change:
+Each `purpose` names why a row was recorded. Only `"result"` is stable; the
+other names describe today's internal work and may change:
 
 - `"result"`: the query the verb returns, rendered but not executed.
 - `"relation_catalog"`: DuckDB's catalog query, checking that the input hides
@@ -492,8 +543,8 @@ The zero-row metadata and label-count collections normally have status
 `handling`; an operation with no observed conditions holds a typed empty tibble.
 The accessor reference defines all statuses and the condition-summary schema.
 `source = "render"` describes how SQL was obtained, independently of whether
-rendering or the backend invocation succeeded. The compatibility result row
-stays `"prepared"`.
+rendering or the backend invocation succeeded. The `"result"` row, which this
+call leaves out with `include_result = FALSE`, stays `"prepared"`.
 
 Copy or export the record before another tracked call — any Margin verb or
 `inspect_grouping()` call, each of which starts a fresh record — replaces it.
@@ -618,7 +669,7 @@ to run it. Native and portable grouping adapters both feed the same staged
 Parent-share contract. Parent matching uses internal Grouping identity and
 missing-safe keys rather than displayed Margin labels; [Parent lookup is
 structural](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html#parent-lookup-is-structural)
-works that through, and defines the Grand total set the next section reads.
+works that through.
 
 `share_of_total()` stages the same way. Its denominator depends on the fixed
 `.by` keys and nothing else. Both helpers use window functions over the staged
@@ -742,10 +793,13 @@ collect(dt_query)
 
 A derived dtplyr step can compute column types or factor levels from its source
 values. A request for zero output rows can still run that upstream calculation
-over every source row before discarding them. When marginplyr cannot establish
-faithful metadata from isolated zero-row sources, it refuses the call before
-processing source rows. Collect the step explicitly and pass the resulting data
-frame if you want its upstream operations to run now:
+over every source row before discarding them. marginplyr therefore reads the
+types only of steps whose output types follow from their input types alone:
+`filter()`, `select()`, `rename()`, `relocate()`, `arrange()`, `slice()`, a
+join, and a `transmute()` or a `mutate()` directly on `lazy_dt()` that adds
+constants, column copies, or arithmetic on numeric columns. Any other step is
+refused before processing source rows, including an aggregate such as
+`summarise()` or `count()` and a `mutate()` that calls another function:
 
 ```{r}
 #| label: dtplyr-unsafe-metadata
@@ -756,6 +810,22 @@ frame if you want its upstream operations to run now:
 january_sales |>
   dtplyr::lazy_dt() |>
   mutate(region = factor(region, levels = unique(region))) |>
+  inspect_grouping(.grouping = rollup(where(is.factor)))
+```
+
+Either remedy runs the step's upstream operations now. `collect()` it and pass
+the resulting data frame, or stay in data.table: materialize the step with
+`data.table::as.data.table()` and wrap the table in `lazy_dt()` again, which
+gives the Margin verb a root whose types it can read:
+
+```{r}
+#| eval: !expr has_dtplyr
+
+january_sales |>
+  dtplyr::lazy_dt() |>
+  mutate(region = factor(region, levels = unique(region))) |>
+  data.table::as.data.table() |>
+  dtplyr::lazy_dt() |>
   inspect_grouping(.grouping = rollup(where(is.factor)))
 ```
 
@@ -834,7 +904,10 @@ january_sales |>
 ```
 
 Arrow summaries and expansions are supported and lazy wherever Arrow can
-evaluate the summary itself. Two things are refused instead, for two unrelated
+evaluate the summary itself. An Arrow summary reads its source once per
+grouping set, a Dataset included. An expansion of more than one grouping set
+instead reads its input into one in-memory Arrow Table when it is consumed, and
+every branch reads that copy. Two things are refused, for two unrelated
 reasons.
 
 The first is a summary Arrow's own engine cannot evaluate. Arrow answers one of
@@ -963,7 +1036,9 @@ reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html).
 
 - Lazy results have no guaranteed order unless the query explicitly requests
   one. Ask for a Margin order with `.sort`, or call `arrange()` for any other
-  presentation order.
+  presentation order. A later `mutate()`, join, or aggregate drops a Margin
+  order, so `collect()` first or `arrange()` last; see *Execute in DuckDB*
+  above.
 
 - Lazy inputs default to `.check_margin_label = FALSE`; see
   *`.check_margin_label` on lazy inputs* above.
@@ -971,5 +1046,8 @@ reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html).
 - A contextual share may need `.check_share_source = FALSE`; see *Parent
   shares use a staged lazy query* above.
 
-- A portable `UNION ALL` query reads the source once per grouping set; see
-  *Portable fallback SQL* above.
+- A portable `UNION ALL` query can repeat the input's lazy pipeline in every
+  branch; see *Portable fallback SQL* above. Where it does, `compute()` a
+  filtered or joined input, or pre-aggregate it to the finest grouping set,
+  before the Margin verb. The branches then read that one table, and the
+  collected result is the same.

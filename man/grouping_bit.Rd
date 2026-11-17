@@ -116,7 +116,9 @@ aggregate whose argument varies with rows only through a helper, such as
 \code{sum(grouping_id(a, b))}, aggregates a constant and follows its
 backend: it counts the constant once per group on a local data frame and
 in \code{dtplyr}, and once per row wherever the helper is a query literal, as
-plain \code{sum(1)} differs between a data frame and a database table. Combine
+plain \code{sum(1)} differs between a data frame and a database table. Arrow is
+the exception: it cannot aggregate the constant, so the summary is refused
+until the Arrow input is collected. Combine
 the helper with a column that varies by row, as in
 \code{sum(v * grouping_id(a, b))}, or put it outside the aggregate, as in
 \code{n() * grouping_id(a, b)}, for a value that agrees everywhere.

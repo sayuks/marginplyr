@@ -19,6 +19,9 @@
 #'   original store values inside instead of `"Total"`. This is the closest
 #'   margin-aware analogue of dplyr's rule that `.keep` retains grouping
 #'   columns.
+#' - The list column is a regular list of data frames rather than the
+#'   `vctrs::list_of` column [dplyr::nest_by()] returns; see *Nested data
+#'   frames*.
 #' - With no grouping keys, an empty input returns one row holding the empty
 #'   input, as [dplyr::nest_by()] does.
 #'

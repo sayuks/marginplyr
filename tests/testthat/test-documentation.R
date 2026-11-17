@@ -372,6 +372,18 @@ test_that("no shipped page guards on installation alone", {
   )
 })
 
+# A design record is written for maintainers and is not installed, so a link to
+# one sends the reader of a shipped page somewhere outside the documentation.
+# The page states the rule it needs instead.
+test_that("no shipped page links a design record", {
+  pages <- documentation_sources()
+
+  links_adr <- vapply(pages, grepl, logical(1), pattern = "design/adr/",
+                      fixed = TRUE)
+
+  expect_equal(names(pages)[links_adr], character())
+})
+
 # Where a reader can get the package is a fact about the outside world, and no
 # page can be read to find it out: a README claiming CRAN availability reads
 # exactly the same whether CRAN has published the package or not. DESCRIPTION's
