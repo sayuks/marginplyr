@@ -365,7 +365,12 @@ test_that("duplicate keep and error retain cube and product occurrences", {
     expect_identical(kept$set_id, 1:4)
     expect_error(
       inspect_grouping(data, .grouping = specification),
-      "1, 2, 3.", fixed = TRUE, class = "marginplyr_error"
+      if (identical(specification$type, "cube")) {
+        "`cube()` selects `key` in more than one argument."
+      } else {
+        "1, 2, 3."
+      },
+      fixed = TRUE, class = "marginplyr_error"
     )
   }
 })

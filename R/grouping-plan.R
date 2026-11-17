@@ -259,6 +259,12 @@ resolve_by_selection <- function(by_quo, data_proxy) {
           cnd
         )
       }
+      computed <- computed_selection_leaf(
+        rlang::quo_get_expr(by_quo), selection_proxy_names(data_proxy)
+      )
+      if (!is.null(computed)) {
+        abort_computed_by(computed)
+      }
       stop(cnd)
     }
   )
@@ -1515,7 +1521,12 @@ validate_leading_selections <- function(
       completed <- unlist(resolved$completed, recursive = FALSE)
       keys <- grouping_set_keys(completed, resolved$dimensions)
       validate_unique_grouping_sets(keys, duplicates_choices,
-                                    complete = complete)
+                                    complete = complete,
+                                    key_label = function(key) {
+                                      grouping_key_label(
+                                        key, resolved$dimensions
+                                      )
+                                    })
       return(invisible(resolved$dimensions))
     }
     completed <- unlist(resolved$completed, recursive = FALSE)
@@ -1543,7 +1554,17 @@ validate_leading_selections <- function(
     set_ids <- c(seq_along(completed),
                  length(completed) + resolved$offset + pending_ids)
     validate_unique_grouping_sets(keys, duplicates_choices, set_ids,
-                                  complete = complete)
+                                  complete = complete,
+                                  # A completed set's key is its membership
+                                  # behind a `0`; a pending prefix's names no
+                                  # whole set.
+                                  key_label = function(key) {
+                                    if (startsWith(key, "0")) {
+                                      grouping_key_label(
+                                        substring(key, 2L), dimensions
+                                      )
+                                    }
+                                  })
   }
   invisible(resolved$dimensions)
 }
@@ -2065,7 +2086,10 @@ compile_grouping_spec_impl <- function(preflight,
   )
   keys <- grouping_set_keys(normalized, dimensions)
   if (identical(.duplicates, "error")) {
-    validate_unique_grouping_sets(keys, duplicates_choices)
+    validate_unique_grouping_sets(keys, duplicates_choices,
+                                  key_label = function(key) {
+                                    grouping_key_label(key, dimensions)
+                                  })
   }
 
   if (identical(.duplicates, "drop")) {
@@ -2117,20 +2141,26 @@ grouping_set_key <- function(set, dimensions) {
 # `complete` says the keys are every occurrence of the plan, so their groups
 # are its whole duplicate partition; otherwise the group holding the earliest
 # position is reported as an example.
+#
+# `key_label` names the set a key encodes, or answers `NULL` for a key that
+# carries more than membership; the repeated set is named wherever every
+# reported key has a name.
 validate_unique_grouping_sets <- function(keys, duplicates_choices,
                                           set_ids = seq_along(keys),
-                                          complete = TRUE) {
-  abort_plan_witness <- function(positions) {
+                                          complete = TRUE,
+                                          key_label = function(key) NULL) {
+  abort_plan_witness <- function(positions, key) {
     abort_duplicate_witness(
       list(family = "the grouping plan", positions = positions),
-      duplicates_choices
+      duplicates_choices,
+      set = key_label(key)
     )
   }
   if (length(keys) > duplicate_report_limit) {
     repeated <- anyDuplicated(keys)
     if (repeated > 0L) {
       original <- match(keys[[repeated]], keys)
-      abort_plan_witness(set_ids[c(original, repeated)])
+      abort_plan_witness(set_ids[c(original, repeated)], keys[[repeated]])
     }
     return(invisible(NULL))
   }
@@ -2141,7 +2171,7 @@ validate_unique_grouping_sets <- function(keys, duplicates_choices,
   groups <- split(set_ids[duplicate_keys], keys[duplicate_keys])
   if (!complete) {
     earliest <- which.min(vapply(groups, min, numeric(1)))
-    abort_plan_witness(sort(groups[[earliest]]))
+    abort_plan_witness(sort(groups[[earliest]]), names(groups)[[earliest]])
   }
   # Each group is already comma-joined. Join groups here to preserve that
   # formatting through cli; codetools cannot see the use in its template.
@@ -2150,7 +2180,19 @@ validate_unique_grouping_sets <- function(keys, duplicates_choices,
     vapply(groups, paste, collapse = ", ", character(1)),
     collapse = "; "
   )
+  sets <- lapply(names(groups), key_label)
   # nolint end
+  if (all(lengths(sets) == 1L)) {
+    abort_marginplyr(c(
+      paste0(
+        "Duplicate grouping sets were produced at ",
+        "{cli::qty(length(groups))}{?positions/position groups}:"
+      ),
+      i = "{positions}.",
+      i = "{cli::qty(length(sets))}Repeated set{?s}: {.code {unlist(sets)}}.",
+      i = "Use {.or {.code {duplicate_alternatives(duplicates_choices)}}}."
+    ))
+  }
   abort_marginplyr(c(
     paste0(
       "Duplicate grouping sets were produced at ",
@@ -2161,8 +2203,28 @@ validate_unique_grouping_sets <- function(keys, duplicates_choices,
   ))
 }
 
-# Show two positions with the same membership in the named family.
-abort_duplicate_witness <- function(witness, duplicates_choices) {
+# A membership key over `dimensions` as the set it encodes, spelled as the
+# guides spell a grouping set: `(region, store)`, and `()` for the empty one.
+grouping_key_label <- function(key, dimensions) {
+  members <- dimensions[strsplit(key, "", fixed = TRUE)[[1L]] == "1"]
+  labels <- vapply(
+    lapply(members, as.name), deparse, character(1), backtick = TRUE
+  )
+  paste0("(", paste(labels, collapse = ", "), ")")
+}
+
+# Show two positions with the same membership in the named family, and the set
+# they share where `set` names it.
+abort_duplicate_witness <- function(witness, duplicates_choices, set = NULL) {
+  if (!is.null(set)) {
+    abort_marginplyr(c(
+      paste0("Duplicate grouping sets were produced. For example, these ",
+             "positions in {witness$family} have the same set:"),
+      i = "{paste(witness$positions, collapse = ', ')}.",
+      i = "Repeated set: {.code {set}}.",
+      i = "Use {.or {.code {duplicate_alternatives(duplicates_choices)}}}."
+    ))
+  }
   abort_marginplyr(c(
     paste0("Duplicate grouping sets were produced. For example, these ",
            "positions in {witness$family} have the same set:"),
@@ -2170,6 +2232,7 @@ abort_duplicate_witness <- function(witness, duplicates_choices) {
     i = "Use {.or {.code {duplicate_alternatives(duplicates_choices)}}}."
   ))
 }
+
 
 # Offer the calling verb's other duplicate policies. Nest excludes keep (#110).
 duplicate_alternatives <- function(duplicates_choices) {
@@ -2322,6 +2385,9 @@ resolve_grouping_units <- function(preflight, resolve_selection) {
 expand_rollup <- function(preflight, resolve_selection, emit, drop_duplicates,
                           duplicate) {
   units <- resolve_grouping_units(preflight, resolve_selection)
+  if (!is.null(duplicate)) {
+    check_repeated_grouping_units(units, "rollup")
+  }
   family <- lapply(
     rev(seq.int(0L, length(units))),
     function(n) {
@@ -2335,6 +2401,9 @@ expand_rollup <- function(preflight, resolve_selection, emit, drop_duplicates,
 expand_cube <- function(preflight, resolve_selection, emit, drop_duplicates,
                         duplicate) {
   units <- resolve_grouping_units(preflight, resolve_selection)
+  if (!is.null(duplicate)) {
+    check_repeated_grouping_units(units, "cube")
+  }
   if (drop_duplicates) {
     return(emit_grouping_family(distinct_cube_sets(units), emit))
   }
@@ -2349,6 +2418,23 @@ expand_cube <- function(preflight, resolve_selection, emit, drop_duplicates,
     }
   }
   emit_grouping_family(cube_grouping_family(units), emit)
+}
+
+# A unit equal to an earlier one repeats a grouping set in a `rollup()` and in a
+# `cube()` alike, so under `.duplicates = "error"` the repeat is named as the
+# argument the caller wrote twice: the duplicate-set refusal's `.duplicates`
+# remedy would hide it.
+check_repeated_grouping_units <- function(units, constructor) {
+  repeated <- which(duplicated(lapply(units, sort)))
+  if (length(repeated) == 0L) {
+    return(invisible(NULL))
+  }
+  # Read only from the cli template below, which codetools cannot see.
+  columns <- units[[repeated[[1L]]]] # nolint: object_usage_linter.
+  abort_marginplyr(c(
+    "{.fun {constructor}} selects {.var {columns}} in more than one argument.",
+    i = "Remove the repeated argument."
+  ))
 }
 
 # Enumerate resolved cube units in descending subset size and combination order.
@@ -3233,6 +3319,12 @@ resolve_grouping_selection <- function(arg, data_proxy) {
         if (is_unsupported_predicate(cnd)) {
           abort_selection_predicate(label, cnd)
         }
+        computed <- computed_selection_leaf(
+          nested_arg_expr(arg), selection_proxy_names(data_proxy)
+        )
+        if (!is.null(computed)) {
+          abort_computed_grouping_arg(computed)
+        }
         stop(cnd)
       }
       abort_nested_grouping_spec(label)
@@ -3541,4 +3633,85 @@ abort_by_rename <- function(selected_names, source_names) {
 # carries no markup of its own; the templates above give it `{.code}`.
 selection_rename_pairs <- function(selected_names, source_names) {
   paste0(selected_names, " = ", source_names)
+}
+
+# The column names tidyselect sees for `data_proxy`, read from its metadata as
+# `resolve_column_selection()` reads them, so asking sends no query.
+selection_proxy_names <- function(data_proxy) {
+  names(tidyselect::tidyselect_data_proxy(data_proxy))
+}
+
+# The first part of a failed selection that computes a value from columns of
+# the input, as `list(expr, columns)`, or `NULL` where there is none. tidyselect
+# evaluates such a call without the columns in scope, so it failed for a
+# reason its own message cannot name. The walk descends the operators
+# tidyselect walks. A selection helper, a constructor, a pronoun subscript, an
+# operator whatever its qualification -- whose failure is tidyselect's own --
+# and a call naming no column are not computed columns.
+computed_selection_leaf <- function(expr, data_vars) {
+  expr <- unparenthesized_value(expr)
+  if (is_selection_walk_call(expr)) {
+    for (part in static_call_args(expr)) {
+      found <- computed_selection_leaf(part, data_vars)
+      if (!is.null(found)) {
+        return(found)
+      }
+    }
+    return(NULL)
+  }
+  if (!is_nameable_call(expr)) {
+    return(NULL)
+  }
+  name <- static_call_name(expr)
+  if (!is.null(name) && name %in% c(
+    selection_leaf_helpers(), "where", grouping_constructor_names(),
+    selection_walk_operators(), selection_refused_operators(),
+    "(", "$", "[["
+  )) {
+    return(NULL)
+  }
+  columns <- intersect(all.vars(expr), data_vars)
+  if (length(columns) == 0L) {
+    return(NULL)
+  }
+  list(expr = expr, columns = columns)
+}
+
+# Two refusals rather than one with the subject interpolated, because the
+# subject is markup in one and prose in the other. The failure they replace is
+# not carried as a cause: it is the lookup of a column the expression names,
+# which is what the refusal explains.
+abort_computed_by <- function(computed) {
+  # Read only from the cli template below, which codetools cannot see.
+  # nolint start: object_usage_linter.
+  label <- rlang::as_label(computed$expr)
+  columns <- computed$columns
+  # nolint end
+  abort_marginplyr(c(
+    "{.arg .by} selects existing columns, not computed expressions.",
+    i = "{.code {label}} is computed from {.var {columns}}.",
+    i = paste0(
+      "Create the column with {.fn dplyr::mutate} first, then select it by ",
+      "name."
+    )
+  ))
+}
+
+abort_computed_grouping_arg <- function(computed) {
+  # Read only from the cli template below, which codetools cannot see.
+  # nolint start: object_usage_linter.
+  label <- rlang::as_label(computed$expr)
+  columns <- computed$columns
+  # nolint end
+  abort_marginplyr(c(
+    paste0(
+      "Grouping specification arguments select existing columns, not ",
+      "computed expressions."
+    ),
+    i = "{.code {label}} is computed from {.var {columns}}.",
+    i = paste0(
+      "Create the column with {.fn dplyr::mutate} first, then select it by ",
+      "name."
+    )
+  ))
 }

@@ -2619,7 +2619,87 @@ test_that("duplicated grouping sets in more than one group name their groups", {
     paste0(
       "Duplicate grouping sets were produced at position groups:\n",
       "i 2, 4; 1, 3.\n",
+      "i Repeated sets: `(b)` and `(a)`.\n",
       "i Use `.duplicates = \"drop\"` or `\"keep\"`."
+    )
+  )
+})
+
+# Positions alone needed `inspect_grouping(.duplicates = "keep")` to read back
+# (#1703).
+test_that("the duplicate-set refusal names the repeated set", {
+  data <- data.frame(region = "a", store = "b", value = 1)
+
+  empty <- expect_error(
+    summarize_with_margins(
+      data,
+      n = dplyr::n(),
+      .grouping = grouping_sets(rollup(region), rollup(store))
+    ),
+    class = "marginplyr_error"
+  )
+  expect_match(
+    conditionMessage(empty),
+    "positions:\ni 2, 4.\ni Repeated set: `()`.\n",
+    fixed = TRUE
+  )
+
+  unusual <- data.frame(`a b` = "a", value = 1, check.names = FALSE)
+  quoted <- expect_error(
+    inspect_grouping(
+      unusual, .grouping = grouping_sets(`a b`, grouping_set(`a b`))
+    ),
+    class = "marginplyr_error"
+  )
+  expect_match(
+    conditionMessage(quoted), "i Repeated set: ``(`a b`)``.", fixed = TRUE
+  )
+})
+
+# A column written twice in one `rollup()` or `cube()` is a typo, which
+# `.duplicates` would hide rather than fix (#1703).
+test_that("a column repeated in rollup() or cube() is named as the cause", {
+  data <- data.frame(region = "a", store = "b", value = 1)
+  cases <- list(
+    list(
+      grouping = rollup(region, region),
+      line = "`rollup()` selects `region` in more than one argument."
+    ),
+    list(
+      grouping = cube(region, store, region),
+      line = "`cube()` selects `region` in more than one argument."
+    ),
+    list(
+      grouping = grouping_sets(store, rollup(region, starts_with("reg"))),
+      line = "`rollup()` selects `region` in more than one argument."
+    )
+  )
+  for (verb in names(forwarded_verbs)) {
+    for (case in cases) {
+      error <- expect_error(
+        forwarded_verbs[[verb]](data, NULL, case$grouping),
+        class = "marginplyr_error"
+      )
+      lines <- strsplit(conditionMessage(error), "\n", fixed = TRUE)[[1L]]
+      expect_identical(
+        lines,
+        c(case$line, "i Remove the repeated argument."),
+        info = verb
+      )
+    }
+  }
+
+  # What the caller asked for by choosing a policy is left alone.
+  expect_identical(
+    inspect_grouping(
+      data, .grouping = rollup(region, region), .duplicates = "drop"
+    )$included,
+    inspect_grouping(data, .grouping = rollup(region))$included
+  )
+  # A column shared by different arguments is not a repeat.
+  expect_no_error(
+    inspect_grouping(
+      data, .grouping = rollup(region, grouping_set(region, store))
     )
   )
 })
@@ -2656,7 +2736,8 @@ test_that("invalid or ambiguous specifications fail early", {
       "a",
       duplicates_choices = margin_duplicates_choices
     ),
-    "object 'a' not found"
+    "not computed expressions",
+    class = "marginplyr_error"
   )
 })
 
@@ -2766,6 +2847,7 @@ test_that("compile_grouping_spec() reads a narrowed duplicates vocabulary", {
     paste0(
       "Duplicate grouping sets were produced at positions:\n",
       "i 1, 2.\n",
+      "i Repeated set: `(a)`.\n",
       "i Use `.duplicates = \"drop\"`."
     )
   )
@@ -2977,15 +3059,18 @@ test_that("invalid Grouping kinds and empty frames yield no match", {
   expect_false(holds_grouping_spec_function(new.env(parent = emptyenv())))
 })
 
-test_that("large repeated cubes report a bounded duplicate witness", {
-  data <- data.frame(k = 1L)
-  spec <- cube(!!!rep(list(quote(k)), 12L))
+test_that("large overlapping cubes report a bounded duplicate witness", {
+  columns <- c("k", "j", paste0("c", 1:9))
+  data <- as.data.frame(stats::setNames(as.list(rep(1L, 11L)), columns))
+  # Overlapping rather than repeated units: a column written twice is refused
+  # as such before any set is enumerated.
+  spec <- cube(grouping_set(k, j), k, j, !!!rlang::syms(columns[-(1:2)]))
   cnd <- expect_error(
     inspect_grouping(data, .grouping = spec),
     "Duplicate grouping sets",
     class = "marginplyr_error"
   )
-  expect_match(conditionMessage(cnd), "1, 2.", fixed = TRUE)
+  expect_match(conditionMessage(cnd), "1, 11.", fixed = TRUE)
   expect_lt(nchar(conditionMessage(cnd)), 256L)
 })
 
@@ -3038,8 +3123,9 @@ test_that("large explicit families also bound duplicate position text", {
 })
 
 test_that("large duplicate proofs preserve typed selection precedence", {
-  data <- data.frame(a = 1L, b = "x")
-  repeated <- cube(!!!rep(list(quote(a)), 9L))
+  data <- data.frame(a = 1L, b = "x", c = 1L, d1 = 1L, d2 = 1L, d3 = 1L,
+                     d4 = 1L, d5 = 1L, d6 = 1L)
+  repeated <- cube(grouping_set(a, c), a, c, d1, d2, d3, d4, d5, d6)
   calls <- 0L
   character_column <- function(column) {
     calls <<- calls + 1L
@@ -3066,7 +3152,7 @@ test_that("large duplicate proofs preserve typed selection precedence", {
     inspect_grouping(data, .grouping = unknown),
     "Duplicate grouping sets", class = "marginplyr_error"
   )
-  expect_identical(calls, 2L)
+  expect_identical(calls, ncol(data))
 
   calls <- 0L
   expect_error(
