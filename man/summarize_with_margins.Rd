@@ -53,7 +53,11 @@ represents one empty grouping set. Any expression returning a
 specification can be written here, while a specification nested inside
 another must be a constructor call or a name bound to one, and a nested
 name the input also has a column for is refused rather than read either
-way; see \code{\link[=grouping_set]{grouping_set()}}.}
+way; see \code{\link[=grouping_set]{grouping_set()}}. The specification expands to the call's
+Grouping plan: the ordered list of grouping sets it computes, which
+\code{\link[=inspect_grouping]{inspect_grouping()}} returns. The columns it selects are the call's
+Margin dimensions; see
+\emph{\link[=margin_verbs]{Fixed columns and Margin dimensions}} in \link{margin_verbs}.}
 
 \item{.margin_label}{A display label for dimensions omitted from a grouping
 set. An unnamed character scalar applies to every resolved Margin
@@ -86,7 +90,7 @@ collect-first remediation.
 A label equal to a declared factor \emph{level} is rejected wherever
 marginplyr holds the levels, whatever this argument says, because finding
 it reads no rows. Left unchecked, a colliding value gives the result a
-margin row and a source row that no grouping column tells apart; keeping
+margin row and a source row that no key column tells apart; keeping
 \code{.id} in the result distinguishes them at no added cost. See
 \emph{\link[=margin_verbs]{Display labels and grouping identity}} in \link{margin_verbs}
 for the factor missing-value contract.}
@@ -130,12 +134,12 @@ after the rows it summarizes and \code{"first"} before them, within each fixed
 \value{
 An ungrouped data frame, or a lazy table when \code{.data} is lazy,
 with one row per group per grouping set. Its columns are the fixed \code{.by}
-keys, then the grouping dimensions, then \code{.id} when supplied, then the
+keys, then the Margin dimensions, then \code{.id} when supplied, then the
 summaries in the order written. Its class follows \code{\link[dplyr:summarize]{dplyr::summarize()}},
 except for the leading class described in \emph{SQLite materialization}; see
 \emph{\link[=margin_verbs]{Result metadata}} in \link{margin_verbs}.
 
-With a character \code{.margin_label}, the default, a grouping dimension that
+With a character \code{.margin_label}, the default, a Margin dimension that
 is not a factor becomes character so that it can hold the label:
 \code{.grouping = rollup(year)} over an integer \code{year} returns \code{year} as
 character, with \code{"Total"} on the margin row. A factor dimension instead
@@ -173,10 +177,10 @@ a result combining several grouping sets has no single grouping to
 retain.
 \item Row order is unspecified. Use \code{.sort} for margins next to the rows they
 summarize, or \code{\link[dplyr:arrange]{dplyr::arrange()}} for any other order.
-\item A character \code{.margin_label} changes a non-factor grouping dimension to
+\item A character \code{.margin_label} changes a non-factor Margin dimension to
 character; see Value. Use \code{.margin_label = NULL} or \code{NA_character_} to
 keep its type.
-\item A summary cannot overwrite a fixed key or grouping dimension. Give it a
+\item A summary cannot overwrite a fixed key or Margin dimension. Give it a
 new name.
 \item \code{\link[dplyr:cur_group]{dplyr::cur_group()}}, \code{\link[dplyr:cur_group_id]{dplyr::cur_group_id()}}, and
 \code{\link[dplyr:cur_group_rows]{dplyr::cur_group_rows()}} are refused, because a result combining several
@@ -216,10 +220,10 @@ on a local input, and a named one is packed into one column, as
 \code{\link[dplyr:summarize]{dplyr::summarize()}} does. A lazy input gives whatever shape its backend
 gives.
 
-Summary results may not overwrite a fixed key or grouping dimension,
+Summary results may not overwrite a fixed key or Margin dimension,
 including through an unnamed data-frame-valued summary. Local dplyr allows
 it but other backends may not, so marginplyr refuses it everywhere. Use a
-new summary name, or rename the grouping column before this call.
+new summary name, or rename the key column before this call.
 
 \code{\link[dplyr:cur_group]{dplyr::cur_group()}}, \code{\link[dplyr:cur_group_id]{dplyr::cur_group_id()}},
 \code{\link[dplyr:cur_group_rows]{dplyr::cur_group_rows()}}, and the deprecated \verb{cur_data*()} helpers are
@@ -249,14 +253,14 @@ names when a result has an unexpected column.
 \section{Summaries a lazy backend cannot carry}{
 
 Two lazy inputs cannot carry back a summary with no columns in it: asked
-for no summaries and given no fixed key or grouping dimension, the answer
+for no summaries and given no fixed key or Margin dimension, the answer
 is one row holding nothing, whatever the input held. A \code{data.table} reads
 its row count from its first column, so a \code{dtplyr} input collects to zero
 rows where a local data frame returns one, and a SQL table of no columns
 cannot be written at all, so a database input raises the error dbplyr
 renders one with. Each is what \code{\link[dplyr:summarize]{dplyr::summarize()}} itself answers for that
 lazy input; an Arrow input answers as a local one does. Anything that puts
-a column in the result -- one summary, one fixed key, one grouping
+a column in the result -- one summary, one fixed key, one Margin
 dimension, or \code{.id} -- ends the difference.
 
 One summary an Arrow table or record batch cannot carry -- or a query built
@@ -358,7 +362,7 @@ termination, fatal signals, or a timeout that does not unwind through R.
 
 These rules are stated once, in \link{margin_verbs}, for every Margin verb:
 \itemize{
-\item \link[=margin_verbs]{Fixed columns and grouping dimensions}
+\item \link[=margin_verbs]{Fixed columns and Margin dimensions}
 \item \link[=margin_verbs]{Grouped and row-wise inputs}
 \item \link[=margin_verbs]{Option arguments}
 \item \link[=margin_verbs]{Result metadata}
@@ -413,7 +417,7 @@ summarize_with_margins(
   .grouping = rollup(year, month, region, store)
 )
 
-# A grouping dimension computed from other columns is created with mutate()
+# A Margin dimension computed from other columns is created with mutate()
 # before summarizing.
 summarize_with_margins(
   .data = dplyr::mutate(

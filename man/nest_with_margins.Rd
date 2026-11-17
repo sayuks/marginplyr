@@ -35,7 +35,11 @@ represents one empty grouping set. Any expression returning a
 specification can be written here, while a specification nested inside
 another must be a constructor call or a name bound to one, and a nested
 name the input also has a column for is refused rather than read either
-way; see \code{\link[=grouping_set]{grouping_set()}}.}
+way; see \code{\link[=grouping_set]{grouping_set()}}. The specification expands to the call's
+Grouping plan: the ordered list of grouping sets it computes, which
+\code{\link[=inspect_grouping]{inspect_grouping()}} returns. The columns it selects are the call's
+Margin dimensions; see
+\emph{\link[=margin_verbs]{Fixed columns and Margin dimensions}} in \link{margin_verbs}.}
 
 \item{.margin_label}{A display label for dimensions omitted from a grouping
 set. An unnamed character scalar applies to every resolved Margin
@@ -68,7 +72,7 @@ collect-first remediation.
 A label equal to a declared factor \emph{level} is rejected wherever
 marginplyr holds the levels, whatever this argument says, because finding
 it reads no rows. Left unchecked, a colliding value gives the result a
-margin row and a source row that no grouping column tells apart; keeping
+margin row and a source row that no key column tells apart; keeping
 \code{.id} in the result distinguishes them at no added cost. See
 \emph{\link[=margin_verbs]{Display labels and grouping identity}} in \link{margin_verbs}
 for the factor missing-value contract.}
@@ -99,20 +103,20 @@ after the rows it summarizes and \code{"first"} before them, within each fixed
 \item{.key}{A string naming the list column. As in \code{\link[tidyr:nest]{tidyr::nest()}},
 \code{NULL} uses \code{"data"}.}
 
-\item{.keep}{Should fixed \code{.by} columns and grouping dimensions also be kept
+\item{.keep}{Should fixed \code{.by} columns and Margin dimensions also be kept
 inside each nested data frame? If \code{TRUE}, the nested columns contain their
 original, pre-margin values rather than \code{.margin_label}.}
 }
 \value{
 For a local input, an ungrouped data frame with one row per group
-per grouping set. Its columns are the fixed \code{.by} keys, then the grouping
+per grouping set. Its columns are the fixed \code{.by} keys, then the Margin
 dimensions, then \code{.id} when supplied, then the list column named by
 \code{.key}. Its outer class follows \code{\link[tidyr:nest]{tidyr::nest()}}, so a plain data frame
 nests to a tibble; see \emph{\link[=margin_verbs]{Result metadata}} in
 \link{margin_verbs}. A \code{dtplyr} input returns a lazy \code{dtplyr} step until
 collected.
 
-With a character \code{.margin_label}, the default, an outer grouping
+With a character \code{.margin_label}, the default, an outer Margin
 dimension that is not a factor becomes character so that it can hold the
 label, while the nested columns keep their original types. A factor
 dimension instead gains the label as a new level.
@@ -130,7 +134,7 @@ a result combining several grouping sets has no single grouping to
 retain.
 \item Row order is unspecified. Use \code{.sort} for margins next to the rows they
 cover, or \code{\link[dplyr:arrange]{dplyr::arrange()}} for any other order.
-\item A character \code{.margin_label} changes a non-factor grouping dimension to
+\item A character \code{.margin_label} changes a non-factor Margin dimension to
 character in the outer columns; see Value. Use \code{.margin_label = NULL} or
 \code{NA_character_} to keep its type.
 \item Every non-key column goes into one list column. The full \code{...} column
@@ -181,7 +185,7 @@ data frame.
 
 These rules are stated once, in \link{margin_verbs}, for every Margin verb:
 \itemize{
-\item \link[=margin_verbs]{Fixed columns and grouping dimensions}
+\item \link[=margin_verbs]{Fixed columns and Margin dimensions}
 \item \link[=margin_verbs]{Grouped and row-wise inputs}
 \item \link[=margin_verbs]{Option arguments}
 \item \link[=margin_verbs]{Result metadata}

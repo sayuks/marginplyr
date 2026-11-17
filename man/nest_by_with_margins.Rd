@@ -35,7 +35,11 @@ represents one empty grouping set. Any expression returning a
 specification can be written here, while a specification nested inside
 another must be a constructor call or a name bound to one, and a nested
 name the input also has a column for is refused rather than read either
-way; see \code{\link[=grouping_set]{grouping_set()}}.}
+way; see \code{\link[=grouping_set]{grouping_set()}}. The specification expands to the call's
+Grouping plan: the ordered list of grouping sets it computes, which
+\code{\link[=inspect_grouping]{inspect_grouping()}} returns. The columns it selects are the call's
+Margin dimensions; see
+\emph{\link[=margin_verbs]{Fixed columns and Margin dimensions}} in \link{margin_verbs}.}
 
 \item{.margin_label}{A display label for dimensions omitted from a grouping
 set. An unnamed character scalar applies to every resolved Margin
@@ -68,7 +72,7 @@ collect-first remediation.
 A label equal to a declared factor \emph{level} is rejected wherever
 marginplyr holds the levels, whatever this argument says, because finding
 it reads no rows. Left unchecked, a colliding value gives the result a
-margin row and a source row that no grouping column tells apart; keeping
+margin row and a source row that no key column tells apart; keeping
 \code{.id} in the result distinguishes them at no added cost. See
 \emph{\link[=margin_verbs]{Display labels and grouping identity}} in \link{margin_verbs}
 for the factor missing-value contract.}
@@ -100,19 +104,19 @@ after the rows it summarizes and \code{"first"} before them, within each fixed
 \code{\link[=nest_with_margins]{nest_with_margins()}} and \code{\link[tidyr:nest]{tidyr::nest()}}, \code{NULL} is not converted to
 \code{"data"}; this follows \code{\link[dplyr:nest_by]{dplyr::nest_by()}}.}
 
-\item{.keep}{Should fixed \code{.by} columns and grouping dimensions also be kept
+\item{.keep}{Should fixed \code{.by} columns and Margin dimensions also be kept
 inside each nested data frame? If \code{TRUE}, the nested columns contain their
 original, pre-margin values rather than \code{.margin_label}.}
 }
 \value{
 A row-wise data frame, a tibble subclass whatever the class of
 \code{.data}, with one row per group per grouping set. Its columns are the
-fixed \code{.by} keys, then the grouping dimensions, then \code{.id} when supplied,
+fixed \code{.by} keys, then the Margin dimensions, then \code{.id} when supplied,
 then the list column named by \code{.key}; it is grouped row-wise by all but
 the list column. See \emph{\link[=margin_verbs]{Result metadata}} in
 \link{margin_verbs}.
 
-With a character \code{.margin_label}, the default, an outer grouping
+With a character \code{.margin_label}, the default, an outer Margin
 dimension that is not a factor becomes character so that it can hold the
 label, while the nested columns keep their original types. A factor
 dimension instead gains the label as a new level.
@@ -125,7 +129,7 @@ it works with local data frames and \code{dtplyr} steps.
 }
 \details{
 dplyr reserves \code{.rows} in row-wise grouping metadata. A fixed \code{.by}
-key, grouping dimension, or \code{.id} named \code{.rows} is therefore refused
+key, Margin dimension, or \code{.id} named \code{.rows} is therefore refused
 before nesting. Rename that outer key or use \code{\link[=nest_with_margins]{nest_with_margins()}} for an
 ungrouped result. A payload column or \code{.key} named \code{.rows} is supported.
 }
@@ -137,7 +141,7 @@ adds the Margin dimensions; the result is row-wise over all of them and
 \code{.id} when supplied.
 \item Row order is unspecified. Use \code{.sort} for margins next to the rows they
 cover, or \code{\link[dplyr:arrange]{dplyr::arrange()}} for any other order.
-\item A character \code{.margin_label} changes a non-factor grouping dimension to
+\item A character \code{.margin_label} changes a non-factor Margin dimension to
 character in the outer columns; see Value. Use \code{.margin_label = NULL} or
 \code{NA_character_} to keep its type.
 \item With \code{.keep = TRUE}, the nested data holds the original, pre-margin
@@ -165,7 +169,7 @@ step's rows when called. Use \code{\link[=nest_with_margins]{nest_with_margins()
 
 These rules are stated once, in \link{margin_verbs}, for every Margin verb:
 \itemize{
-\item \link[=margin_verbs]{Fixed columns and grouping dimensions}
+\item \link[=margin_verbs]{Fixed columns and Margin dimensions}
 \item \link[=margin_verbs]{Grouped and row-wise inputs}
 \item \link[=margin_verbs]{Option arguments}
 \item \link[=margin_verbs]{Result metadata}

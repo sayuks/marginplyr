@@ -480,7 +480,7 @@ markers <- list(
   "docs/man/inspect_grouping.html" = c(
     "Formats and ordinary tibble behavior",
     "Positron",
-    "31 variable dimensions",
+    "31 Margin dimensions",
     "separate from a SQL execution plan"
   ),
   "docs/man/share_of_parent.html" = c(

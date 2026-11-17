@@ -1,16 +1,19 @@
 #' Behavior shared by the Margin verbs
 #'
 #' [summarize_with_margins()], [expand_with_margins()], [nest_with_margins()],
-#' and [nest_by_with_margins()] resolve their inputs into a Grouping plan and
-#' label, identify, and order their results by the rules on this page. Each
-#' verb's own page states what is particular to it and links here for the
-#' rest.
+#' and [nest_by_with_margins()] resolve their inputs into a Grouping plan --
+#' the ordered list of grouping sets the Grouping specification in `.grouping`
+#' expands to, which [inspect_grouping()] returns -- and label, identify, and
+#' order their results by the rules on this page. Each verb's own page states
+#' what is particular to it and links here for the rest.
 #'
-#' @section Fixed columns and grouping dimensions:
-#' `.by` marks columns that are present in every grouping set, while
-#' `.grouping` describes dimensions that can be omitted to form margins.
-#' Columns in `.by` retain their input types and never receive
-#' `.margin_label`.
+#' @section Fixed columns and Margin dimensions:
+#' `.by` marks fixed keys: columns present in every grouping set, which retain
+#' their input types and never receive `.margin_label`. Every column
+#' `.grouping` selects is a Margin dimension: one a grouping set can omit to
+#' form a margin -- a subtotal or total row -- where it then holds the Margin
+#' label. A grouped input's grouping columns are fixed keys, as `.by` columns
+#' are.
 #'
 #' `.by = year` with `.grouping = rollup(region, store)` produces the same
 #' grouping sets as
@@ -111,8 +114,9 @@
 #'
 #' @section Margin order:
 #' `.sort` orders a result by the structure of its Grouping plan rather than by
-#' displayed values. The key is the result's own leading grouping columns, left
-#' to right, with each grouping dimension preceded by its Grouping bit and by
+#' displayed values. The key is the result's own leading key columns, left
+#' to right, with each Margin dimension preceded by its Grouping bit -- `1` on a
+#' row whose grouping set omits that dimension, `0` otherwise -- and by
 #' whether its value is missing:
 #'
 #' ```
@@ -147,7 +151,7 @@
 #' exactly once; missing, unknown, duplicate, and empty names are rejected, as
 #' are names from `.by`.
 #'
-#' Non-missing labels convert ordinary grouping dimensions to character. A
+#' Non-missing labels convert ordinary Margin dimensions to character. A
 #' factor or ordered factor is rebuilt instead, preserving ordered status and
 #' placing a new synthetic level last by default or first when
 #' `.margin_label_position = "first"`. A label equal to any declared level,
@@ -163,7 +167,7 @@
 #' `NA_character_` even when `.check_margin_label = FALSE`, while `NULL`
 #' preserves it.
 #'
-#' A local packed data-frame, matrix, or array grouping dimension accepts only
+#' A local packed data-frame, matrix, or array Margin dimension accepts only
 #' `NULL` or `NA_character_` as its Margin label, because no scalar string can
 #' represent such a key; split it into separate columns if it needs display
 #' text.
@@ -176,11 +180,11 @@
 #' |---|---:|---:|---|
 #' | `NA_character_` | yes | yes | Error: NA is already a factor level |
 #' | `NA_character_` | yes | no | Error: NA is already a factor level |
-#' | `NA_character_` | no | yes | Allowed; source missing values and margins require structural identity | # nolint: line_length_linter
+#' | `NA_character_` | no | yes | Allowed; source missing values and margins display alike, so tell them apart with `.id` | # nolint: line_length_linter
 #' | `NA_character_` | no | no | Allowed; use typed missing |
-#' | `NULL` | yes | yes | Allowed; source missing values and margins require structural identity | # nolint: line_length_linter
+#' | `NULL` | yes | yes | Allowed; source missing values and margins display alike, so tell them apart with `.id` | # nolint: line_length_linter
 #' | `NULL` | yes | no | Allowed; preserve the NA level and use typed missing |
-#' | `NULL` | no | yes | Allowed; source missing values and margins require structural identity | # nolint: line_length_linter
+#' | `NULL` | no | yes | Allowed; source missing values and margins display alike, so tell them apart with `.id` | # nolint: line_length_linter
 #' | `NULL` | no | no | Allowed; use typed missing |
 #'
 #' A factor observation that uses an NA level can print as `<NA>` while

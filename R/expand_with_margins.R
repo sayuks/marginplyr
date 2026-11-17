@@ -14,7 +14,7 @@
 #'   retain.
 #' - Row order is unspecified. Use `.sort` for margins next to the rows they
 #'   cover, or [dplyr::arrange()] for any other order.
-#' - A character `.margin_label` changes a non-factor grouping dimension to
+#' - A character `.margin_label` changes a non-factor Margin dimension to
 #'   character in every copy, detail rows included; see Value. Use
 #'   `.margin_label = NULL` or `NA_character_` to keep its type.
 #' - The result has `nrow(.data)` times the number of grouping sets rows.
@@ -34,7 +34,7 @@
 #' @section Behavior shared with the other Margin verbs:
 #' These rules are stated once, in [margin_verbs], for every Margin verb:
 #'
-#' - [Fixed columns and grouping dimensions][margin_verbs]
+#' - [Fixed columns and Margin dimensions][margin_verbs]
 #' - [Grouped and row-wise inputs][margin_verbs]
 #' - [Option arguments][margin_verbs]
 #' - [Result metadata][margin_verbs]
@@ -47,7 +47,7 @@
 #'
 #' @return An ungrouped data frame, or a lazy table when `.data` is lazy,
 #'   with one row per input row per grouping set. Its columns are the fixed
-#'   `.by` keys, then the grouping dimensions, then `.id` when supplied, then
+#'   `.by` keys, then the Margin dimensions, then `.id` when supplied, then
 #'   the remaining input columns in input order. Its class follows
 #'   [dplyr::mutate()] combined with [dplyr::union_all()], except for the
 #'   leading class described in
@@ -55,7 +55,7 @@
 #'   [summarize_with_margins()]; see *[Result metadata][margin_verbs]* in
 #'   [margin_verbs].
 #'
-#'   With a character `.margin_label`, the default, a grouping dimension that
+#'   With a character `.margin_label`, the default, a Margin dimension that
 #'   is not a factor becomes character so that it can hold the label. A factor
 #'   dimension instead gains the label as a new level. `.margin_label = NULL`
 #'   or `NA_character_` keeps every dimension's type and marks margin copies

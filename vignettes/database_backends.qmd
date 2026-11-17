@@ -13,7 +13,9 @@ format:
 date: last-modified
 ---
 
-`marginplyr` applies one Grouping plan to local data frames and supported lazy
+`marginplyr` applies one Grouping plan — the ordered list of grouping sets that
+the Grouping specification written in `.grouping`, such as
+`rollup(region, store)`, expands to — to local data frames and supported lazy
 tables. With a database table, the plan remains lazy: `show_query()` renders
 the SQL, while `collect()` executes it and brings the result into R.
 
@@ -129,9 +131,10 @@ testing, or another programmatic purpose.
 
 Building a Margin query never reads your table's rows. Rows are read when you
 execute the query, with `collect()`, `compute()`, or a printed preview, and
-when you ask marginplyr to look for an observed label with
-`.check_margin_label = TRUE`. Building the query may still send internal
-queries that read no source values; *When marginplyr queries your data* in the
+when you ask marginplyr, with `.check_margin_label = TRUE`, to look for an
+observed label: a source value equal to the Margin label. Building the query
+may still send internal queries that read no source values; *When marginplyr
+queries your data* in the
 [`margin_verbs` reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html)
 enumerates them, and *Record the SQL marginplyr prepares* below shows how to
 see them. The one exception is `nest_by_with_margins()` on dtplyr, described
@@ -355,7 +358,7 @@ region_db |>
 DBI::dbDisconnect(con)
 ```
 
-Arrow is different. A factor grouping dimension there returns as character,
+Arrow is different. A factor Margin dimension there returns as character,
 so Arrow does not expose its declared levels to this check; see *Arrow
 inputs* in the [`margin_verbs`
 reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html).
@@ -497,8 +500,9 @@ other names describe today's internal work and may change:
   types and factor levels.
 - `"observed_label_collision"`: the label check `.check_margin_label = TRUE`
   requests.
-- `"share_dialect"`: a contextual share's table-free question, whether the
-  dialect refuses a summary that is not a number.
+- `"share_dialect"`: the table-free question a contextual share —
+  `share_of_parent()` or `share_of_total()` — asks, whether the dialect
+  refuses a summary that is not a number.
 - `"share_dialect_control"`: the numeric query sent after that question
   raised, confirming the connection could be asked at all.
 - `"share_dialect_transaction"`: on RPostgres within a caller's transaction,
@@ -541,8 +545,9 @@ The accessor reference defines all statuses and the condition-summary schema.
 rendering or the backend invocation succeeded. The `"result"` row, which this
 call leaves out with `include_result = FALSE`, stays `"prepared"`.
 
-Copy or export the record before another tracked call replaces it. A tibble
-you already hold survives that replacement unchanged:
+Copy or export the record before another tracked call — any Margin verb or
+`inspect_grouping()` call, each of which starts a fresh record — replaces it.
+A tibble you already hold survives that replacement unchanged:
 
 ```{r}
 #| eval: !expr has_duckdb

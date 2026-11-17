@@ -17,6 +17,8 @@ A grain is what one row of a summary stands for — one row per store, say.
 Reports often need several grains at once: detail rows, subtotals, and a grand
 total. `marginplyr` creates those levels with one dplyr-style summary. SQL
 calls this idea `GROUPING SETS`; you do not need to know that syntax to begin.
+The subtotal and total rows are the report's *margins*: in each, a column that
+level removed shows the Margin label, `"Total"` by default.
 
 This guide starts with a familiar reporting problem, then introduces
 `rollup()`, `grouping_sets()`, and `cube()`. If you already know the task and
@@ -122,13 +124,20 @@ january_report <- january_sales |>
 january_report
 ```
 
-The result is one ordinary data frame. The Grouping plan expands to:
+The result is one ordinary data frame. What is written in `.grouping` is a
+Grouping specification; the ordered list of grouping sets it expands to is its
+Grouping plan, which
+[`inspect_grouping()`](https://sayuks.github.io/marginplyr/man/inspect_grouping.html)
+prints. This plan is:
 
 ```text
 (region, store)  store detail
 (region)         region subtotal
 ()               company total
 ```
+
+`region` and `store` are its Margin dimensions: the columns supplied through
+`.grouping`, which a grouping set can remove to form a margin.
 
 The empty set `()` means that neither dimension remains, so it produces the
 grand total.
@@ -180,10 +189,10 @@ monthly_report |>
   filter(year == 2026L, month == "Jan")
 ```
 
-Columns in `.by` belong to every grouping set. They retain their input types
-and never receive the Margin label. The empty set from `rollup()` still
-includes the fixed `.by` columns, so it produces one company total per year
-and month.
+Columns in `.by` belong to every grouping set, so they are fixed keys rather
+than Margin dimensions. They retain their input types and never receive the
+Margin label. The empty set from `rollup()` still includes the fixed `.by`
+columns, so it produces one company total per year and month.
 
 ### The three grouping helpers
 
@@ -313,7 +322,8 @@ retail_sales |>
 ```
 
 `"drop"` retains one copy; `"keep"` retains both copies when repeated totals
-are intentionally meaningful:
+are intentionally meaningful. `.id` names an extra column numbering each row's
+grouping set by its position in the Grouping plan, here `1` to `6`:
 
 ```{r}
 retail_sales |>
@@ -486,16 +496,16 @@ retail_sales |>
   )
 ```
 
-A character label changes the type of a grouping dimension that is not a
+A character label changes the type of a Margin dimension that is not a
 factor, so that the column can hold the label: `year` is an integer in
 `retail_sales` and character in this result, and a Date dimension becomes
 character the same way. A factor dimension stays a factor and gains the label
 as a new level, placed last by default; `.margin_label_position = "first"`
 puts it first. That changes only the level order, not the row order.
 
-Use a named vector to give each resolved Margin dimension its own label.
-Names must cover the dimensions exactly once; `.by` columns are fixed keys
-and cannot be named:
+Use a named vector to give each Margin dimension its own label. Names must
+cover every column `.grouping` selects exactly once; `.by` columns are fixed
+keys and cannot be named:
 
 ```{r}
 retail_sales |>
@@ -509,8 +519,9 @@ retail_sales |>
   )
 ```
 
-Use `.margin_label = NULL` or `NA_character_` to preserve the grouping
-column's input type and create a typed missing Margin value:
+Use `.margin_label = NULL` or `NA_character_` to preserve each Margin
+dimension's input type and mark its margin rows with a typed missing Margin
+value — a missing value of the column's own type — instead of a label:
 
 ```{r}
 retail_sales |>
@@ -566,9 +577,9 @@ parent_report
 
 A row of the Grand total set has a Parent share of one. Missing numerators or
 denominators and zero denominators produce a missing double value. The helper
-requires a rollup and uses internal Grouping identity, so displayed Margin
-labels and source missing keys do not determine the parent. For multiple
-measures, complete source rules, and the supported `across()` form, see the
+requires a rollup and finds each row's parent from the dimensions its
+grouping set removed, so displayed Margin labels and source missing keys do
+not determine it. For multiple measures, complete source rules, and the supported `across()` form, see the
 [`share_of_parent()` reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html).
 
 For several measures, use two ordered `across()` expressions: the first
@@ -884,7 +895,7 @@ meaning of dplyr's “keep the grouping columns” rule after a dimension has be
 rolled up. For `nest_with_margins()`, it corresponds to explicitly selecting
 grouping keys with `tidyr::nest(data = everything(), .by = ...)`. marginplyr
 uses a logical argument instead of the full `...` interface because its
-grouping dimensions must remain visible outside to distinguish detail,
+Margin dimensions must remain visible outside to distinguish detail,
 subtotal, and total rows.
 
 Nesting accepts `.duplicates = "error"` or `"drop"`, but rejects `"keep"`,
@@ -1059,7 +1070,7 @@ states the rule for all four verbs.
 
 Summary expressions use dplyr data masking, but marginplyr narrows the parts
 of the official API where arbitrary grouping sets have no portable
-interpretation. A summary may not overwrite a fixed key or grouping dimension,
+interpretation. A summary may not overwrite a fixed key or Margin dimension,
 even where the local dplyr backend would allow it, because that would destroy
 grouping-set identity. `across()` and `pick()` exclude every column in the
 complete Grouping plan, not only the ones active in one branch. The
@@ -1095,7 +1106,7 @@ reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html)
 states each of these rules in full.
 
 For example, `everything()` below selects every column except the fixed key
-`year` and the grouping dimensions `region` and `store`, and on a local data
+`year` and the Margin dimensions `region` and `store`, and on a local data
 frame it includes the summary `total` computed before it:
 
 ```{r}
