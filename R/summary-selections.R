@@ -179,15 +179,8 @@ check_grouping_spec_summaries <- function(dots, data) {
   is_spec_dot <- function(dot) {
     expr <- rlang::quo_get_expr(dot)
     env <- rlang::quo_get_env(dot)
-    name <- static_spelling_name(expr, "grouping_constructor")
-    if (!is.null(name)) {
-      return(
-        !is.null(static_call_ns(expr)) ||
-          identical(
-            get0(name, envir = env, mode = "function"),
-            get(name, envir = asNamespace("marginplyr"))
-          )
-      )
+    if (!is.null(static_spelling_name(expr, "grouping_constructor"))) {
+      return(identical(grouping_constructor_owner(expr, env), "marginplyr"))
     }
     if (!rlang::is_symbol(expr)) {
       return(FALSE)

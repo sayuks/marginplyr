@@ -15,8 +15,10 @@ Initial CRAN release.
   product SQL forms from comma-separated items. Specifications nest, accept
   tidy-select expressions, and support composite dimensions and empty sets.
   `.grouping` takes one of these calls; a bare column or `c()` is refused with
-  the constructor call to write instead, and a specification written among
-  the summaries is refused with the `.grouping =` spelling to use.
+  the constructor call to write instead, a specification written among the
+  summaries is refused with the `.grouping =` spelling to use, and a
+  `rollup()` or `cube()` another package masks, as data.table does, is
+  refused with the `marginplyr::rollup()` spelling.
 
 * Columns in `.by`, or existing `group_by()` columns, stay fixed in every
   grouping set, so one call produces an independent report per partition.

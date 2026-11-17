@@ -422,7 +422,8 @@ Config/testthat/start-first:
     share-removal-targets,
     grouping-spec-as-summary,
     backend-matrix,
-    list-grouping
+    list-grouping,
+    grouping-masked-constructor
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
