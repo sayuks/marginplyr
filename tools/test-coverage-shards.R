@@ -1,13 +1,15 @@
 # Exercise sharded coverage through tools/coverage-check.R on a small package:
 # merged shard results must reproduce the unsharded verdict, uncovered lines
-# and per-line hits, the merge refuses an incomplete set of shards, and each leg
-# and the merge report every test file's duration.
+# and per-line hits, the merge refuses an incomplete set of shards, legs are
+# assigned from the duration table, and each leg and the merge report every
+# test file's duration.
 source_root <- normalizePath(".")
 rscript <- file.path(R.home("bin"), "Rscript")
 expect <- function(ok, detail) if (!isTRUE(ok)) stop(detail, call. = FALSE)
 
 # A package in the shape coverage-check-lib.R reads: one asserted optional
-# Suggest, no exclusions, and four test files so a three-way split is uneven.
+# Suggest, no exclusions, four test files so a three-way split is uneven, and
+# a duration table that omits one of them and names one the tree lacks.
 write_fixture <- function(root) {
   for (path in c("R", "tests/testthat", "inst/suggests", "tools")) {
     dir.create(file.path(root, path), recursive = TRUE)
@@ -44,6 +46,9 @@ write_fixture <- function(root) {
     writeLines(c("test_that(\"fixture\", {", paste0("  ", tests[[name]]), "})"),
       file.path(root, "tests/testthat", name))
   }
+  writeLines(c("# Fixture durations.", "file\tseconds", "test-b.R\t5",
+    "test-c.R\t3", "test-d.R\t2", "test-z.R\t100"),
+    file.path(root, "tools", "coverage-shard-durations.tsv"))
   file.copy(file.path(source_root, "inst/suggests/guard.R"),
     file.path(root, "inst/suggests"))
   for (path in c("coverage-check.R", "coverage-check-lib.R",
@@ -103,8 +108,10 @@ main <- function() {
 
   shards <- file.path(workspace, "shards")
   dir.create(shards)
-  # Every 3rd file in radix order.
-  assigned <- list(c("test-a.R", "test-d.R"), "test-b.R", "test-c.R")
+  # Longest first onto the least-loaded leg: b (5), c (3), d (2), then
+  # test-a.R, absent from the table, at the median known duration (3) onto
+  # the leg holding d. The stale test-z.R row would otherwise take leg 1.
+  assigned <- list("test-b.R", "test-c.R", c("test-a.R", "test-d.R"))
   for (index in 1:3) {
     result <- file.path(shards, paste0("coverage-shard-", index, ".rds"))
     summary <- file.path(workspace, paste0("summary-", index, ".md"))
@@ -117,7 +124,7 @@ main <- function() {
       all(is.finite(durations$seconds) & durations$seconds >= 0),
       paste("Shard", index, "durations:", paste(capture.output(durations),
         collapse = "\n")))
-    if (index == 1L) {
+    if (index == 3L) {
       expect(durations$seconds[durations$file == "test-d.R"] >= 1 &&
         durations$seconds[durations$file == "test-a.R"] < 1,
         "test-d.R's one-second sleep is not attributed to it")
@@ -129,8 +136,10 @@ main <- function() {
       collapse = "\n"))
   }
   merged_summary <- file.path(workspace, "summary-merged.md")
+  refreshed <- file.path(workspace, "durations.tsv")
   merged <- in_root(root, c("--merge", shards, "--cobertura",
-    file.path(workspace, "merged.xml")), merged_summary)
+    file.path(workspace, "merged.xml"), "--durations", refreshed),
+    merged_summary)
   expect(merged$status == 1L, merged$output)
   expect(identical(verdict(merged$output), expected),
     paste("Merged verdict differs:", merged$output, "Unsharded:", whole$output))
@@ -148,6 +157,13 @@ main <- function() {
         collapse = "\n"))
     }
   }
+
+  # The merge writes the committed table's format for the next refresh.
+  table <- utils::read.delim(refreshed, comment.char = "#")
+  expect(identical(names(table), c("file", "seconds")) &&
+    identical(table$file, c("test-a.R", "test-b.R", "test-c.R", "test-d.R")) &&
+    all(is.finite(table$seconds)) && grepl("^#", readLines(refreshed, 1L)),
+    paste(readLines(refreshed), collapse = "\n"))
 
   for (bad in c("0/3", "4/3", "1/0", "1/5", "2")) {
     refused <- in_root(root, c("--shard", bad, "--output",
