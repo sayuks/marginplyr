@@ -54,10 +54,10 @@
 #'   a `dtplyr` step, and for a summary or expansion also a database table or
 #'   an Arrow object -- because there the check runs a query that reads your
 #'   data; see *[When marginplyr queries your data][margin_verbs]* in
-#'   [margin_verbs], and *dtplyr inputs* in [nest_by_with_margins()] for the
-#'   one exception. A collected input is a local data frame, so collecting
-#'   turns the check on; set this explicitly when re-running a call on
-#'   collected data.
+#'   [margin_verbs], and *[dtplyr inputs][nest_by_with_margins]* in
+#'   [nest_by_with_margins()] for the one exception. A collected input is a
+#'   local data frame, so collecting turns the check on; set this explicitly
+#'   when re-running a call on collected data.
 #'
 #'   A label equal to a declared factor level is refused wherever marginplyr
 #'   holds the levels, whatever this argument says, because finding it reads

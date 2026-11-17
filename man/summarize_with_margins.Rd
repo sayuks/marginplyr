@@ -81,10 +81,10 @@ for a local data frame and \code{FALSE} for a lazy input the verb accepts --
 a \code{dtplyr} step, and for a summary or expansion also a database table or
 an Arrow object -- because there the check runs a query that reads your
 data; see \emph{\link[=margin_verbs]{When marginplyr queries your data}} in
-\link{margin_verbs}, and \emph{dtplyr inputs} in \code{\link[=nest_by_with_margins]{nest_by_with_margins()}} for the
-one exception. A collected input is a local data frame, so collecting
-turns the check on; set this explicitly when re-running a call on
-collected data.
+\link{margin_verbs}, and \emph{\link[=nest_by_with_margins]{dtplyr inputs}} in
+\code{\link[=nest_by_with_margins]{nest_by_with_margins()}} for the one exception. A collected input is a
+local data frame, so collecting turns the check on; set this explicitly
+when re-running a call on collected data.
 
 A label equal to a declared factor level is refused wherever marginplyr
 holds the levels, whatever this argument says, because finding it reads

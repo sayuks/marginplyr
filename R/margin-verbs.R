@@ -307,9 +307,9 @@
 #' by the bytes a query scans, and `LIMIT 0` is not exempt. marginplyr cannot
 #' tell a billed connection from a free one, so `.check_margin_label` defaults
 #' to `is.data.frame(.data)` and a lazy input is checked only when asked;
-#' *dtplyr inputs* in [nest_by_with_margins()] states the one exception. The
-#' observed check scans every input row of the checked columns and retrieves
-#' one row of collision counts.
+#' *[dtplyr inputs][nest_by_with_margins]* in [nest_by_with_margins()] states
+#' the one exception. The observed check scans every input row of the checked
+#' columns and retrieves one row of collision counts.
 #'
 #' With recording enabled before the call, [last_sent_queries()] lists the
 #' SQL prepared for these internal queries in the order sent.

@@ -319,9 +319,9 @@ A query is not safe merely because it returns no rows: some services bill
 by the bytes a query scans, and \verb{LIMIT 0} is not exempt. marginplyr cannot
 tell a billed connection from a free one, so \code{.check_margin_label} defaults
 to \code{is.data.frame(.data)} and a lazy input is checked only when asked;
-\emph{dtplyr inputs} in \code{\link[=nest_by_with_margins]{nest_by_with_margins()}} states the one exception. The
-observed check scans every input row of the checked columns and retrieves
-one row of collision counts.
+\emph{\link[=nest_by_with_margins]{dtplyr inputs}} in \code{\link[=nest_by_with_margins]{nest_by_with_margins()}} states
+the one exception. The observed check scans every input row of the checked
+columns and retrieves one row of collision counts.
 
 With recording enabled before the call, \code{\link[=last_sent_queries]{last_sent_queries()}} lists the
 SQL prepared for these internal queries in the order sent.
