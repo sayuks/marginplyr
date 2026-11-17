@@ -19,10 +19,15 @@ concurrency:
 
 jobs:
   # The suite under covr outgrew one job's 360-minute ceiling, so each leg
-  # measures every N-th test file and test-coverage merges the legs' results.
+  # measures part of the test files and test-coverage merges the legs' results.
   # covr also observes testthat's parallel workers
   # (investigation/2026-11-17-covr-shards-and-parallel-workers.md), but those
   # are capped by one runner's CPUs, while legs grow with the matrix.
+  # Files go to legs by their measured seconds in
+  # tools/coverage-shard-durations.tsv rather than by count, because one file
+  # holds a large share of the time and leaves an every-N-th split uneven;
+  # no leg can finish sooner than that file, so more legs would not help.
+  # Refresh the table from test-coverage's coverage-shard-durations artifact.
   shard:
     name: test-coverage shard ${{ matrix.shard }}
     runs-on: ubuntu-latest
@@ -107,7 +112,17 @@ jobs:
           path: coverage-shards
 
       - name: Test coverage
-        run: Rscript tools/coverage-check.R --merge coverage-shards --cobertura cobertura.xml
+        run: >-
+          Rscript tools/coverage-check.R --merge coverage-shards
+          --cobertura cobertura.xml
+          --durations coverage-shard-durations.tsv
+
+      - uses: actions/upload-artifact@v7
+        if: ${{ always() && hashFiles('coverage-shard-durations.tsv') != '' }}
+        with:
+          name: coverage-shard-durations
+          path: coverage-shard-durations.tsv
+          retention-days: 30
 
       - uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7
         if: ${{ always() && hashFiles('cobertura.xml') != '' }}
