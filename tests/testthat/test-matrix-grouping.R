@@ -45,14 +45,14 @@ test_that("a non-missing matrix label is refused by every Margin verb", {
   expect_error(
     summarize_with_margins(data, total = sum(value),
                            .grouping = rollup(g)),
-    "matrix or array grouping dimensions"
+    "matrix or array Margin dimensions"
   )
   for (check in c(TRUE, FALSE)) {
     for (operation in dimensional_margin_operations(data, "Total", check)) {
       error <- expect_error(operation())
       expect_s3_class(error, "marginplyr_error")
       expect_match(conditionMessage(error),
-                   "matrix or array grouping dimension")
+                   "matrix or array Margin dimension")
       expect_match(conditionMessage(error), "`g`", fixed = TRUE)
       expect_match(conditionMessage(error), "`.margin_label`", fixed = TRUE)
       expect_match(conditionMessage(error), "non-missing scalar label")
@@ -149,7 +149,7 @@ test_that("a scalar array label is refused from populated and empty schemas", {
       for (operation in dimensional_margin_operations(input, "All", check)) {
         error <- expect_error(operation())
         expect_s3_class(error, "marginplyr_error")
-        expect_match(conditionMessage(error), "array grouping dimensions")
+        expect_match(conditionMessage(error), "array Margin dimensions")
         expect_match(conditionMessage(error), "`g`", fixed = TRUE)
         expect_match(conditionMessage(error), "NULL", fixed = TRUE)
         expect_match(conditionMessage(error), "NA_character_", fixed = TRUE)

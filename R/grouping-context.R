@@ -4,16 +4,21 @@
 #' [summarize_with_margins()]. They distinguish values that are absent from a
 #' grouping set from ordinary missing values in the source data.
 #'
+#' Like every contextual helper, they are refused outside that verb, including
+#' in a later [dplyr::filter()] of its result. To keep or drop subtotal rows,
+#' store the helper as a summary column and filter on that column, as the
+#' first example does.
+#'
 #' [grouping_bit()] corresponds to SQL `GROUPING(x)`: it returns `1L` when
 #' `x` is absent from the grouping set and `0L` otherwise.
 #' [grouping_id()] combines those flags as a bit mask; its last argument is
-#' the least-significant bit. It accepts up to 31 distinct grouping columns.
+#' the least-significant bit. It accepts up to 31 distinct columns.
 #'
-#' Written with no columns, [grouping_id()] reads every `.grouping` column of
-#' the resolved plan, in plan order. That is the order [inspect_grouping()]
-#' reports, so a bare [grouping_id()] equals that function's `grouping_id` for
-#' the grouping set the row came from. Columns fixed by `.by` are not part of
-#' that default.
+#' Written with no columns, [grouping_id()] reads every Margin dimension --
+#' each column `.grouping` selects -- of the resolved plan, in plan order. That
+#' is the order [inspect_grouping()] reports, so a bare [grouping_id()] equals
+#' that function's `grouping_id` for the grouping set the row came from.
+#' Columns fixed by `.by` are not part of that default.
 #'
 #' The `_bit` suffix emphasizes the `0`/`1` result and deliberately avoids
 #' masking [base::grouping()], an unrelated function that returns a permutation
@@ -40,39 +45,52 @@
 #' `.grouping`, and `.duplicates`. Reordering or deduplicating a Grouping
 #' specification changes both, so `.id` is not a durable business key.
 #'
-#' Grouping identifiers encode absence and need not be consecutive. A
-#' `rollup(region, store)` plan therefore has `.id` values `1L`, `2L`, and
-#' `3L` but [grouping_id()] values `0L`, `1L`, and `3L`: identifier `2` would
-#' mean `region` absent while `store` remains, which the declared hierarchy
-#' never produces. A `cube(region, store)` plan contains every mask, so its
-#' identifiers are `0L`, `1L`, `2L`, and `3L`.
+#' Grouping identifiers, the values [grouping_id()] returns, encode absence
+#' and need not be consecutive. A `rollup(region, store)` plan therefore has
+#' `.id` values `1L`, `2L`, and `3L` but [grouping_id()] values `0L`, `1L`,
+#' and `3L`: identifier `2` would mean `region` absent while `store` remains,
+#' which the declared hierarchy never produces. A `cube(region, store)` plan
+#' contains every mask, so its identifiers are `0L`, `1L`, `2L`, and `3L`.
 #'
-#' Neither value records physical row order. Call [dplyr::arrange()] whenever
-#' presentation order matters.
+#' Neither value records physical row order. Pass `.sort` to a Margin verb for
+#' margins next to the rows they summarize; see *[Margin order][margin_verbs]*
+#' in [margin_verbs]. Call [dplyr::arrange()] for any order `.sort` does not
+#' express.
 #'
 #' Displayed Margin labels are not identity. A source value can equal its
 #' Margin label, and a source missing value can print exactly like a
 #' typed-missing Margin value, so retain one of these helpers or `.id` when
-#' structural identity matters. The complete label, factor, and missing-value
-#' contract is *[Display labels and grouping identity][summarize_with_margins]*
-#' in [summarize_with_margins()].
+#' the two must be told apart. The complete label, factor, and missing-value
+#' contract is *[Display labels and grouping identity][margin_verbs]* in
+#' [margin_verbs].
 #'
-#' The [grouping identity guide][guide] works through these values with
-#' executable examples.
+#' [Grouping identity][guide] works through these values with executable
+#' examples.
 #'
 #' [guide]: https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html
 #'
-#' A function of your own may forward the column its caller wrote by injecting
-#' it: `!!rlang::enquo(col)` is accepted wherever a bare column is, and so is
-#' `!!rlang::ensym(col)`. Only the name is read. It is resolved against the
-#' Grouping plan, as every bare column here is, so the environment
-#' [rlang::enquo()] captured is not consulted and an injection carrying
+#' @section Forwarding a column from your own function:
+#' A function of your own forwards the column its caller wrote by embracing
+#' it, as it would for dplyr: `grouping_bit({{ col }})`. The spellings `{{ }}`
+#' abbreviates, `!!rlang::enquo(col)` and `!!rlang::ensym(col)`, are accepted
+#' too, and a column name held as a string is injected as
+#' `!!rlang::sym(name)`. Only the name is read. It is resolved against the
+#' Grouping plan, as every bare column here is, so the environment the
+#' caller's expression came from is not consulted and an injection carrying
 #' anything but a name is refused exactly where writing that expression out
 #' would be.
 #'
-#' @param x A bare grouping column.
-#' @param ... Bare grouping columns. Passing none reads every `.grouping`
-#'   column of the resolved plan.
+#' *Call a Margin verb from your own function* in
+#' [Recipes for common reporting tasks][recipes] forwards grouping columns,
+#' a measure, and a fixed key into a Margin verb by each of these routes, and
+#' passes a Grouping specification as an argument.
+#'
+#' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html#call-a-margin-verb-from-your-own-function
+#'
+#' @param x A bare Margin dimension -- a column `.grouping` selects -- or a
+#'   fixed `.by` key, whose bit is always `0L`.
+#' @param ... Bare Margin dimensions or fixed `.by` keys. Passing none reads
+#'   every Margin dimension of the resolved plan.
 #'
 #' @return Used inside [summarize_with_margins()], one value per result row.
 #'   [grouping_bit()] gives an integer flag: `1L` where the column is absent
@@ -100,7 +118,9 @@
 #' `sum(grouping_id(a, b))`, aggregates a constant and follows its
 #' backend: it counts the constant once per group on a local data frame and
 #' in `dtplyr`, and once per row wherever the helper is a query literal, as
-#' plain `sum(1)` differs between a data frame and a database table. Combine
+#' plain `sum(1)` differs between a data frame and a database table. Arrow is
+#' the exception: it cannot aggregate the constant, so the summary is refused
+#' until the Arrow input is collected. Combine
 #' the helper with a column that varies by row, as in
 #' `sum(v * grouping_id(a, b))`, or put it outside the aggregate, as in
 #' `n() * grouping_id(a, b)`, for a value that agrees everywhere.
@@ -117,7 +137,7 @@
 #' @examples
 #' # Online-direct sales have a source NA store. grouping_bit(store) is 0 for
 #' # that detail row but 1 when ROLLUP removes store to create a subtotal.
-#' summarize_with_margins(
+#' by_store <- summarize_with_margins(
 #'   .data = dplyr::filter(retail_sales, year == 2026L, month == "Jan"),
 #'   revenue = sum(revenue),
 #'   # Always 0 for a `.by` column, which no grouping set removes.
@@ -127,10 +147,15 @@
 #'   .by = year,
 #'   .grouping = rollup(region, store)
 #' )
+#' by_store
+#'
+#' # Keep only the store rows by filtering on the stored column; the helper
+#' # itself is refused outside summarize_with_margins().
+#' dplyr::filter(by_store, store_is_total == 0L)
 #'
 #' # Keeping typed missing values makes the Grouping bits essential: a source
-#' # missing store and a generated store margin both print as NA even though
-#' # their structural identities differ.
+#' # missing store and a generated store margin both print as NA, and only the
+#' # margin's Grouping bit is 1.
 #' summarize_with_margins(
 #'   .data = dplyr::filter(retail_sales, year == 2026L, month == "Jan"),
 #'   revenue = sum(revenue),

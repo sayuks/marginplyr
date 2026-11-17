@@ -23,6 +23,24 @@
 #' A [grouping_set()] nested directly inside [rollup()] or [cube()] is a
 #' composite dimension. Its columns are added or removed together.
 #'
+#' What each constructor accepts as an argument besides column selections,
+#' and what it means with no arguments:
+#'
+#' | Constructor | Nested specifications | Zero arguments |
+#' |---|---|---|
+#' | `grouping_set()` | none | the empty set |
+#' | `grouping_sets()` | any | error |
+#' | `rollup()` / `cube()` | only a non-empty `grouping_set()` | error |
+#' | `grouping_spec()` | any | the empty set |
+#'
+#' [rollup()] and [cube()] also refuse arguments that together select no
+#' column.
+#'
+#' Constructors select existing columns; they do not compute one, so
+#' `rollup(format(day, "%Y"))` fails even when `day` exists. Create a derived
+#' dimension with [dplyr::mutate()] first, as *Computed grouping columns* in
+#' [Get started][computed] shows.
+#'
 #' Each form expands to these grouping sets. A [rollup()] of n dimensions
 #' gives n + 1 sets, a [cube()] gives 2^n, and a [grouping_spec()] the
 #' product of its arguments' counts:
@@ -30,46 +48,58 @@
 #' | Form | Expands to |
 #' |---|---|
 #' | `rollup(a, b)` | (a, b), (a), () |
+#' | `rollup(c(a, b))` | (a, b), (a), (): two dimensions |
 #' | `cube(a, b)` | (a, b), (a), (b), () |
 #' | `grouping_sets(a, b)` | (a), (b): each argument is one set |
 #' | `grouping_sets(c(a, b))` | (a, b) |
 #' | `grouping_spec(rollup(a), b)` | (a, b), (b) |
 #' | `cube(grouping_set(a, b), c)` | (a, b, c), (a, b), (c), () |
 #'
-#' [inspect_grouping()] lists the sets any specification expands to, and
-#' *Choose the grouping operation* in the [Get started guide][start] works
-#' through each form.
+#' A [cube()] lists its sets from the most dimensions to the fewest.
+#' [inspect_grouping()] lists the sets any specification expands to, in the
+#' order `.id` numbers them, and *Choose the grouping operation* in
+#' [Get started][operations] works through each form.
+#'
+#' Combining forms can produce the same grouping set more than once. Every
+#' [rollup()] and [cube()] contains the empty set, so
+#' `grouping_sets(rollup(a), rollup(b))` contains `()` twice; `rollup(a, a)`
+#' gives (a) twice. Column order within a set does not distinguish it, so
+#' `grouping_sets(c(a, b), c(b, a))` also repeats one set, while a column
+#' written twice within one set counts once: `grouping_set(a, a)` is the
+#' single set (a). Margin verbs and [inspect_grouping()] refuse a repeated set
+#' unless `.duplicates` says to drop or keep it, naming the set; a column one
+#' [rollup()] or [cube()] selects in more than one argument is refused as that
+#' instead.
 #'
 #' A column that belongs in every grouping set, such as a reporting month, is
 #' best passed as the Margin verb's `.by`. Written inside [grouping_spec()]
-#' it is a grouping dimension instead, so the plan has no Grand total set and
-#' [share_of_total()] and [share_of_parent()] are refused.
+#' it is a Margin dimension instead, as every column `.grouping` selects is, so
+#' the plan has no Grand total set and [share_of_total()] and
+#' [share_of_parent()] are refused.
 #'
 #' A resolved Grouping plan can be read back in four ways: `.id`,
 #' [inspect_grouping()]`$set_id`, [grouping_bit()], and [grouping_id()].
-#' [grouping_bit()] compares them; the [grouping identity guide][guide] works
+#' [grouping_bit()] compares them; [Grouping identity][guide] works
 #' through the same values with executable examples.
 #'
 #' [guide]: https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html
-#' [start]: https://sayuks.github.io/marginplyr/vignettes/get_started.html
+#' [computed]: https://sayuks.github.io/marginplyr/vignettes/get_started.html#computed-grouping-columns
+#' [operations]: https://sayuks.github.io/marginplyr/vignettes/get_started.html#choose-the-grouping-operation
 #'
 #' @param ... <[`tidy-select`][dplyr::dplyr_tidy_select]> Column selections
-#'   and, where supported, nested Grouping specifications. In
-#'   [grouping_set()], the selections form one grouping set; nested Grouping
-#'   specifications are not allowed, and no arguments form the empty grouping
-#'   set. In [rollup()] and [cube()], each selected column is one dimension;
-#'   wrap multiple columns in a non-empty [grouping_set()] to make a composite
-#'   dimension. These constructors accept no other nested Grouping
-#'   specifications and require at least one resolved dimension.
-#'   [grouping_sets()] forms the union of its arguments, accepts any valid
-#'   nested Grouping specification, and requires at least one argument.
-#'   [grouping_spec()] combines its arguments by Cartesian product, accepts any
-#'   valid nested Grouping specification, and with no arguments represents the
-#'   identity product (the empty grouping set). Which of the two readings an
-#'   argument gets, and what is refused rather than read either way, is *How an
-#'   argument is read*.
+#'   and, where the constructor accepts them, nested Grouping specifications.
+#'   The constructor table in Details gives which nested specifications each
+#'   constructor accepts and what no arguments mean. Which of the two readings
+#'   an argument gets, and what is refused rather than read either way, is
+#'   *How an argument is read*.
 #'
-#' @return A Grouping specification for use in `.grouping`.
+#' @return A Grouping specification for use in `.grouping`. Its arguments are
+#'   stored unevaluated and read when a Margin verb or [inspect_grouping()]
+#'   receives data, so one specification can be reused across inputs, and a
+#'   misspelled column is reported by that call rather than by the
+#'   constructor. Printing it shows the constructor call as written, nested
+#'   constructors included; [inspect_grouping()] shows the grouping sets it
+#'   expands to for an input.
 #'
 #' @section How an argument is read:
 #' A nested Grouping specification is recognized by how it is written: a
@@ -118,7 +148,7 @@
 #' under the same name makes `s` refer to the new specification itself.
 #' Reusing a specification in independent branches is allowed.
 #'
-#' A Grouping dimension keeps its input column name. Inside a selection,
+#' A Margin dimension keeps its input column name. Inside a selection,
 #' `c(region = region)` and `all_of(c(region = "region"))` both select `region`
 #' under its own name. A selection that changes the name, such as
 #' `c(area = region)`, is refused. Rename the result with [dplyr::rename()].
@@ -127,6 +157,14 @@
 #' `rollup(area = region)` both raise errors. A call such as
 #' `rollup(region, .by = year)` reports `.by` as a named constructor argument.
 #' Pass `.by = year` to the Margin verb.
+#'
+#' data.table exports its own `rollup()` and `cube()`, so attaching it after
+#' marginplyr masks these two constructors. A `.grouping` that reaches
+#' data.table's function, directly or nested inside another constructor, is
+#' refused with an error naming `data.table::rollup()` or
+#' `data.table::cube()`. Write `marginplyr::rollup()` and
+#' `marginplyr::cube()`, or attach marginplyr after data.table and write
+#' `data.table::rollup()` for data.table's own.
 #'
 #' @family grouping plans and grouping identity
 #' @seealso [summarize_with_margins()], [expand_with_margins()],
@@ -225,6 +263,17 @@
 #'     dplyr::all_of(c("product", "channel"))
 #'   )
 #' )
+#'
+#' # A function of your own forwards its caller's columns into a constructor,
+#' # here through `...`; `{{ }}` and `all_of()` work the same way.
+#' revenue_report <- function(data, ...) {
+#'   summarize_with_margins(
+#'     data,
+#'     revenue = sum(revenue),
+#'     .grouping = rollup(...)
+#'   )
+#' }
+#' revenue_report(retail_sales, region, store)
 #'
 #' # A simulated PostgreSQL table shows the native GROUPING SETS translation
 #' # without requiring a database server.
@@ -398,13 +447,35 @@ print.margin_grouping_spec <- function(x, ...) {
   # amendment for a specification the printer could not read decides that
   # count, and states what reading through a shared function costs.
   kind <- grouping_spec_kind(x)
+  printed <- grouping_kind_printed_name(kind)
   cat(
     "<marginplyr Grouping specification: ",
-    grouping_kind_printed_name(kind),
+    printed,
     ">\n",
     sep = ""
   )
+  call_lines <- grouping_spec_call_lines(x, kind)
+  cat(paste0(call_lines, "\n", recycle0 = TRUE), sep = "")
   invisible(x)
+}
+
+# The constructor call a specification was written as, as the lines it
+# deparses to, or no lines. `kind` is the value the header's read returned.
+# Where the lines are written, and why the argument list is read inside a
+# catch, are ADR 0008's amendment for a printed specification's call.
+grouping_spec_call_lines <- function(x, kind) {
+  rule <- find_grouping_kind_rule(kind)
+  if (is.null(rule)) {
+    return(character())
+  }
+  args <- tryCatch(x$args, error = function(cnd) NULL)
+  if (!is.list(args) || length(args) == 0L ||
+        !all(vapply(args, rlang::is_quosure, logical(1)))) {
+    return(character())
+  }
+  rlang::expr_deparse(
+    rlang::call2(rule$constructor, !!!lapply(args, rlang::quo_squash))
+  )
 }
 
 # The name a kind prints under, or the empty string where it has none. The

@@ -28,44 +28,60 @@ represents the empty grouping set. Any expression returning a
 specification can be written here, while a specification nested inside
 another must be a constructor call or a name bound to one, and a nested
 name the input also has a column for is refused rather than read either
-way; see \code{\link[=grouping_set]{grouping_set()}}.}
+way; see \code{\link[=grouping_set]{grouping_set()}}. The columns it selects are the plan's Margin
+dimensions, which a grouping set can omit; \code{.by} columns are fixed keys.}
 
 \item{.duplicates}{One of \code{"error"}, \code{"drop"}, or \code{"keep"}, and nothing
-else, controlling duplicate grouping-set occurrences; see \emph{Option
-arguments}.}
+else; see \emph{\link[=margin_verbs]{Option arguments}} in \link{margin_verbs}. A
+duplicate is a grouping set whose columns are the same as an earlier
+set's. \code{"error"} (the default) refuses the call and names the
+positions. \code{"drop"} keeps the first occurrence of each set and numbers
+\code{set_id} over the rows that remain. \code{"keep"} lists every occurrence,
+each with its own \code{set_id}.}
 
 \item{.format}{\code{"text"} for compact display values or \code{"list"} for exact
-character and integer vectors, and nothing else; see \emph{Option arguments}.
+character and integer vectors, and nothing else; see
+\emph{\link[=margin_verbs]{Option arguments}} in \link{margin_verbs}.
 Text values are display-only; use \code{"list"} when column names contain
 separators or other non-syntactic characters.}
 }
 \value{
-A local, ungrouped tibble with columns \code{set_id}, \code{fixed},
-\code{included}, \code{omitted}, \code{grouping_bits}, and \code{grouping_id}.
+A local, ungrouped tibble with one row per grouping-set occurrence
+that remains after \code{.duplicates}, in Grouping-plan order;
+\code{.grouping = NULL} gives one row. Its columns are:
+\itemize{
+\item \code{set_id}: the one-based Grouping set identifier, an integer.
+\item \code{fixed}: the fixed keys, from \code{.by} or the input's groups, the same in
+every row.
+\item \code{included}: the Margin dimensions the set keeps.
+\item \code{omitted}: the Margin dimensions the set leaves out, which hold the
+Margin label in a Margin verb's rows for it.
+\item \code{grouping_bits}: \code{0L} for each included and \code{1L} for each omitted
+Margin dimension.
+\item \code{grouping_id}: those bits encoded as an integer bit mask.
+}
+
+With \code{.format = "text"}, \code{fixed}, \code{included}, \code{omitted}, and
+\code{grouping_bits} are character. With \code{.format = "list"}, the first three
+are lists of character vectors and \code{grouping_bits} is a list of named
+integer vectors.
 }
 \description{
 \code{inspect_grouping()} returns the Grouping plan resolved from \code{.data},
-\code{.by}, and \code{.grouping} without executing a Margin operation. The result is
+\code{.by}, and \code{.grouping} without executing a Margin operation. A Grouping plan
+is the ordered list of grouping sets that the Grouping specification written
+in \code{.grouping} expands to, and this function returns one row per
+grouping-set occurrence in it. The result is
 always a local, ungrouped, ordinary tibble, including for lazy inputs.
 }
-\section{Option arguments}{
-
-\code{.duplicates} and \code{.format} each take one of their listed strings, spelled
-in full. An abbreviation is not shorthand for the value it begins, and
-\code{NULL} is not shorthand for the default: both are errors naming the values
-the argument accepts. For the default, leave the argument out or pass the
-whole vocabulary as the signature spells it, such as
-\code{.format = c("text", "list")}; any other vector of more than one value is
-an error.
-}
-
 \section{Grouping identity}{
 
-\code{set_id} is the one-based Grouping set identifier exposed by \code{.id} for the
-same resolved plan. \code{grouping_bits} instead describes whether each variable
-dimension is included (\code{0L}) or omitted (\code{1L}), and \code{grouping_id} encodes
+\code{set_id} is the one-based Grouping set identifier a Margin verb's
+\code{\link[=summarize_with_margins]{.id}} column holds for the same resolved plan.
+\code{grouping_bits} instead describes whether each Margin dimension is
+included (\code{0L}) or omitted (\code{1L}), and \code{grouping_id} encodes
 that absence pattern as a bit mask. \code{grouping_id} is \code{NA_integer_} beyond
-31 variable dimensions, while \code{grouping_bits} remains complete.
+31 Margin dimensions, while \code{grouping_bits} remains complete.
 
 \code{\link[=grouping_bit]{grouping_bit()}} is the canonical reference for how these four values
 relate and which of them distinguish duplicate grouping-set occurrences.
@@ -92,86 +108,54 @@ operation.
 
 \section{Lazy inputs}{
 
-A lazy \code{.data} still returns a local tibble without reading source rows:
-inspection uses captured column metadata and the backend-independent
-Grouping plan. Predicates in \code{.by} and \code{.grouping} use that metadata, not
-source values; collect explicitly before inspecting a plan whose selections
-depend on values. See
-\emph{\link[=summarize_with_margins]{Fixed columns and grouping dimensions}} for
-type-based and value-dependent examples.
-A derived dtplyr step whose typed metadata cannot be
-established without processing source rows is refused when inspection needs
-those types. Name-only inspection on dtplyr and DuckDB uses the input's
-captured column names. To inspect a derived dtplyr step with typed
-selections, call \code{\link[dplyr:collect]{dplyr::collect()}} on it explicitly and
-pass the resulting data frame. DuckDB CSV readers that use auto-detection
-are also refused before typed metadata is requested: binding even a
-zero-row query can sample CSV values. This includes filename replacement
-scans such as \verb{FROM 'path.csv'}. Supply an explicit CSV schema with
-\code{auto_detect = false}, or collect explicitly before typed inspection.
-The Grouping plan is deliberately separate
-from a SQL execution plan. Use \code{\link[dplyr:show_query]{dplyr::show_query()}} for generated SQL and
-backend-native tools for an optimizer plan. With recording enabled before
-inspection, \code{\link[=last_sent_queries]{last_sent_queries(include_result = FALSE)}}
-shows its prepared internal SQL, such as DuckDB's system-catalog check and
-zero-row metadata read, in recording order. It performs no query on access;
-missing SQL denotes a failed diagnostic render, not proof of database
-receipt or completion. Add
-\code{details = TRUE} for each internal operation's outcome and conditions.
+Inspecting a lazy \code{.data} reads none of its rows and returns a local
+tibble. Selecting columns by name sends no query. A type predicate such as
+\code{where(is.character)} needs column types: on DuckDB, inspection sends
+metadata queries that read no rows, a system-catalog check and a zero-row
+read; Arrow and dtplyr inputs answer from their schema; other SQL
+connections refuse the predicate.
+\emph{\link[=margin_verbs]{Fixed columns and Margin dimensions}} in \link{margin_verbs}
+covers predicates by backend and those that depend on values, and
+\code{\link[=last_sent_queries]{last_sent_queries()}} reads back the queries an inspection sent.
 
-Because inspection builds no grouping-set branch, it also accepts a dtplyr
-step with an input rooted at \code{dtplyr::lazy_dt(immutable = FALSE)} and leaves
-every caller \code{data.table} unchanged. Margin verbs refuse the same Mutable
-step before building a branch; rebuild it with \code{immutable = TRUE} before
-passing it to one of them.
-
-The \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide} walks through inspecting a plan and
-reading it back off a Margin result. The \href{https://sayuks.github.io/marginplyr/vignettes/recipes.html}{recipes guide} uses a
-plan to choose which grouping set to keep, and joins one against \code{.id} to
-name the set behind every row. Because the plan is local, that join needs a
-\code{copy} argument when the Margin result is lazy, and it does not preserve a
-Margin order.
+Where column types cannot be established without reading rows, an
+inspection that needs them is refused before they are requested:
+\itemize{
+\item A derived dtplyr step whose types depend on processing source rows. Call
+\code{\link[dplyr:collect]{dplyr::collect()}} on it explicitly and pass the resulting data frame.
+\item A DuckDB CSV reader that uses auto-detection, including filename
+replacement scans such as \verb{FROM 'path.csv'}, because binding even a
+zero-row query can sample CSV values. Supply an explicit CSV schema
+with \code{auto_detect = false}, or collect explicitly first.
 }
 
-\section{Arrow inputs}{
-
-Arrow's tabular dplyr inputs are a \code{Table}, \code{RecordBatch}, \code{Dataset},
-\code{RecordBatchReader}, or an \code{arrow_dplyr_query} built from them. marginplyr's
-contract depends on both the verb and the query's sources:\tabular{llll}{
-   Input \tab Summary or expansion \tab Inspection \tab Nesting \cr
-   \code{Table}, \code{RecordBatch}, or \code{Dataset} \tab Accepted \tab Accepted \tab Refused; collect first \cr
-   Query with no reader source \tab Accepted \tab Accepted \tab Refused; collect first \cr
-   \code{RecordBatchReader} \tab Refused; materialize first \tab Accepted \tab Refused; collect first \cr
-   Query with any reader source \tab Refused; materialize first \tab Accepted \tab Refused; collect first \cr
-   Non-tabular Arrow object \tab General input refusal \tab General input refusal \tab General input refusal \cr
+Inspection also accepts:
+\itemize{
+\item every tabular Arrow input, including a \code{RecordBatchReader}, which
+inspection does not consume. Non-tabular Arrow objects are refused.
+\item a dtplyr step with an input rooted at
+\code{dtplyr::lazy_dt(immutable = FALSE)}. Because inspection builds no
+grouping-set branch, it leaves every caller \code{data.table} unchanged.
+Margin verbs refuse such a step before building a branch, because
+data.table may write to the caller's table by reference in any branch;
+rebuild it with \code{immutable = TRUE} before passing it to one of them.
 }
 
+The Grouping plan is not a SQL execution plan. Use \code{\link[dplyr:show_query]{dplyr::show_query()}}
+for generated SQL and backend-native tools for an optimizer plan.
 
-A translatable summary or expansion stays an Arrow query. For a summary or
-generated Margin label transformation Arrow cannot translate, a \code{Table} and
-\code{RecordBatch} (and queries built on them) would fall back to R, so marginplyr
-refuses it before a row is read. Collect the input first to perform that
-operation locally, selecting the columns you need before collecting. A
-\code{Dataset} and a query built on one instead keep Arrow's own
-unsupported-expression error.
-
-A \code{RecordBatchReader} is one-pass, while a Margin operation may build one
-branch per grouping set, so a reader and any query whose source graph
-contains one are refused. \code{\link[arrow:as_arrow_table]{arrow::as_arrow_table()}} consumes every batch
-once and materializes the reusable \code{Table} those branches require.
-\code{\link[=inspect_grouping]{inspect_grouping()}} executes no branch, so it accepts both without
-consuming either. Other Arrow objects, such as a \code{Scanner} or an \code{Array},
-are not dplyr inputs; a Scanner materializes with \verb{$ToTable()}.
-
-Arrow does not hold factor levels in the schema marginplyr reads, so a
-non-missing \code{.margin_label} converts a factor dimension to character, its
-levels and ordered status are lost, and a Margin order sorts it by value.
-For the same reason, a label equal to an unused declared level is allowed,
-and an observed collision is refused only when
-\code{.check_margin_label = TRUE}. \code{NA_character_} and \code{NULL} convert nothing.
+\emph{Inspect a Grouping plan as data} in \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html#inspect-a-grouping-plan-as-data}{Grouping identity} walks through
+inspecting a plan and reading it back off a Margin result. \emph{Show only the
+subtotals, only the detail, or one level} in \href{https://sayuks.github.io/marginplyr/vignettes/recipes.html#show-only-the-subtotals-only-the-detail-or-one-level}{Recipes for common reporting tasks} uses a plan to choose which grouping set to keep, and \emph{Add a
+level column: detail, subtotal or total} in \href{https://sayuks.github.io/marginplyr/vignettes/recipes.html#add-a-level-column-detail-subtotal-or-total}{Recipes for common reporting tasks} joins one
+against a Margin result's \code{\link[=summarize_with_margins]{.id}} column to name the
+set behind every row. Because the plan is local, that join needs a \code{copy}
+argument when the Margin result is lazy, and it does not preserve a Margin
+order.
 }
 
 \examples{
+# The data comes first; the specification goes in `.grouping`.
 inspect_grouping(
   .data = retail_sales,
   .by = c(year, month),

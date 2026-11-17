@@ -139,8 +139,12 @@ test_that("lazy label checks preserve their opt-in default and accepted TRUE", {
   flag <- structure(TRUE, class = "margin_label_check_flag")
   data <- dtplyr::lazy_dt(data.frame(g = "Total", value = 1L))
 
-  for (verb in label_check_verbs) {
-    for (args in list(list(), list(.check_margin_label = FALSE))) {
+  for (name in names(label_check_verbs)) {
+    verb <- label_check_verbs[[name]]
+    unchecked <- list(.check_margin_label = FALSE)
+    # The row-wise verb reads a dtplyr step's rows, so it checks by default.
+    calls <- if (name == "nest_by") list(unchecked) else list(list(), unchecked)
+    for (args in calls) {
       result <- dplyr::collect(do.call(verb, c(list(data, .id = "set"), args)))
       expect_identical(result$g, c("Total", "Total"))
       expect_identical(result$set, 1:2)

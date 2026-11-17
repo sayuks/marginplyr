@@ -17,13 +17,20 @@ duplicate_example_lines <- function(positions) {
     paste0("i ", positions, "."))
 }
 
+# The remedy is compared with the complete pass's. The repeated set is not: a
+# group proved from a prefix whose suffix is still unknown names no whole set,
+# so only a complete pass, or a group of completed sets, names one.
 expect_duplicate_example <- function(cnd, positions, original = NULL) {
   lines <- function(cnd) {
     strsplit(conditionMessage(cnd), "\n", fixed = TRUE)[[1L]]
   }
+  remedy <- function(cnd) {
+    rest <- lines(cnd)[-(1:2)]
+    rest[!startsWith(rest, "i Repeated set")]
+  }
   expect_identical(lines(cnd)[1:2], duplicate_example_lines(positions))
   if (!is.null(original)) {
-    expect_identical(lines(cnd)[-(1:2)], lines(original)[-(1:2)])
+    expect_identical(remedy(cnd), remedy(original))
   }
 }
 

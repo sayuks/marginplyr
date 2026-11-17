@@ -27,3 +27,4 @@
 ^doc$
 ^Meta$
 ^\.review-ready$
+^\.lintr\.R$

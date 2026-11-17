@@ -20,23 +20,20 @@ grouping_spec(...)
 }
 \arguments{
 \item{...}{<\code{\link[dplyr:dplyr_tidy_select]{tidy-select}}> Column selections
-and, where supported, nested Grouping specifications. In
-\code{\link[=grouping_set]{grouping_set()}}, the selections form one grouping set; nested Grouping
-specifications are not allowed, and no arguments form the empty grouping
-set. In \code{\link[=rollup]{rollup()}} and \code{\link[=cube]{cube()}}, each selected column is one dimension;
-wrap multiple columns in a non-empty \code{\link[=grouping_set]{grouping_set()}} to make a composite
-dimension. These constructors accept no other nested Grouping
-specifications and require at least one resolved dimension.
-\code{\link[=grouping_sets]{grouping_sets()}} forms the union of its arguments, accepts any valid
-nested Grouping specification, and requires at least one argument.
-\code{\link[=grouping_spec]{grouping_spec()}} combines its arguments by Cartesian product, accepts any
-valid nested Grouping specification, and with no arguments represents the
-identity product (the empty grouping set). Which of the two readings an
-argument gets, and what is refused rather than read either way, is \emph{How an
-argument is read}.}
+and, where the constructor accepts them, nested Grouping specifications.
+The constructor table in Details gives which nested specifications each
+constructor accepts and what no arguments mean. Which of the two readings
+an argument gets, and what is refused rather than read either way, is
+\emph{How an argument is read}.}
 }
 \value{
-A Grouping specification for use in \code{.grouping}.
+A Grouping specification for use in \code{.grouping}. Its arguments are
+stored unevaluated and read when a Margin verb or \code{\link[=inspect_grouping]{inspect_grouping()}}
+receives data, so one specification can be reused across inputs, and a
+misspelled column is reported by that call rather than by the
+constructor. Printing it shows the constructor call as written, nested
+constructors included; \code{\link[=inspect_grouping]{inspect_grouping()}} shows the grouping sets it
+expands to for an input.
 }
 \description{
 These constructors describe SQL-style grouping operations for the
@@ -65,11 +62,30 @@ region subtotal.
 A \code{\link[=grouping_set]{grouping_set()}} nested directly inside \code{\link[=rollup]{rollup()}} or \code{\link[=cube]{cube()}} is a
 composite dimension. Its columns are added or removed together.
 
+What each constructor accepts as an argument besides column selections,
+and what it means with no arguments:\tabular{lll}{
+   Constructor \tab Nested specifications \tab Zero arguments \cr
+   \code{grouping_set()} \tab none \tab the empty set \cr
+   \code{grouping_sets()} \tab any \tab error \cr
+   \code{rollup()} / \code{cube()} \tab only a non-empty \code{grouping_set()} \tab error \cr
+   \code{grouping_spec()} \tab any \tab the empty set \cr
+}
+
+
+\code{\link[=rollup]{rollup()}} and \code{\link[=cube]{cube()}} also refuse arguments that together select no
+column.
+
+Constructors select existing columns; they do not compute one, so
+\code{rollup(format(day, "\%Y"))} fails even when \code{day} exists. Create a derived
+dimension with \code{\link[dplyr:mutate]{dplyr::mutate()}} first, as \emph{Computed grouping columns} in
+\href{https://sayuks.github.io/marginplyr/vignettes/get_started.html#computed-grouping-columns}{Get started} shows.
+
 Each form expands to these grouping sets. A \code{\link[=rollup]{rollup()}} of n dimensions
 gives n + 1 sets, a \code{\link[=cube]{cube()}} gives 2^n, and a \code{\link[=grouping_spec]{grouping_spec()}} the
 product of its arguments' counts:\tabular{ll}{
    Form \tab Expands to \cr
    \code{rollup(a, b)} \tab (a, b), (a), () \cr
+   \code{rollup(c(a, b))} \tab (a, b), (a), (): two dimensions \cr
    \code{cube(a, b)} \tab (a, b), (a), (b), () \cr
    \code{grouping_sets(a, b)} \tab (a), (b): each argument is one set \cr
    \code{grouping_sets(c(a, b))} \tab (a, b) \cr
@@ -78,18 +94,31 @@ product of its arguments' counts:\tabular{ll}{
 }
 
 
-\code{\link[=inspect_grouping]{inspect_grouping()}} lists the sets any specification expands to, and
-\emph{Choose the grouping operation} in the \href{https://sayuks.github.io/marginplyr/vignettes/get_started.html}{Get started guide} works
-through each form.
+A \code{\link[=cube]{cube()}} lists its sets from the most dimensions to the fewest.
+\code{\link[=inspect_grouping]{inspect_grouping()}} lists the sets any specification expands to, in the
+order \code{.id} numbers them, and \emph{Choose the grouping operation} in
+\href{https://sayuks.github.io/marginplyr/vignettes/get_started.html#choose-the-grouping-operation}{Get started} works through each form.
+
+Combining forms can produce the same grouping set more than once. Every
+\code{\link[=rollup]{rollup()}} and \code{\link[=cube]{cube()}} contains the empty set, so
+\code{grouping_sets(rollup(a), rollup(b))} contains \verb{()} twice; \code{rollup(a, a)}
+gives (a) twice. Column order within a set does not distinguish it, so
+\code{grouping_sets(c(a, b), c(b, a))} also repeats one set, while a column
+written twice within one set counts once: \code{grouping_set(a, a)} is the
+single set (a). Margin verbs and \code{\link[=inspect_grouping]{inspect_grouping()}} refuse a repeated set
+unless \code{.duplicates} says to drop or keep it, naming the set; a column one
+\code{\link[=rollup]{rollup()}} or \code{\link[=cube]{cube()}} selects in more than one argument is refused as that
+instead.
 
 A column that belongs in every grouping set, such as a reporting month, is
 best passed as the Margin verb's \code{.by}. Written inside \code{\link[=grouping_spec]{grouping_spec()}}
-it is a grouping dimension instead, so the plan has no Grand total set and
-\code{\link[=share_of_total]{share_of_total()}} and \code{\link[=share_of_parent]{share_of_parent()}} are refused.
+it is a Margin dimension instead, as every column \code{.grouping} selects is, so
+the plan has no Grand total set and \code{\link[=share_of_total]{share_of_total()}} and
+\code{\link[=share_of_parent]{share_of_parent()}} are refused.
 
 A resolved Grouping plan can be read back in four ways: \code{.id},
 \code{\link[=inspect_grouping]{inspect_grouping()}}\verb{$set_id}, \code{\link[=grouping_bit]{grouping_bit()}}, and \code{\link[=grouping_id]{grouping_id()}}.
-\code{\link[=grouping_bit]{grouping_bit()}} compares them; the \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide} works
+\code{\link[=grouping_bit]{grouping_bit()}} compares them; \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{Grouping identity} works
 through the same values with executable examples.
 }
 \section{How an argument is read}{
@@ -140,7 +169,7 @@ value: after \code{s <- grouping_set(region)}, write
 under the same name makes \code{s} refer to the new specification itself.
 Reusing a specification in independent branches is allowed.
 
-A Grouping dimension keeps its input column name. Inside a selection,
+A Margin dimension keeps its input column name. Inside a selection,
 \code{c(region = region)} and \code{all_of(c(region = "region"))} both select \code{region}
 under its own name. A selection that changes the name, such as
 \code{c(area = region)}, is refused. Rename the result with \code{\link[dplyr:rename]{dplyr::rename()}}.
@@ -149,6 +178,14 @@ Constructors take positional arguments, so \code{rollup(region = region)} and
 \code{rollup(area = region)} both raise errors. A call such as
 \code{rollup(region, .by = year)} reports \code{.by} as a named constructor argument.
 Pass \code{.by = year} to the Margin verb.
+
+data.table exports its own \code{rollup()} and \code{cube()}, so attaching it after
+marginplyr masks these two constructors. A \code{.grouping} that reaches
+data.table's function, directly or nested inside another constructor, is
+refused with an error naming \code{data.table::rollup()} or
+\code{data.table::cube()}. Write \code{marginplyr::rollup()} and
+\code{marginplyr::cube()}, or attach marginplyr after data.table and write
+\code{data.table::rollup()} for data.table's own.
 }
 
 \examples{
@@ -243,6 +280,17 @@ summarize_with_margins(
     dplyr::all_of(c("product", "channel"))
   )
 )
+
+# A function of your own forwards its caller's columns into a constructor,
+# here through `...`; `{{ }}` and `all_of()` work the same way.
+revenue_report <- function(data, ...) {
+  summarize_with_margins(
+    data,
+    revenue = sum(revenue),
+    .grouping = rollup(...)
+  )
+}
+revenue_report(retail_sales, region, store)
 
 # A simulated PostgreSQL table shows the native GROUPING SETS translation
 # without requiring a database server.

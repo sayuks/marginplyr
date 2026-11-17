@@ -14,15 +14,35 @@ date: last-modified
 ---
 
 marginplyr creates the grouping sets requested by a Grouping specification; it
-does not create unobserved values within those sets. Complete absent keys
-before a Margin operation when synthetic facts should participate in detail,
-subtotal, and grand-total summaries. Replace values after a summary when the
-change is only for display.
+does not create unobserved values within those sets. A key absent from the
+input is absent from every level of the result, and what to do about it
+depends on which of three results you want:
+
+- **Synthetic facts count.** Complete the input before the Margin operation,
+  so the inserted rows participate in detail, subtotal, and grand-total
+  summaries.
+- **A row for every key, but no synthetic fact in any number.** Complete the
+  input, restrict each aggregate to observed facts with a marker column, and
+  replace the empty result after the summary.
+- **Only relabel rows the summary already has.** Change them with `mutate()`
+  after the summary; nothing needs completing.
 
 If grouping sets are new to you, read [Get
 started](https://sayuks.github.io/marginplyr/vignettes/get_started.html)
 first. It introduces the Grouping specifications, Margin labels, and Margin
 operations this guide assumes.
+
+Install marginplyr from GitHub:
+
+```{r}
+#| eval: false
+
+install.packages("pak")
+pak::pkg_install("sayuks/marginplyr")
+
+# Used for completion and for the database sections of this guide.
+install.packages(c("tidyr", "DBI", "RSQLite"))
+```
 
 ```{r setup}
 #| message: false
@@ -31,13 +51,16 @@ library(marginplyr)
 library(dplyr)
 ```
 
-Nothing beyond marginplyr's own dependencies is required. The tidyr and SQLite
-sections below need optional packages, so their chunks evaluate only when those
-packages are installed at the versions marginplyr asks for. Where a package is
-missing or too old the code is still shown, but its output is absent.
+The chunks that need these packages evaluate only when they are installed at
+the versions marginplyr asks for. Where a package is missing or too old the
+code is still shown, but its output is absent.
 
 ```{r}
 #| include: false
+
+# Base R translates its own diagnostics, and a rejected call shows them, so
+# the page carries English whatever locale it is rendered in.
+Sys.setenv(LANGUAGE = "en")
 
 # `marginplyr_suggest_available()` answers what a bare installation check
 # could not: whether the installed package satisfies the version DESCRIPTION
@@ -51,8 +74,8 @@ has_sqlite <- marginplyr_suggest_available("DBI") &&
 
 ## Complete local facts with `tidyr::complete()`
 
-This small fact table does not contain every product for every observed
-region-store relationship:
+The first case: synthetic facts count. This small fact table does not contain
+every product for every observed region-store relationship:
 
 ```{r}
 facts <- tibble(
@@ -98,14 +121,11 @@ completed_facts |>
   summarize_with_margins(
     rows = dplyr::n(),
     observed_facts = sum(is_fact),
-    units = sum(units),
     mean_per_key = mean(revenue),
     mean_per_fact = mean(revenue[is_fact]),
     .grouping = rollup(region, store, product),
-    .id = "occurrence"
-  ) |>
-  arrange(occurrence, region, store, product) |>
-  select(region, store, product, rows, observed_facts, starts_with("mean"))
+    .sort = "last"
+  )
 ```
 
 `rows` counts completed keys, while `observed_facts` counts only source facts.
@@ -114,9 +134,54 @@ The two means show that filling synthetic facts before a summary is a
 substantive modeling choice: `mean_per_key` averages the inserted zeros in,
 and `mean_per_fact` leaves them out.
 
-If the intended change is only presentational — a row for every key, but no
-synthetic fact in any summary — the rows still come from the completed input,
-because a summary has no row for a key it never saw. What keeps the synthetic
+## Keep unused factor levels
+
+A factor level that no row uses is an absent key too. Grouping by it with
+`group_by(.drop = FALSE)` does not carry it into a Margin operation: the input
+is rejected, because empty groups cannot be preserved on every backend.
+
+```{r}
+#| error: true
+#| purl: false
+
+sales <- tibble(
+  region = factor(c("East", "West"), levels = c("East", "West", "North")),
+  product = "Laptop",
+  revenue = c(100, 200)
+)
+
+sales |>
+  group_by(region, .drop = FALSE) |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    .grouping = rollup(product)
+  )
+```
+
+This is the first case again. `tidyr::complete()` expands a factor column to
+every level, used or not, so complete the input and name the fixed key with
+`.by` instead:
+
+```{r}
+#| eval: !expr has_tidyr
+
+sales |>
+  tidyr::complete(region, product, fill = list(revenue = 0)) |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    .by = region,
+    .grouping = rollup(product),
+    .sort = "last"
+  )
+```
+
+North now has a zero-revenue detail row and a zero subtotal.
+
+## Show every key without counting synthetic facts
+
+The second case — a row for every key, but no synthetic fact in any number —
+still takes its rows from the completed input, because a summary has no row
+for a key it never saw. What keeps the synthetic
 facts out is the summary expression: `mean(revenue[is_fact])` averages only
 the observed facts, so a completed key with none averages an empty selection
 and reports `NaN`. Replace that afterwards, as `coalesce()` replaces any
@@ -137,9 +202,10 @@ observed_summary |>
 
 Three detail rows change; every subtotal and the grand total keep the value
 they were summarized to, because that `mutate()` adds no fact rows and alters
-no existing aggregate.
+no existing aggregate. The third case, relabeling, is a `mutate()` of the
+same kind: it changes rows the summary already has and adds none.
 
-Completing the finished Margin result instead does not work.
+Completing the finished Margin result to add rows does not work.
 `tidyr::complete()` takes each Margin label for one more value of its column,
 so it crosses the labels with real values and invents rows that no grouping
 set produced, each filled with a made-up zero:
@@ -182,15 +248,15 @@ distinct counts overlap, and medians do not combine.
 A Grouping specification declares which grouping sets exist, not the value
 domain of each dimension. `share_of_parent()` and `share_of_total()` hold the
 same line: *Value rules* in the [`share_of_parent()`
-reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html) states
+reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html#value-rules) states
 that neither ever completes keys, so a denominator with no row behind it gives
 `NA_real_` rather than a number.
 
 ## Union an explicit scaffold with observed keys
 
-Sometimes the requested domain is an explicit relation rather than a regular
-cross product. Union it with observed keys before joining so facts outside the
-scaffold are not accidentally discarded:
+Sometimes, in the first case, the requested domain is an explicit relation
+rather than a regular cross product. Union it with observed keys before
+joining so facts outside the scaffold are not accidentally discarded:
 
 ```{r}
 requested_keys <- tribble(
@@ -221,12 +287,7 @@ other summaries must distinguish those rows.
 
 ## Complete keys on a database connection
 
-Use ordinary lazy relations on the same connection. The domain comes from a
-dimension table and a union rather than from `tidyr::complete()`: dbplyr's
-`complete()` accepts only expressions over the table's own columns, so the
-literal `product = product_domain` used above fails with *Every expression
-must use at least one data column*. An existing dimension table is the
-natural source of a reusable key domain:
+Use ordinary lazy relations on the same connection:
 
 ```{r}
 #| message: false
@@ -241,6 +302,41 @@ facts_db <- copy_to(
   temporary = TRUE,
   overwrite = TRUE
 )
+```
+
+When the domain is the table's own observed values, `tidyr::complete()` works
+lazily, as it does locally. Every product here occurs somewhere in the facts,
+so completing against observed values gives the keys the first section did:
+
+```{r}
+#| eval: !expr has_sqlite && has_tidyr
+
+facts_db |>
+  mutate(is_fact = TRUE) |>
+  tidyr::complete(
+    tidyr::nesting(region, store),
+    product,
+    fill = list(is_fact = FALSE, units = 0L, revenue = 0)
+  ) |>
+  summarize_with_margins(
+    observed_facts = sum(is_fact, na.rm = TRUE),
+    revenue = sum(revenue, na.rm = TRUE),
+    .grouping = rollup(region, store, product),
+    .sort = "last"
+  ) |>
+  collect()
+```
+
+A value the table does not contain cannot come from `complete()`: dbplyr's
+`complete()` accepts only expressions over the table's own columns, so the
+literal `product = product_domain` used above fails with *Every expression
+must use at least one data column*. Take such a domain from a dimension table
+instead, and union it with the observed keys:
+
+```{r}
+#| message: false
+#| eval: !expr has_sqlite
+
 dimension_db <- copy_to(
   con,
   requested_keys,
@@ -274,8 +370,6 @@ completed_db |>
     .sort = "last"
   ) |>
   collect()
-
-DBI::dbDisconnect(con)
 ```
 
 The union, join, completion expressions, and Margin summary stay lazy until
@@ -286,31 +380,21 @@ that count them.
 
 ## Move local keys only when you ask to
 
+The dimension table above stands for one that already exists on the
+connection. A key table that exists only in R has to be moved there first, and
+the caller chooses how.
+
 For a small local key table, `dbplyr::copy_inline()` embeds the rows in the
 lazy SQL as a `VALUES` subquery. It creates no table, so it needs no
-permission to write one, but the query text grows with the number of keys:
+permission to write one, but the query text grows with the number of keys.
+`copy_to()` instead creates a temporary table that exists on the connection
+until it closes. Either result can take the place of `dimension_db` in the
+union above:
 
 ```{r}
-#| message: false
 #| eval: !expr has_sqlite
 
-con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
-facts_db <- copy_to(
-  con,
-  facts,
-  name = "facts",
-  temporary = TRUE,
-  overwrite = TRUE
-)
-
 inline_keys <- dbplyr::copy_inline(con, requested_keys)
-inline_query <- inline_keys |>
-  union(distinct(facts_db, region, store, product)) |>
-  left_join(
-    facts_db,
-    by = c("region", "store", "product")
-  )
-show_query(inline_query)
 
 reusable_keys <- copy_to(
   con,
@@ -319,22 +403,9 @@ reusable_keys <- copy_to(
   temporary = TRUE,
   overwrite = TRUE
 )
-reusable_query <- reusable_keys |>
-  union(distinct(facts_db, region, store, product)) |>
-  left_join(
-    facts_db,
-    by = c("region", "store", "product")
-  )
-show_query(reusable_query)
 
 DBI::dbDisconnect(con)
 ```
-
-Read the two renderings side by side. The inline query carries the key rows
-themselves — on SQLite, a zero-row `SELECT` joined by `UNION ALL` to a
-`VALUES` list, wrapped in the casts that give the columns their types — while
-the `copy_to()` query names `requested_keys`, a temporary table that now
-exists on the connection until it closes.
 
 Use explicit `dplyr::copy_to()` for a larger or reusable local key relation.
 It performs data movement at the line where the caller requested it.
@@ -344,7 +415,7 @@ completion data implicitly. Connection choice, data movement, and execution
 remain ordinary dplyr and dbplyr operations owned by the caller.
 
 Execution, not completion, is where each backend starts to impose rules of its
-own. [Database
+own. [Database and lazy
 backends](https://sayuks.github.io/marginplyr/vignettes/database_backends.html)
 takes the lazy pipeline from here through query shape, `collect()`, and what
 each backend is verified to do.

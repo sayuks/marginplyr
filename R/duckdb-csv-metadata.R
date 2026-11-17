@@ -567,9 +567,9 @@ abort_duckdb_view_metadata <- function() {
     "Can't safely determine column metadata for this DuckDB view.",
     i = "Its definition could hide source work while binding a zero-row query.",
     i = paste0(
-      "Supply established reader metadata directly, or collect the input ",
-      "explicitly with {.code dplyr::collect()} ",
-      "and pass the resulting data frame."
+      "Call {.code dplyr::compute()} on the input first, so the Margin verb ",
+      "reads the stored table, or call {.code dplyr::collect()} and pass the ",
+      "resulting data frame."
     )
   ))
 }
@@ -601,9 +601,9 @@ abort_duckdb_call_metadata <- function() {
       "during binding."
     ),
     i = paste0(
-      "Supply established reader metadata directly, or collect the input ",
-      "explicitly with {.code dplyr::collect()} ",
-      "and pass the resulting data frame."
+      "Call {.code dplyr::compute()} on the input first, so the Margin verb ",
+      "reads the stored table, or call {.code dplyr::collect()} and pass the ",
+      "resulting data frame."
     )
   ))
 }

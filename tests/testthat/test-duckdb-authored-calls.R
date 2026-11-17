@@ -685,3 +685,44 @@ test_that("translated pipelines without a caller macro keep typed metadata", {
     )$included, case[[2L]])
   }
 })
+
+# The remedy a caller can run comes first: `compute()` stores a table whose
+# columns are read from the catalog, which the refusal could not do (#1703).
+test_that("a refused DuckDB call or view names compute() as its remedy", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  DBI::dbWriteTable(con, "t", data.frame(g = c("a", "b"), v = c(1L, 2L)))
+  DBI::dbExecute(con, "CREATE MACRO doubled(x) AS (SELECT 2 * x)")
+  DBI::dbExecute(
+    con, "CREATE VIEW macro_view AS SELECT g, doubled(v) AS y FROM t"
+  )
+  t <- dplyr::tbl(con, "t")
+  inputs <- list(
+    call = dplyr::mutate(t, y = doubled(v)),
+    view = dplyr::tbl(con, "macro_view")
+  )
+  remedy <- paste0(
+    "Call `dplyr::compute()` on the input first, so the Margin verb reads ",
+    "the stored table, or call `dplyr::collect()` and pass the resulting ",
+    "data frame."
+  )
+  for (kind in names(inputs)) {
+    error <- expect_error(
+      inspect_grouping(
+        inputs[[kind]], .grouping = grouping_set(where(is.numeric))
+      ),
+      paste0("this DuckDB ", kind),
+      class = "marginplyr_error",
+      info = kind
+    )
+    expect_match(conditionMessage(error), remedy, fixed = TRUE, info = kind)
+    expect_no_match(conditionMessage(error), "reader metadata", info = kind)
+
+    stored <- dplyr::compute(inputs[[kind]])
+    included <- inspect_grouping(
+      stored, .grouping = grouping_set(where(is.numeric)), .format = "list"
+    )$included
+    expect_true("y" %in% included[[1L]], info = kind)
+  }
+})

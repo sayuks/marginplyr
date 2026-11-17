@@ -889,9 +889,9 @@ test_that("a lazy selection proxy resolves renames against its columns", {
   expect_identical(
     conditionMessage(error),
     paste0(
-      "Can't rename grouping dimension:\n",
+      "Can't rename Margin dimension:\n",
       "i `area = region`.\n",
-      "i Grouping dimensions must name existing columns."
+      "i Margin dimensions must name existing columns."
     )
   )
 })

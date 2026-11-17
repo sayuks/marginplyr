@@ -1147,7 +1147,7 @@ writeLines(
     ),
     paste0(
       "URL: https://app.codecov.io/gh/sayuks/marginplyr, ",
-      "https://contributor-covenant.org/version/2/1/CODE_OF_CONDUCT.html,"
+      "https://www.contributor-covenant.org/version/2/1/code_of_conduct/,"
     ),
     paste0(
       "    https://github.com/sayuks/marginplyr, ",

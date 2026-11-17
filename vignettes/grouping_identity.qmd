@@ -32,6 +32,14 @@ library(marginplyr)
 library(dplyr)
 ```
 
+```{r}
+#| include: false
+
+# Base R translates its own diagnostics, and a rejected call shows them, so
+# the page carries English whatever locale it is rendered in.
+Sys.setenv(LANGUAGE = "en")
+```
+
 ## Four related values
 
 Four interfaces answer those two questions. `.id` and
@@ -40,18 +48,29 @@ Four interfaces answer those two questions. `.id` and
 therefore distinguish repeated identical sets, and a Grouping identifier
 deliberately cannot.
 
+Repeat one grouping set and keep both occurrences:
+
+```{r}
+retail_sales |>
+  filter(year == 2026L, month == "Jan") |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    absence = grouping_id(region),
+    .grouping = grouping_sets(region, region),
+    .duplicates = "keep",
+    .id = "occurrence"
+  )
+```
+
+`occurrence` is `1` for the first `(region)` set and `2` for the second, while
+`absence` is `0` for both: nothing is absent from either, so their Grouping
+identifier is the same.
+
 The [`grouping_bit()`
 reference](https://sayuks.github.io/marginplyr/man/grouping_bit.html)
 compares all four values side by side and states their duplicate-occurrence
 rules. The rest of this article works through what that comparison means in
 practice.
-
-Local frames and dtplyr return integer Grouping bits and identifiers. Remote
-backends may use integer or double representations. A direct helper summary,
-including a supported literal `across()` lambda returning the helper, stays
-numeric when a Margin result has zero rows and is directly collected or
-materialized. An enclosing arithmetic or conversion expression and a later
-lazy transformation use their own type rules.
 
 ## Why a rollup skips Grouping identifier 2
 
@@ -137,66 +156,22 @@ differently ordered or deduplicated Grouping specifications.
 
 ## Inspect a Grouping plan as data
 
-`inspect_grouping()` returns an ordinary local, ungrouped tibble. It does not
-aggregate source rows, even when `.data` is a lazy table. This makes the plan
-easy to view in an IDE, transform with dplyr, export, or snapshot-test:
+`inspect_grouping()` returns the plan as an ordinary local tibble without
+aggregating source rows, so its `set_id` and `grouping_id` columns can be
+filtered like any other data:
 
 ```{r}
-class(rollup_plan)
-group_vars(rollup_plan)
-
 rollup_plan |>
   filter(grouping_id != 0L) |>
-  select(set_id, included, omitted, grouping_id)
+  select(set_id, omitted, grouping_id)
 ```
 
-The default `.format = "text"` avoids opaque list-column cells in IDE table
-viewers. Use `.format = "list"` when exact names or programmable vectors
-matter:
-
-```{r}
-rollup_list <- inspect_grouping(
-  .data = retail_sales,
-  .grouping = rollup(region, store),
-  .format = "list"
-)
-
-rollup_list$omitted
-rollup_list$grouping_bits
-```
-
-The list format stores `fixed`, `included`, and `omitted` as character
-list-columns and `grouping_bits` as a named integer-vector list-column. The
-text form is for display, not serialization.
-
-`grouping_id` uses an R integer and is available through 31 variable
-dimensions. Beyond that limit it is `NA_integer_`; `grouping_bits` remains
-complete:
-
-```{r}
-wide_data <- as.data.frame(
-  stats::setNames(rep(list(1), 32L), sprintf("x%02d", 1:32))
-)
-wide_plan <- inspect_grouping(
-  .data = wide_data,
-  .grouping = rollup(everything()),
-  .format = "list"
-)
-
-wide_plan |>
-  slice(1L) |>
-  transmute(
-    number_of_bits = lengths(grouping_bits),
-    grouping_id
-  )
-```
-
-This is a backend-independent Grouping plan, not a database execution plan.
-Use `show_query()` for generated SQL and database-native tooling for optimizer
-plans. [Database and lazy
+The [`inspect_grouping()`
+reference](https://sayuks.github.io/marginplyr/man/inspect_grouping.html)
+describes its text and list formats and the 31-dimension limit of
+`grouping_id`. [Database and lazy
 backends](https://sayuks.github.io/marginplyr/vignettes/database_backends.html)
-renders the SQL one of these plans becomes, on a dialect with native grouping
-sets and on one without.
+renders the SQL one of these plans becomes.
 
 ## Margin labels are display values
 
@@ -267,7 +242,7 @@ factor_result |>
 
 The structural flag, rather than the printed value, distinguishes a source
 missing value from the typed-missing Margin value. See the
-[`summarize_with_margins()` reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html#display-labels-and-grouping-identity)
+[`margin_verbs` reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html#display-labels-and-grouping-identity)
 for the complete eight-case `NA_character_`/`NULL` factor table, ordered-factor
 preservation, unused-level checks, and label positioning.
 
@@ -305,7 +280,7 @@ total set, the grouping set in which every dimension is omitted, so it is
 defined for any plan containing one rather than for a rollup alone. See the
 [`share_of_parent()` reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html)
 for both helpers' value, source-summary, ordering, and `across()` rules, and
-[Compare a row with an ancestor
-level](https://sayuks.github.io/marginplyr/vignettes/recipes.html#compare-a-row-with-an-ancestor-level)
+[Show each row as a percent of a level further
+up](https://sayuks.github.io/marginplyr/vignettes/recipes.html#show-each-row-as-a-percent-of-a-level-further-up)
 for a denominator neither helper reaches, which a caller assembles from the
 same identity values.

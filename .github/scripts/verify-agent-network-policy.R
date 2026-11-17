@@ -3,8 +3,7 @@
 # Codex uses full proxy mode
 # because gh sends GraphQL POST requests; the host allowlist still applies.
 # Preflight hosts come from R's standard repositories and the URLs in the
-# current package candidate. A redirect the candidate currently follows is
-# named beside its source URL so deleting that URL also deletes the exception.
+# current package candidate.
 #
 # Run it locally with:
 #
@@ -157,20 +156,9 @@ candidate_urls <- unique(c(
   markdown_urls(file.path(repository_path, c("README.md", "NEWS.md")))
 ))
 
-redirect_source <- paste0(
-  "https://contributor-covenant.org/version/2/1/",
-  "CODE_OF_CONDUCT.html"
-)
-if (!redirect_source %in% candidate_urls) {
-  stop(
-    "The recorded candidate redirect no longer has its source URL.",
-    call. = FALSE
-  )
-}
 required_domains <- sort(unique(c(
   url_hosts(standard_urls),
-  url_hosts(candidate_urls),
-  "www.contributor-covenant.org"
+  url_hosts(candidate_urls)
 )))
 json_setup <- new.env(parent = baseenv())
 sys.source(file.path(repository_path, "tools", "duckdb-json.R"), json_setup)

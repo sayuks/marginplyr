@@ -10,10 +10,11 @@ grouping_bit(x)
 grouping_id(...)
 }
 \arguments{
-\item{x}{A bare grouping column.}
+\item{x}{A bare Margin dimension -- a column \code{.grouping} selects -- or a
+fixed \code{.by} key, whose bit is always \code{0L}.}
 
-\item{...}{Bare grouping columns. Passing none reads every \code{.grouping}
-column of the resolved plan.}
+\item{...}{Bare Margin dimensions or fixed \code{.by} keys. Passing none reads
+every Margin dimension of the resolved plan.}
 }
 \value{
 Used inside \code{\link[=summarize_with_margins]{summarize_with_margins()}}, one value per result row.
@@ -28,16 +29,21 @@ as a double; \emph{How the value is computed} says where.
 grouping set from ordinary missing values in the source data.
 }
 \details{
+Like every contextual helper, they are refused outside that verb, including
+in a later \code{\link[dplyr:filter]{dplyr::filter()}} of its result. To keep or drop subtotal rows,
+store the helper as a summary column and filter on that column, as the
+first example does.
+
 \code{\link[=grouping_bit]{grouping_bit()}} corresponds to SQL \code{GROUPING(x)}: it returns \code{1L} when
 \code{x} is absent from the grouping set and \code{0L} otherwise.
 \code{\link[=grouping_id]{grouping_id()}} combines those flags as a bit mask; its last argument is
-the least-significant bit. It accepts up to 31 distinct grouping columns.
+the least-significant bit. It accepts up to 31 distinct columns.
 
-Written with no columns, \code{\link[=grouping_id]{grouping_id()}} reads every \code{.grouping} column of
-the resolved plan, in plan order. That is the order \code{\link[=inspect_grouping]{inspect_grouping()}}
-reports, so a bare \code{\link[=grouping_id]{grouping_id()}} equals that function's \code{grouping_id} for
-the grouping set the row came from. Columns fixed by \code{.by} are not part of
-that default.
+Written with no columns, \code{\link[=grouping_id]{grouping_id()}} reads every Margin dimension --
+each column \code{.grouping} selects -- of the resolved plan, in plan order. That
+is the order \code{\link[=inspect_grouping]{inspect_grouping()}} reports, so a bare \code{\link[=grouping_id]{grouping_id()}} equals
+that function's \code{grouping_id} for the grouping set the row came from.
+Columns fixed by \code{.by} are not part of that default.
 
 The \verb{_bit} suffix emphasizes the \code{0}/\code{1} result and deliberately avoids
 masking \code{\link[base:grouping]{base::grouping()}}, an unrelated function that returns a permutation
@@ -65,33 +71,45 @@ The correspondence between \code{.id} and \code{set_id} holds for one resolved \
 \code{.grouping}, and \code{.duplicates}. Reordering or deduplicating a Grouping
 specification changes both, so \code{.id} is not a durable business key.
 
-Grouping identifiers encode absence and need not be consecutive. A
-\code{rollup(region, store)} plan therefore has \code{.id} values \code{1L}, \code{2L}, and
-\code{3L} but \code{\link[=grouping_id]{grouping_id()}} values \code{0L}, \code{1L}, and \code{3L}: identifier \code{2} would
-mean \code{region} absent while \code{store} remains, which the declared hierarchy
-never produces. A \code{cube(region, store)} plan contains every mask, so its
-identifiers are \code{0L}, \code{1L}, \code{2L}, and \code{3L}.
+Grouping identifiers, the values \code{\link[=grouping_id]{grouping_id()}} returns, encode absence
+and need not be consecutive. A \code{rollup(region, store)} plan therefore has
+\code{.id} values \code{1L}, \code{2L}, and \code{3L} but \code{\link[=grouping_id]{grouping_id()}} values \code{0L}, \code{1L},
+and \code{3L}: identifier \code{2} would mean \code{region} absent while \code{store} remains,
+which the declared hierarchy never produces. A \code{cube(region, store)} plan
+contains every mask, so its identifiers are \code{0L}, \code{1L}, \code{2L}, and \code{3L}.
 
-Neither value records physical row order. Call \code{\link[dplyr:arrange]{dplyr::arrange()}} whenever
-presentation order matters.
+Neither value records physical row order. Pass \code{.sort} to a Margin verb for
+margins next to the rows they summarize; see \emph{\link[=margin_verbs]{Margin order}}
+in \link{margin_verbs}. Call \code{\link[dplyr:arrange]{dplyr::arrange()}} for any order \code{.sort} does not
+express.
 
 Displayed Margin labels are not identity. A source value can equal its
 Margin label, and a source missing value can print exactly like a
 typed-missing Margin value, so retain one of these helpers or \code{.id} when
-structural identity matters. The complete label, factor, and missing-value
-contract is \emph{\link[=summarize_with_margins]{Display labels and grouping identity}}
-in \code{\link[=summarize_with_margins]{summarize_with_margins()}}.
+the two must be told apart. The complete label, factor, and missing-value
+contract is \emph{\link[=margin_verbs]{Display labels and grouping identity}} in
+\link{margin_verbs}.
 
-The \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide} works through these values with
-executable examples.
+\href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{Grouping identity} works through these values with executable
+examples.
+}
 
-A function of your own may forward the column its caller wrote by injecting
-it: \code{!!rlang::enquo(col)} is accepted wherever a bare column is, and so is
-\code{!!rlang::ensym(col)}. Only the name is read. It is resolved against the
-Grouping plan, as every bare column here is, so the environment
-\code{\link[rlang:enquo]{rlang::enquo()}} captured is not consulted and an injection carrying
+\section{Forwarding a column from your own function}{
+
+A function of your own forwards the column its caller wrote by embracing
+it, as it would for dplyr: \code{grouping_bit({{ col }})}. The spellings \code{{{ }}}
+abbreviates, \code{!!rlang::enquo(col)} and \code{!!rlang::ensym(col)}, are accepted
+too, and a column name held as a string is injected as
+\code{!!rlang::sym(name)}. Only the name is read. It is resolved against the
+Grouping plan, as every bare column here is, so the environment the
+caller's expression came from is not consulted and an injection carrying
 anything but a name is refused exactly where writing that expression out
 would be.
+
+\emph{Call a Margin verb from your own function} in
+\href{https://sayuks.github.io/marginplyr/vignettes/recipes.html#call-a-margin-verb-from-your-own-function}{Recipes for common reporting tasks} forwards grouping columns,
+a measure, and a fixed key into a Margin verb by each of these routes, and
+passes a Grouping specification as an argument.
 }
 
 \section{How the value is computed}{
@@ -115,7 +133,9 @@ aggregate whose argument varies with rows only through a helper, such as
 \code{sum(grouping_id(a, b))}, aggregates a constant and follows its
 backend: it counts the constant once per group on a local data frame and
 in \code{dtplyr}, and once per row wherever the helper is a query literal, as
-plain \code{sum(1)} differs between a data frame and a database table. Combine
+plain \code{sum(1)} differs between a data frame and a database table. Arrow is
+the exception: it cannot aggregate the constant, so the summary is refused
+until the Arrow input is collected. Combine
 the helper with a column that varies by row, as in
 \code{sum(v * grouping_id(a, b))}, or put it outside the aggregate, as in
 \code{n() * grouping_id(a, b)}, for a value that agrees everywhere.
@@ -131,7 +151,7 @@ transformations follow the type rules of their backend.
 \examples{
 # Online-direct sales have a source NA store. grouping_bit(store) is 0 for
 # that detail row but 1 when ROLLUP removes store to create a subtotal.
-summarize_with_margins(
+by_store <- summarize_with_margins(
   .data = dplyr::filter(retail_sales, year == 2026L, month == "Jan"),
   revenue = sum(revenue),
   # Always 0 for a `.by` column, which no grouping set removes.
@@ -141,10 +161,15 @@ summarize_with_margins(
   .by = year,
   .grouping = rollup(region, store)
 )
+by_store
+
+# Keep only the store rows by filtering on the stored column; the helper
+# itself is refused outside summarize_with_margins().
+dplyr::filter(by_store, store_is_total == 0L)
 
 # Keeping typed missing values makes the Grouping bits essential: a source
-# missing store and a generated store margin both print as NA even though
-# their structural identities differ.
+# missing store and a generated store margin both print as NA, and only the
+# margin's Grouping bit is 1.
 summarize_with_margins(
   .data = dplyr::filter(retail_sales, year == 2026L, month == "Jan"),
   revenue = sum(revenue),

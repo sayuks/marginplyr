@@ -3,6 +3,10 @@ validate_grouping_spec_early <- function(grouping_spec) {
     return(invisible(NULL))
   }
   if (!inherits(grouping_spec, "margin_grouping_spec")) {
+    if (is.character(grouping_spec) && length(grouping_spec) > 0L &&
+          !anyNA(grouping_spec)) {
+      abort_grouping_strings(grouping_spec)
+    }
     abort_marginplyr(paste0(
       "{.arg .grouping} must be created with ",
       "{.or {.fun {grouping_constructor_names()}}}."
@@ -13,8 +17,7 @@ validate_grouping_spec_early <- function(grouping_spec) {
   # a name and not the value it was read off (#280).
   kind <- grouping_kind_name(grouping_spec_kind(grouping_spec))
   # A catch of its own, because the two fields are not read together: an object
-  # can refuse one while answering the other, and this is the only reader of
-  # `args` before the guard below has run.
+  # can refuse one while answering the other.
   args <- tryCatch(grouping_spec$args, error = function(cnd) NULL)
   if (is.null(kind) || !is.list(args)) {
     abort_invalid_grouping_spec()
@@ -31,20 +34,94 @@ validate_grouping_spec_early <- function(grouping_spec) {
 
 # The value of a nonempty `.grouping`. A failed evaluation of a column written
 # where a specification belongs -- `region`, or `c(region, store)` -- is
-# answered with the constructor remedy; every other failure, including one
+# answered with the constructor remedy, which carries no cause: the failed
+# lookup of the column is what it explains. Every other failure, including one
 # raised inside a caller's own specification builder, propagates untouched,
 # which is why the handler is a calling one. It runs only after evaluation has
 # failed, so a specification bound to a name that is also a column still
 # reaches the caller's value.
+#
+# A failure, or a value that is not a specification, from a constructor name
+# another package's function answers to is answered with the qualified
+# spelling instead (#1700).
 eval_grouping_argument <- function(grouping_quo, .data) {
-  withCallingHandlers(
+  value <- withCallingHandlers(
     rlang::eval_tidy(grouping_quo),
     error = function(cnd) {
+      check_masked_constructor(grouping_quo)
       columns <- written_grouping_columns(grouping_quo, .data)
       if (!is.null(columns)) {
-        abort_grouping_columns(columns, cnd)
+        abort_grouping_columns(columns)
       }
     }
+  )
+  if (!inherits(value, "margin_grouping_spec")) {
+    check_masked_constructor(grouping_quo)
+  }
+  value
+}
+
+# The package whose function a constructor-spelled call names, by the ordinary
+# lookup R gives a call head from `env` (ADR 0019): `"marginplyr"` for a
+# qualified spelling or marginplyr's own function, the namespace's name for a
+# function a package namespace encloses, and `NULL` for anything else -- a call
+# that is not a constructor spelling, a caller's own function, or a name
+# nothing binds to a function.
+grouping_constructor_owner <- function(expr, env) {
+  name <- static_spelling_name(expr, "grouping_constructor")
+  if (is.null(name)) {
+    return(NULL)
+  }
+  if (!is.null(static_call_ns(expr))) {
+    return("marginplyr")
+  }
+  fn <- get0(name, envir = env, mode = "function")
+  if (identical(fn, get(name, envir = asNamespace("marginplyr")))) {
+    return("marginplyr")
+  }
+  if (!is.function(fn) || is.primitive(fn)) {
+    return(NULL)
+  }
+  owner <- topenv(environment(fn))
+  if (!isNamespace(owner)) {
+    return(NULL)
+  }
+  # Read by name, because testthat evaluates a test in a clone of this
+  # namespace, and any other function enclosed there is a caller's.
+  package <- unname(getNamespaceName(owner))
+  if (identical(package, "marginplyr")) {
+    return(NULL)
+  }
+  package
+}
+
+# Refuses a constructor-spelled call another package's function answers to.
+# `quo` is the caller's quosure, read through any quosure it wraps, so the name
+# is looked up where it is evaluated; the caller holds a failure or a value
+# that is not a specification. The refusal carries no cause, because the
+# masking function's failure explains nothing the qualified spelling does not.
+check_masked_constructor <- function(quo) {
+  expr <- quo
+  while (rlang::is_quosure(expr)) {
+    env <- rlang::quo_get_env(expr)
+    expr <- rlang::quo_get_expr(expr)
+  }
+  owner <- grouping_constructor_owner(expr, env)
+  if (is.null(owner) || identical(owner, "marginplyr")) {
+    return(invisible(NULL))
+  }
+  # Read only from the cli template below, which codetools cannot see.
+  name <- static_call_name(expr)
+  masked <- paste0(owner, "::", name) # nolint: object_usage_linter.
+  qualified <- paste0("marginplyr::", name) # nolint: object_usage_linter.
+  abort_marginplyr(
+    c(
+      paste0(
+        "{.fun {name}} in {.arg .grouping} resolves to {.fun {masked}}, ",
+        "not to marginplyr's constructor."
+      ),
+      i = "Write {.fun {qualified}} to build a Grouping specification."
+    )
   )
 }
 
@@ -79,7 +156,29 @@ written_grouping_columns <- function(grouping_quo, .data) {
   columns
 }
 
-abort_grouping_columns <- function(columns, parent) {
+# Column names given as strings where a specification belongs. The rewrite is
+# the constructor call that selects them, deparsed from the values rather than
+# from the caller's expression, which may be a variable.
+abort_grouping_strings <- function(values) {
+  attributes(values) <- NULL
+  # Read only from the cli template below, which codetools cannot see.
+  # nolint start: object_usage_linter.
+  rewrite <- deparse1(call("rollup", call("all_of", values)))
+  # nolint end
+  abort_marginplyr(c(
+    paste0(
+      "{.arg .grouping} must be created with ",
+      "{.or {.fun {grouping_constructor_names()}}}."
+    ),
+    i = "A character vector was supplied: {.val {values}}.",
+    i = paste0(
+      "Select the columns it names inside a constructor, for example ",
+      "{.code {rewrite}}."
+    )
+  ))
+}
+
+abort_grouping_columns <- function(columns) {
   # Read only from the cli template below, which codetools cannot see.
   written <- paste( # nolint: object_usage_linter.
     vapply(lapply(columns, as.name), rlang::as_label, character(1)),
@@ -96,8 +195,7 @@ abort_grouping_columns <- function(columns, parent) {
         "wrapped in a constructor, for example {.code rollup({written})} or ",
         "{.code grouping_sets({written})}."
       )
-    ),
-    parent = parent
+    )
   )
 }
 
@@ -232,6 +330,12 @@ resolve_by_selection <- function(by_quo, data_proxy) {
           rlang::as_label(rlang::quo_get_expr(by_quo)),
           cnd
         )
+      }
+      computed <- computed_selection_leaf(
+        rlang::quo_get_expr(by_quo), selection_proxy_names(data_proxy)
+      )
+      if (!is.null(computed)) {
+        abort_computed_by(computed)
       }
       stop(cnd)
     }
@@ -1489,7 +1593,12 @@ validate_leading_selections <- function(
       completed <- unlist(resolved$completed, recursive = FALSE)
       keys <- grouping_set_keys(completed, resolved$dimensions)
       validate_unique_grouping_sets(keys, duplicates_choices,
-                                    complete = complete)
+                                    complete = complete,
+                                    key_label = function(key) {
+                                      grouping_key_label(
+                                        key, resolved$dimensions
+                                      )
+                                    })
       return(invisible(resolved$dimensions))
     }
     completed <- unlist(resolved$completed, recursive = FALSE)
@@ -1517,7 +1626,17 @@ validate_leading_selections <- function(
     set_ids <- c(seq_along(completed),
                  length(completed) + resolved$offset + pending_ids)
     validate_unique_grouping_sets(keys, duplicates_choices, set_ids,
-                                  complete = complete)
+                                  complete = complete,
+                                  # A completed set's key is its membership
+                                  # behind a `0`; a pending prefix's names no
+                                  # whole set.
+                                  key_label = function(key) {
+                                    if (startsWith(key, "0")) {
+                                      grouping_key_label(
+                                        substring(key, 2L), dimensions
+                                      )
+                                    }
+                                  })
   }
   invisible(resolved$dimensions)
 }
@@ -2039,7 +2158,10 @@ compile_grouping_spec_impl <- function(preflight,
   )
   keys <- grouping_set_keys(normalized, dimensions)
   if (identical(.duplicates, "error")) {
-    validate_unique_grouping_sets(keys, duplicates_choices)
+    validate_unique_grouping_sets(keys, duplicates_choices,
+                                  key_label = function(key) {
+                                    grouping_key_label(key, dimensions)
+                                  })
   }
 
   if (identical(.duplicates, "drop")) {
@@ -2091,20 +2213,26 @@ grouping_set_key <- function(set, dimensions) {
 # `complete` says the keys are every occurrence of the plan, so their groups
 # are its whole duplicate partition; otherwise the group holding the earliest
 # position is reported as an example.
+#
+# `key_label` names the set a key encodes, or answers `NULL` for a key that
+# carries more than membership; the repeated set is named wherever every
+# reported key has a name.
 validate_unique_grouping_sets <- function(keys, duplicates_choices,
                                           set_ids = seq_along(keys),
-                                          complete = TRUE) {
-  abort_plan_witness <- function(positions) {
+                                          complete = TRUE,
+                                          key_label) {
+  abort_plan_witness <- function(positions, key) {
     abort_duplicate_witness(
       list(family = "the grouping plan", positions = positions),
-      duplicates_choices
+      duplicates_choices,
+      set = key_label(key)
     )
   }
   if (length(keys) > duplicate_report_limit) {
     repeated <- anyDuplicated(keys)
     if (repeated > 0L) {
       original <- match(keys[[repeated]], keys)
-      abort_plan_witness(set_ids[c(original, repeated)])
+      abort_plan_witness(set_ids[c(original, repeated)], keys[[repeated]])
     }
     return(invisible(NULL))
   }
@@ -2113,9 +2241,12 @@ validate_unique_grouping_sets <- function(keys, duplicates_choices,
     return(invisible(NULL))
   }
   groups <- split(set_ids[duplicate_keys], keys[duplicate_keys])
-  if (!complete) {
+  sets <- lapply(names(groups), key_label)
+  # A partition holding a key no set names is reported as an incomplete pass's
+  # is, by one example, rather than with a gap in the sets it names.
+  if (!complete || !all(lengths(sets) == 1L)) {
     earliest <- which.min(vapply(groups, min, numeric(1)))
-    abort_plan_witness(sort(groups[[earliest]]))
+    abort_plan_witness(sort(groups[[earliest]]), names(groups)[[earliest]])
   }
   # Each group is already comma-joined. Join groups here to preserve that
   # formatting through cli; codetools cannot see the use in its template.
@@ -2131,12 +2262,33 @@ validate_unique_grouping_sets <- function(keys, duplicates_choices,
       "{cli::qty(length(groups))}{?positions/position groups}:"
     ),
     i = "{positions}.",
+    i = "{cli::qty(length(sets))}Repeated set{?s}: {.code {unlist(sets)}}.",
     i = "Use {.or {.code {duplicate_alternatives(duplicates_choices)}}}."
   ))
 }
 
-# Show two positions with the same membership in the named family.
-abort_duplicate_witness <- function(witness, duplicates_choices) {
+# A membership key over `dimensions` as the set it encodes, spelled as the
+# guides spell a grouping set: `(region, store)`, and `()` for the empty one.
+grouping_key_label <- function(key, dimensions) {
+  members <- dimensions[strsplit(key, "", fixed = TRUE)[[1L]] == "1"]
+  labels <- vapply(
+    lapply(members, as.name), deparse, character(1), backtick = TRUE
+  )
+  paste0("(", paste(labels, collapse = ", "), ")")
+}
+
+# Show two positions with the same membership in the named family, and the set
+# they share where `set` names it.
+abort_duplicate_witness <- function(witness, duplicates_choices, set = NULL) {
+  if (!is.null(set)) {
+    abort_marginplyr(c(
+      paste0("Duplicate grouping sets were produced. For example, these ",
+             "positions in {witness$family} have the same set:"),
+      i = "{paste(witness$positions, collapse = ', ')}.",
+      i = "Repeated set: {.code {set}}.",
+      i = "Use {.or {.code {duplicate_alternatives(duplicates_choices)}}}."
+    ))
+  }
   abort_marginplyr(c(
     paste0("Duplicate grouping sets were produced. For example, these ",
            "positions in {witness$family} have the same set:"),
@@ -2296,6 +2448,9 @@ resolve_grouping_units <- function(preflight, resolve_selection) {
 expand_rollup <- function(preflight, resolve_selection, emit, drop_duplicates,
                           duplicate) {
   units <- resolve_grouping_units(preflight, resolve_selection)
+  if (!is.null(duplicate)) {
+    check_repeated_grouping_units(units, "rollup")
+  }
   family <- lapply(
     rev(seq.int(0L, length(units))),
     function(n) {
@@ -2309,6 +2464,9 @@ expand_rollup <- function(preflight, resolve_selection, emit, drop_duplicates,
 expand_cube <- function(preflight, resolve_selection, emit, drop_duplicates,
                         duplicate) {
   units <- resolve_grouping_units(preflight, resolve_selection)
+  if (!is.null(duplicate)) {
+    check_repeated_grouping_units(units, "cube")
+  }
   if (drop_duplicates) {
     return(emit_grouping_family(distinct_cube_sets(units), emit))
   }
@@ -2323,6 +2481,23 @@ expand_cube <- function(preflight, resolve_selection, emit, drop_duplicates,
     }
   }
   emit_grouping_family(cube_grouping_family(units), emit)
+}
+
+# A unit equal to an earlier one repeats a grouping set in a `rollup()` and in a
+# `cube()` alike, so under `.duplicates = "error"` the repeat is named as the
+# argument the caller wrote twice: the duplicate-set refusal's `.duplicates`
+# remedy would hide it.
+check_repeated_grouping_units <- function(units, constructor) {
+  repeated <- which(duplicated(lapply(units, sort)))
+  if (length(repeated) == 0L) {
+    return(invisible(NULL))
+  }
+  # Read only from the cli template below, which codetools cannot see.
+  columns <- units[[repeated[[1L]]]] # nolint: object_usage_linter.
+  abort_marginplyr(c(
+    "{.fun {constructor}} selects {.var {columns}} in more than one argument.",
+    i = "Remove the repeated argument."
+  ))
 }
 
 # Enumerate resolved cube units in descending subset size and combination order.
@@ -2926,6 +3101,9 @@ read_grouping_arg <- function(arg, data_vars, wrappers, data_proxy,
       # dbplyr's generic proxy invents logical columns from names. It cannot
       # answer an unknown caller's type reads faithfully (ADR 0008).
       if (inherits(data_proxy, "tbl_lazy")) {
+        # A masked constructor never runs here, so its remedy is the one that
+        # applies rather than collecting the input.
+        check_masked_constructor(rlang::new_quosure(expr, env))
         abort_marginplyr(c(
           "Can't provide a faithful typed selection context for this call.",
           i = "This SQL backend supplies column names without their R types.",
@@ -2949,11 +3127,15 @@ read_grouping_arg <- function(arg, data_vars, wrappers, data_proxy,
       rlang::new_quosure(rlang::call2(capture, evaluation), env), proxy
     )
     if (!is.null(outcome$error)) {
+      check_masked_constructor(rlang::new_quosure(expr, env))
       stop(outcome$error)
     }
     outcome$value
   } else {
     evaluate()
+  }
+  if (is_constructor_call && !inherits(value, "margin_grouping_spec")) {
+    check_masked_constructor(rlang::new_quosure(expr, env))
   }
   selection$evaluated <- TRUE
   if (inherits(value, "margin_grouping_spec")) {
@@ -3194,6 +3376,15 @@ resolve_grouping_selection <- function(arg, data_proxy) {
         if (is_grouping_spec_predicate(selection_frame, nested_arg_expr(arg))) {
           predicate <<- cnd
         }
+      },
+      # tidyselect's deprecation of an external vector advises `all_of()`,
+      # which refuses a specification as well, so it is not passed on where
+      # the vector is one; the refusal that follows names it.
+      warning = function(cnd) {
+        if (inherits(cnd, "lifecycle_warning_deprecated") &&
+              selection_names_grouping_spec(arg)) {
+          invokeRestart("muffleWarning")
+        }
       }
     ),
     error = function(cnd) {
@@ -3207,11 +3398,34 @@ resolve_grouping_selection <- function(arg, data_proxy) {
         if (is_unsupported_predicate(cnd)) {
           abort_selection_predicate(label, cnd)
         }
+        computed <- computed_selection_leaf(
+          nested_arg_expr(arg), selection_proxy_names(data_proxy)
+        )
+        if (!is.null(computed)) {
+          abort_computed_grouping_arg(computed)
+        }
         stop(cnd)
       }
       abort_nested_grouping_spec(label)
     }
   )
+}
+
+# Whether a name `arg` reads is bound, where its quosure looks it up, to a
+# Grouping specification. A binding is read only where reading it evaluates
+# nothing tidyselect has not: an active binding is passed over, since reading
+# it would call it again.
+selection_names_grouping_spec <- function(arg) {
+  env <- rlang::quo_get_env(arg)
+  any(vapply(all.vars(nested_arg_expr(arg)), function(name) {
+    owner <- env
+    while (!identical(owner, emptyenv()) && !rlang::env_has(owner, name)) {
+      owner <- parent.env(owner)
+    }
+    !identical(owner, emptyenv()) &&
+      !rlang::env_binding_are_active(owner, name) &&
+      inherits(rlang::env_get(owner, name), "margin_grouping_spec")
+  }, logical(1)))
 }
 
 # Whether the failure now unwinding is a specification tidyselect took for a
@@ -3496,9 +3710,9 @@ resolve_column_selection <- function(arg, data_proxy, on_rename) {
 # of them there are is the caller's decision.
 abort_grouping_rename <- function(selected_names, source_names) {
   abort_marginplyr(c(
-    "Can't rename {cli::qty(length(selected_names))}grouping dimension{?s}:",
+    "Can't rename {cli::qty(length(selected_names))}Margin dimension{?s}:",
     i = "{.code {selection_rename_pairs(selected_names, source_names)}}.",
-    i = "Grouping dimensions must name existing columns."
+    i = "Margin dimensions must name existing columns."
   ))
 }
 
@@ -3515,4 +3729,86 @@ abort_by_rename <- function(selected_names, source_names) {
 # carries no markup of its own; the templates above give it `{.code}`.
 selection_rename_pairs <- function(selected_names, source_names) {
   paste0(selected_names, " = ", source_names)
+}
+
+# The column names tidyselect sees for `data_proxy`, read from its metadata as
+# `resolve_column_selection()` reads them, so asking sends no query.
+selection_proxy_names <- function(data_proxy) {
+  names(tidyselect::tidyselect_data_proxy(data_proxy))
+}
+
+# The first part of a failed selection that computes a value from columns of
+# the input, as `list(expr, columns)`, or `NULL` where there is none. tidyselect
+# evaluates such a call without the columns in scope, so it failed for a
+# reason its own message cannot name. The walk descends the operators
+# tidyselect walks. A selection helper, a constructor, a pronoun subscript, an
+# operator whatever its qualification -- whose failure is tidyselect's own --
+# and a call naming no column are not computed columns.
+computed_selection_leaf <- function(expr, data_vars) {
+  expr <- unparenthesized_value(expr)
+  if (is_selection_walk_call(expr)) {
+    parts <- static_call_args(expr)
+    for (index in seq_along(parts)) {
+      found <- computed_selection_leaf(parts[[index]], data_vars)
+      if (!is.null(found)) {
+        return(found)
+      }
+    }
+    return(NULL)
+  }
+  if (!is_nameable_call(expr)) {
+    return(NULL)
+  }
+  name <- static_call_name(expr)
+  if (!is.null(name) && name %in% c(
+    selection_leaf_helpers(), "where", grouping_constructor_names(),
+    selection_walk_operators(), selection_refused_operators(),
+    "(", "$", "[[", "~"
+  )) {
+    return(NULL)
+  }
+  columns <- intersect(all.vars(expr), data_vars)
+  if (length(columns) == 0L) {
+    return(NULL)
+  }
+  list(expr = expr, columns = columns)
+}
+
+# Two refusals rather than one with the subject interpolated, because the
+# subject is markup in one and prose in the other. The failure they replace is
+# not carried as a cause: it is the lookup of a column the expression names,
+# which is what the refusal explains.
+abort_computed_by <- function(computed) {
+  # Read only from the cli template below, which codetools cannot see.
+  # nolint start: object_usage_linter.
+  label <- rlang::as_label(computed$expr)
+  columns <- computed$columns
+  # nolint end
+  abort_marginplyr(c(
+    "{.arg .by} selects existing columns, not computed expressions.",
+    i = "{.code {label}} is computed from {.var {columns}}.",
+    i = paste0(
+      "Create the column with {.fun dplyr::mutate} first, then select it by ",
+      "name."
+    )
+  ))
+}
+
+abort_computed_grouping_arg <- function(computed) {
+  # Read only from the cli template below, which codetools cannot see.
+  # nolint start: object_usage_linter.
+  label <- rlang::as_label(computed$expr)
+  columns <- computed$columns
+  # nolint end
+  abort_marginplyr(c(
+    paste0(
+      "Grouping specification arguments select existing columns, not ",
+      "computed expressions."
+    ),
+    i = "{.code {label}} is computed from {.var {columns}}.",
+    i = paste0(
+      "Create the column with {.fun dplyr::mutate} first, then select it by ",
+      "name."
+    )
+  ))
 }

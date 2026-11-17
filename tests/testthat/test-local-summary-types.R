@@ -45,6 +45,50 @@ test_that("a local summary refuses a non-vector result as dplyr does", {
   }
 })
 
+# dplyr's size refusal sends its caller to `reframe()`, which has no Margin
+# counterpart, so the refusal also names the two spellings that do work here,
+# and both are run (#1703).
+test_that("a local summary of several values is told what works here", {
+  data <- data.frame(g = c("a", "a", "b"), v = 1:3)
+  remedy <- paste0(
+    "No Margin verb reframes: wrap the summary in `list()` to return a list ",
+    "column, or call `expand_with_margins()` and then `dplyr::reframe()`."
+  )
+
+  for (width in c(80L, 40L)) {
+    rlang::local_options(width = width)
+    error <- expect_error(
+      summarize_with_margins(data, q = range(v), .grouping = rollup(g))
+    )
+    expect_false(inherits(error, "marginplyr_error"))
+    expect_match(conditionMessage(error), "`q` must be size 1, not 2.",
+      fixed = TRUE
+    )
+    expect_match(
+      gsub("\\s+", " ", cli::ansi_strip(conditionMessage(error))),
+      remedy,
+      fixed = TRUE
+    )
+  }
+
+  listed <- summarize_with_margins(
+    data, q = list(range(v)), .grouping = rollup(g)
+  )
+  expect_identical(listed$q, list(1:2, c(3L, 3L), c(1L, 3L)))
+  reframed <- dplyr::reframe(
+    expand_with_margins(data, .grouping = rollup(g)),
+    q = range(v),
+    .by = g
+  )
+  expect_identical(nrow(reframed), 6L)
+
+  # A refusal dplyr raises for a reason other than size gains nothing.
+  other <- expect_error(
+    summarize_with_margins(data, x = environment(), .grouping = rollup(g))
+  )
+  expect_no_match(conditionMessage(other), "reframes", fixed = TRUE)
+})
+
 # Exercise the public verb with each input class in a separate test so only
 # the data.table case depends on an optional backend (AGENTS.md).
 check_mixed_local_types <- function(convert) {
