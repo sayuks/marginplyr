@@ -108,6 +108,11 @@ margins](https://sayuks.github.io/marginplyr/vignettes/completing_keys.html).
 Already working with remote data? See [Database and lazy
 backends](https://sayuks.github.io/marginplyr/vignettes/database_backends.html).
 
+The function reference contains executable examples for composite
+dimensions, tidy-select expressions, duplicate grouping sets, Cartesian
+products, computed grouping columns, simulated SQL dialects, DuckDB, and
+dtplyr.
+
 ## Grouping sets in plain language
 
 A normal grouped summary has one grain: for example, one row per store.
@@ -366,7 +371,11 @@ documents both helpers in full: the eligible sources, value rules,
 ## Use the same report with a database
 
 The Grouping plan becomes part of the lazy query. `show_query()`
-inspects the SQL without collecting the result:
+inspects the SQL without collecting the result. The call writes
+`na.rm = TRUE`, and a local call needs it too for the results to match:
+locally a missing measure makes every subtotal and total that includes
+it `NA`, while a SQL aggregate always drops missing values, and dbplyr
+warns when `na.rm = TRUE` is absent:
 
 ``` r
 postgres_sales <- dbplyr::tbl_lazy(
@@ -472,14 +481,9 @@ What is verified on each backend, and how, is stated in one place:
 *Database backend coverage* in the [`summarize_with_margins()`
 reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html).
 
-The function reference contains executable examples for composite
-dimensions, tidy-select expressions, duplicate grouping sets, Cartesian
-products, computed grouping columns, simulated SQL dialects, DuckDB, and
-dtplyr.
-
 ## Code of Conduct
 
 Please note that the marginplyr project is released with a [Contributor
 Code of
-Conduct](https://contributor-covenant.org/version/2/1/CODE_OF_CONDUCT.html).
+Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct/).
 By contributing to this project, you agree to abide by its terms.

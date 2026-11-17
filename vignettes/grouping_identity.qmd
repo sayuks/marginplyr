@@ -32,6 +32,14 @@ library(marginplyr)
 library(dplyr)
 ```
 
+```{r}
+#| include: false
+
+# Base R translates its own diagnostics, and a rejected call shows them, so
+# the page carries English whatever locale it is rendered in.
+Sys.setenv(LANGUAGE = "en")
+```
+
 ## Four related values
 
 Four interfaces answer those two questions. `.id` and

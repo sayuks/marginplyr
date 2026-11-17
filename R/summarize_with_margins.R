@@ -6,7 +6,8 @@
 #'
 #' Use it when one report needs several levels of detail—for example, stores,
 #' region subtotals, and a company total—or when that report should use the
-#' same code locally and through [dbplyr::tbl_lazy()]. The [Get started
+#' same code locally and on a database table opened with [dplyr::tbl()]. The
+#' [Get started
 #' guide][started] builds that report from a hand-written version, and is the
 #' page to read before this one.
 #'
@@ -93,8 +94,9 @@
 #' @return An ungrouped data frame, or a lazy table when `.data` is lazy,
 #'   with one row per group per grouping set. Its columns are the fixed `.by`
 #'   keys, then the grouping dimensions, then `.id` when supplied, then the
-#'   summaries in the order written. Its class follows [dplyr::summarize()];
-#'   see *Result metadata*.
+#'   summaries in the order written. Its class follows [dplyr::summarize()],
+#'   except for the leading class described in *SQLite materialization*; see
+#'   *Result metadata*.
 #'
 #'   With a character `.margin_label`, the default, a grouping dimension that
 #'   is not a factor becomes character so that it can hold the label:
@@ -480,16 +482,28 @@
 #' `.check_margin_label = TRUE`. `NA_character_` and `NULL` convert nothing.
 #'
 #' @section Database backend coverage:
-#' Summaries on DuckDB and PostgreSQL use one native `GROUP BY GROUPING SETS`
-#' query. Other database backends, and every expansion, use a portable
-#' `UNION ALL` query with one branch per grouping set and the same result.
-#' Asking for a Margin order never changes which of the two runs.
+#' Most summaries on DuckDB and PostgreSQL use one native
+#' `GROUP BY GROUPING SETS` query. Other database backends, every expansion,
+#' and the summaries listed under *Portable fallback SQL* in the
+#' [database guide][db] use a portable `UNION ALL` query with one branch per
+#' grouping set and the same result. Asking for a Margin order never changes
+#' which of the two runs.
 #'
-#' Results are executed and compared with local ones on DuckDB, SQLite, and
-#' Microsoft SQL Server. SQL generation, not execution, is verified for
-#' PostgreSQL, Access, SAP HANA, Hive, Impala, MariaDB, MySQL, Oracle, Amazon
-#' Redshift, Snowflake, Spark SQL, and Teradata, and for generic DBI and ODBC
-#' connections. Arrow and `dtplyr` are also supported lazy backends.
+#' Continuous integration executes Margin queries on these backends:
+#'
+#' * DuckDB, SQLite, Arrow, and `dtplyr`: the test suite.
+#' * PostgreSQL, on a live server: Parent and Total shares, including inside
+#'   a transaction the caller holds, typed missing dimensions, the observed
+#'   label check, expansion input, and window-ordered input. The rest of its
+#'   coverage is SQL generation.
+#' * Microsoft SQL Server, on a live server: portable summaries, compared with
+#'   the local result. Its expansion coverage is SQL generation.
+#'
+#' SQL generation, not execution, is verified for Access, SAP HANA, Hive,
+#' Impala, MariaDB, MySQL, Oracle, Amazon Redshift, Snowflake, Spark SQL, and
+#' Teradata, and for generic DBI and ODBC connections.
+#'
+#' [db]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html
 #'
 #' On SQLite and DuckDB, identifiers differing only in ASCII letter case name
 #' the same column, so a result refuses two public columns that would collide
@@ -508,6 +522,10 @@
 #' see *[SQLite materialization][summarize_with_margins]*.
 #'
 #' @section SQLite materialization:
+#' A result on a live SQLite connection can carry the leading class
+#' `marginplyr_sqlite_typed_result`. It is direct until another dplyr verb
+#' is applied to it; the verb keeps the class but not the behavior below.
+#'
 #' On a live SQLite connection, direct [dplyr::compute()] of a result
 #' returned by [summarize_with_margins()] or [expand_with_margins()] writes a
 #' typed table holding only the public columns, and later dplyr verbs on it
@@ -614,7 +632,7 @@
 #' dplyr::group_vars(grouped_report)
 #'
 #' # Moving year and month into the rollup extends the hierarchy from store
-#' # detail through monthly, annual, and all-period totals.
+#' # detail through monthly, per-year, and all-period totals.
 #' summarize_with_margins(
 #'   .data = retail_sales,
 #'   revenue = sum(revenue),
@@ -622,7 +640,8 @@
 #'   .grouping = rollup(year, month, region, store)
 #' )
 #'
-#' # Grouping expressions are created with mutate() before summarizing.
+#' # A grouping dimension computed from other columns is created with mutate()
+#' # before summarizing.
 #' summarize_with_margins(
 #'   .data = dplyr::mutate(
 #'     retail_sales,
@@ -721,8 +740,8 @@
 #'   revenue_percent = 100 * revenue_share
 #' )
 #'
-#' # Empty input without `.by` still has one Grand total row, whose share is
-#' # one; with `.by` it has no rows. Both keep a double share column.
+#' # Empty input without `.by` still has one row for the Grand total set, whose
+#' # share is one; with `.by` it has no rows. Both keep a double share column.
 #' empty_sales <- retail_sales[0, ]
 #' empty_grand_total <- summarize_with_margins(
 #'   .data = empty_sales,
@@ -747,7 +766,8 @@
 #' )
 #'
 #' # across() and pick() treat every fixed key and Margin dimension as a
-#' # grouping column, including dimensions omitted from a subtotal branch.
+#' # grouping column, including dimensions omitted from a subtotal branch, so
+#' # pick(everything()) names neither year nor region.
 #' summarize_with_margins(
 #'   .data = retail_sales,
 #'   dplyr::across(
@@ -755,8 +775,8 @@
 #'     sum,
 #'     .names = "total_{.col}"
 #'   ),
-#'   measures = paste(
-#'     names(dplyr::pick(c(units, revenue))),
+#'   picked = paste(
+#'     names(dplyr::pick(everything())),
 #'     collapse = ", "
 #'   ),
 #'   .by = year,

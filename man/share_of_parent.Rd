@@ -54,9 +54,11 @@ nothing in the plan says which of them is \emph{the} parent.
 \code{share_of_total()} has no such choice to make: a Grand total set is not
 selected, and a plan either contains one or does not. It therefore accepts
 any Grouping specification whose plan contains one. \code{\link[=rollup]{rollup()}} and \code{\link[=cube]{cube()}}
-always produce one; \code{\link[=grouping_sets]{grouping_sets()}} produces one only when it includes an
-empty \code{\link[=grouping_set]{grouping_set()}}, a \code{\link[=grouping_spec]{grouping_spec()}} product only when every factor
-produces an empty set, and a lone \code{\link[=grouping_set]{grouping_set()}} only when it is empty. A
+always produce one, and so does \code{.grouping = NULL}; \code{\link[=grouping_sets]{grouping_sets()}}
+produces one only when some member produces the empty set, as an empty
+\code{\link[=grouping_set]{grouping_set()}} or a \code{\link[=rollup]{rollup()}} member does, a \code{\link[=grouping_spec]{grouping_spec()}} product
+only when every factor produces an empty set, and a lone \code{\link[=grouping_set]{grouping_set()}}
+only when it is empty. A
 specification without one is rejected naming the change that gives it one.
 
 Neither helper reaches a level between the two. For a denominator at a
@@ -87,6 +89,10 @@ revenue_percent = 100 * share_of_parent(revenue)
 # Rewrite: derive from the finished share afterwards
 result |> dplyr::mutate(revenue_percent = 100 * revenue_share)
 }\if{html}{\out{</div>}}
+
+On a lazy input that \code{mutate()} wraps the result in a subquery, which drops
+an order \code{.sort} requested; \code{\link[dplyr:collect]{dplyr::collect()}} first, or \code{\link[dplyr:arrange]{dplyr::arrange()}}
+afterwards, as \emph{Execute in DuckDB} in the \href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html}{database guide} shows.
 
 A direct call cannot be unnamed, use a string, use a forward reference,
 redefine the source name, or use a share as another share's source.
