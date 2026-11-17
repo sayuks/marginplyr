@@ -45,8 +45,9 @@
 #'   with one row per input row per grouping set. Its columns are the fixed
 #'   `.by` keys, then the grouping dimensions, then `.id` when supplied, then
 #'   the remaining input columns in input order. Its class follows
-#'   [dplyr::mutate()] combined with [dplyr::union_all()]; see *Result
-#'   metadata*.
+#'   [dplyr::mutate()] combined with [dplyr::union_all()], except for the
+#'   leading class described in
+#'   *[SQLite materialization][summarize_with_margins]*; see *Result metadata*.
 #'
 #'   With a character `.margin_label`, the default, a grouping dimension that
 #'   is not a factor becomes character so that it can hold the label. A factor

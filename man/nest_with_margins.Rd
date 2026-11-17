@@ -141,9 +141,9 @@ does.
 
 \section{Nested data frames}{
 
-The list column is a list of data frames holding the input's non-key
-columns; its exact \code{vctrs_list_of} subclass is not part of the API, and
-neither is the class of its elements, which is a tibble for a local input
+The list column is a regular list of data frames holding the input's
+non-key columns; a \code{vctrs::list_of} subclass is not promised. Nor is the
+class of its elements, which is a tibble for a local input
 and a data table under \code{dtplyr}. Call \code{lapply(result$data, tibble::as_tibble)} when one element class is needed across backends.
 
 Each nested data frame has one row per source row it stands for, even when

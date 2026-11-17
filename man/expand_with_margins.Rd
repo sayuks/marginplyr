@@ -93,8 +93,9 @@ An ungrouped data frame, or a lazy table when \code{.data} is lazy,
 with one row per input row per grouping set. Its columns are the fixed
 \code{.by} keys, then the grouping dimensions, then \code{.id} when supplied, then
 the remaining input columns in input order. Its class follows
-\code{\link[dplyr:mutate]{dplyr::mutate()}} combined with \code{\link[dplyr:union_all]{dplyr::union_all()}}; see \emph{Result
-metadata}.
+\code{\link[dplyr:mutate]{dplyr::mutate()}} combined with \code{\link[dplyr:union_all]{dplyr::union_all()}}, except for the
+leading class described in
+\emph{\link[=summarize_with_margins]{SQLite materialization}}; see \emph{Result metadata}.
 
 With a character \code{.margin_label}, the default, a grouping dimension that
 is not a factor becomes character so that it can hold the label. A factor

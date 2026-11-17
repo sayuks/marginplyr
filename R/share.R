@@ -36,9 +36,11 @@
 #' `share_of_total()` has no such choice to make: a Grand total set is not
 #' selected, and a plan either contains one or does not. It therefore accepts
 #' any Grouping specification whose plan contains one. [rollup()] and [cube()]
-#' always produce one; [grouping_sets()] produces one only when it includes an
-#' empty [grouping_set()], a [grouping_spec()] product only when every factor
-#' produces an empty set, and a lone [grouping_set()] only when it is empty. A
+#' always produce one, and so does `.grouping = NULL`; [grouping_sets()]
+#' produces one only when some member produces the empty set, as an empty
+#' [grouping_set()] or a [rollup()] member does, a [grouping_spec()] product
+#' only when every factor produces an empty set, and a lone [grouping_set()]
+#' only when it is empty. A
 #' specification without one is rejected naming the change that gives it one.
 #'
 #' Neither helper reaches a level between the two. For a denominator at a

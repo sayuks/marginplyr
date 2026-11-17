@@ -53,6 +53,10 @@ dtplyr installs it.
 ```{r}
 #| include: false
 
+# Base R translates its own diagnostics, and a rejected call shows them, so
+# the page carries English whatever locale it is rendered in.
+Sys.setenv(LANGUAGE = "en")
+
 # `marginplyr_suggest_available()` answers what a bare installation check
 # could not: whether the installed package satisfies the version DESCRIPTION
 # requires. AGENTS.md is authoritative for which guards must go through it.

@@ -126,8 +126,9 @@ missing values last. See \emph{Margin order}.}
 An ungrouped data frame, or a lazy table when \code{.data} is lazy,
 with one row per group per grouping set. Its columns are the fixed \code{.by}
 keys, then the grouping dimensions, then \code{.id} when supplied, then the
-summaries in the order written. Its class follows \code{\link[dplyr:summarize]{dplyr::summarize()}};
-see \emph{Result metadata}.
+summaries in the order written. Its class follows \code{\link[dplyr:summarize]{dplyr::summarize()}},
+except for the leading class described in \emph{SQLite materialization}; see
+\emph{Result metadata}.
 
 With a character \code{.margin_label}, the default, a grouping dimension that
 is not a factor becomes character so that it can hold the label:
@@ -144,7 +145,8 @@ data frames and lazy tables.
 \details{
 Use it when one report needs several levels of detail—for example, stores,
 region subtotals, and a company total—or when that report should use the
-same code locally and through \code{\link[dbplyr:tbl_lazy]{dbplyr::tbl_lazy()}}. The \href{https://sayuks.github.io/marginplyr/vignettes/get_started.html}{Get started guide} builds that report from a hand-written version, and is the
+same code locally and on a database table opened with \code{\link[dplyr:tbl]{dplyr::tbl()}}. The
+\href{https://sayuks.github.io/marginplyr/vignettes/get_started.html}{Get started guide} builds that report from a hand-written version, and is the
 page to read before this one.
 
 \code{\link[=grouping_sets]{grouping_sets()}} forms a union of grouping families. \code{\link[=grouping_spec]{grouping_spec()}}
@@ -574,6 +576,10 @@ see \emph{\link[=summarize_with_margins]{SQLite materialization}}.
 
 \section{SQLite materialization}{
 
+A result on a live SQLite connection can carry the leading class
+\code{marginplyr_sqlite_typed_result}. It is direct until another dplyr verb
+is applied to it; the verb keeps the class but not the behavior below.
+
 On a live SQLite connection, direct \code{\link[dplyr:compute]{dplyr::compute()}} of a result
 returned by \code{\link[=summarize_with_margins]{summarize_with_margins()}} or \code{\link[=expand_with_margins]{expand_with_margins()}} writes a
 typed table holding only the public columns, and later dplyr verbs on it
@@ -682,7 +688,7 @@ grouped_report <- retail_sales |>
 dplyr::group_vars(grouped_report)
 
 # Moving year and month into the rollup extends the hierarchy from store
-# detail through monthly, annual, and all-period totals.
+# detail through monthly, per-year, and all-period totals.
 summarize_with_margins(
   .data = retail_sales,
   revenue = sum(revenue),
@@ -690,7 +696,8 @@ summarize_with_margins(
   .grouping = rollup(year, month, region, store)
 )
 
-# Grouping expressions are created with mutate() before summarizing.
+# A grouping dimension computed from other columns is created with mutate()
+# before summarizing.
 summarize_with_margins(
   .data = dplyr::mutate(
     retail_sales,
@@ -789,8 +796,8 @@ dplyr::mutate(
   revenue_percent = 100 * revenue_share
 )
 
-# Empty input without `.by` still has one Grand total row, whose share is
-# one; with `.by` it has no rows. Both keep a double share column.
+# Empty input without `.by` still has one row for the Grand total set, whose
+# share is one; with `.by` it has no rows. Both keep a double share column.
 empty_sales <- retail_sales[0, ]
 empty_grand_total <- summarize_with_margins(
   .data = empty_sales,
@@ -815,7 +822,8 @@ c(
 )
 
 # across() and pick() treat every fixed key and Margin dimension as a
-# grouping column, including dimensions omitted from a subtotal branch.
+# grouping column, including dimensions omitted from a subtotal branch, so
+# pick(everything()) names neither year nor region.
 summarize_with_margins(
   .data = retail_sales,
   dplyr::across(
@@ -823,8 +831,8 @@ summarize_with_margins(
     sum,
     .names = "total_{.col}"
   ),
-  measures = paste(
-    names(dplyr::pick(c(units, revenue))),
+  picked = paste(
+    names(dplyr::pick(everything())),
     collapse = ", "
   ),
   .by = year,
