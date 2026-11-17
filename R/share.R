@@ -8587,9 +8587,7 @@ injection_operands <- function(expr) {
   }
   if (rlang::is_call(expr, "!", n = 1L) &&
         rlang::is_call(expr[[2L]], "!", n = 1L)) {
-    operand <- expr[[2L]][[2L]]
-    if (rlang::is_call(operand, "!", n = 1L)) operand <- operand[[2L]]
-    return(list(operand))
+    return(list(expr[[2L]][[2L]]))
   }
   if (rlang::is_call(expr, "{", n = 1L) &&
         rlang::is_call(expr[[2L]], "{", n = 1L)) {
