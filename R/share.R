@@ -46,11 +46,12 @@
 #'
 #' Neither helper reaches a level between the two. For a denominator at a
 #' named ancestor level, move that dimension into `.by` and use
-#' `share_of_total()`; the [recipes guide][recipes] writes that out, and the
+#' `share_of_total()`; *Show each row as a percent of a level further up* in
+#' [Recipes for common reporting tasks][recipes] writes that out, and the
 #' join for the case where the levels above the ancestor have to stay in the
 #' same result.
 #'
-#' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
+#' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html#show-each-row-as-a-percent-of-a-level-further-up
 #'
 #' @section Value rules:
 #' Both helpers divide within each fixed `.by` partition, so a fixed key never
@@ -90,9 +91,9 @@
 #' | Without fixed `.by` keys | One row of the Grand total set | `1.0`, double |
 #' | With fixed `.by` keys | Zero rows | Empty double vector |
 #'
-#' Missing detail or subtotal combinations are not completed. The [completing
-#' keys guide][keys] shows how to complete the input facts before the summary,
-#' where synthetic facts are meant to reach every level.
+#' Missing detail or subtotal combinations are not completed. [Complete absent
+#' keys before margins][keys] shows how to complete the input facts before the
+#' summary, where synthetic facts are meant to reach every level.
 #'
 #' [keys]: https://sayuks.github.io/marginplyr/vignettes/completing_keys.html
 #'
@@ -119,9 +120,10 @@
 #'
 #' On a lazy input that `mutate()` wraps the result in a subquery, which drops
 #' an order `.sort` requested; [dplyr::collect()] first, or [dplyr::arrange()]
-#' afterwards, as *Execute in DuckDB* in the [database guide][db] shows.
+#' afterwards, as *Execute in DuckDB* in [Database and lazy backends][db]
+#' shows.
 #'
-#' [db]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html
+#' [db]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html#execute-in-duckdb
 #'
 #' @section Eligible source summaries:
 #' A source summary must be:
@@ -328,12 +330,12 @@
 #' original call, as the local ones do.
 #'
 #' On dbplyr, a summary that is not one value per grouping row surfaces as a
-#' database error when the staged query executes. *Parent shares use a
-#' staged lazy query* in the [database guide][db] describes how a dialect is
+#' database error when the staged query executes. *Parent shares use a staged
+#' lazy query* in [Database and lazy backends][db] describes how a dialect is
 #' asked, which answers are reused, and what that sends; its *Backend support
 #' matrix* sets each backend family's share support beside its other answers.
 #'
-#' [db]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html
+#' [db]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html#parent-shares-use-a-staged-lazy-query
 #'
 #' @section Forwarding a name from your own function:
 #' A function of your own forwards the name its caller wrote by embracing it,
@@ -346,10 +348,11 @@
 #' anything but a name is refused exactly where writing that expression out
 #' would be.
 #'
-#' *Call a Margin verb from your own function* in the [Recipes guide][recipes]
-#' names a summary after the caller's measure and forwards that name here.
+#' *Call a Margin verb from your own function* in
+#' [Recipes for common reporting tasks][recipes] names a summary after the
+#' caller's measure and forwards that name here.
 #'
-#' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
+#' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html#call-a-margin-verb-from-your-own-function
 #'
 #' @param x The bare name of one preceding eligible ordinary summary.
 #'

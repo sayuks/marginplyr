@@ -108,13 +108,13 @@ leading class described in
 \code{\link[=summarize_with_margins]{summarize_with_margins()}}; see \emph{\link[=margin_verbs]{Result metadata}} in
 \link{margin_verbs}.
 
-With a character \code{.margin_label}, the default, a Margin dimension that
-is not a factor becomes character so that it can hold the label. On a lazy
+With a character \code{.margin_label}, the default, a Margin dimension that is
+not a factor becomes character so that it can hold the label. On a lazy
 input the text is the backend's own cast, which can differ from a local
-result's; \emph{Converted dimension text} in the \href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html}{database guide}
-tabulates it. When the text matters, give the column the type you want
-with \code{\link[dplyr:mutate]{dplyr::mutate()}} first. A factor dimension instead gains the label
-as a new level. \code{.margin_label = NULL} or \code{NA_character_} keeps every
+result's; \emph{Converted dimension text} in \href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html#converted-dimension-text}{Database and lazy backends}
+tabulates it. When the text matters, give the column the type you want with
+\code{\link[dplyr:mutate]{dplyr::mutate()}} first. A factor dimension instead gains the label as a
+new level. \code{.margin_label = NULL} or \code{NA_character_} keeps every
 dimension's type and marks margin copies with a missing value.
 }
 \description{
@@ -148,12 +148,12 @@ character in every copy, detail rows included; see Value. Use
 
 A summary that needs both a group-level value and the rows behind it works
 directly in \code{\link[=summarize_with_margins]{summarize_with_margins()}} on a local data frame, because dplyr
-hands the expression the whole group; against a database the same
-expression has to compile to SQL aggregates, and a nested aggregate is
-rejected. Expanding first gives ordinary window functions over the copies
-and stays lazy, at the cost of one copy of the input per grouping set. The
-\href{https://sayuks.github.io/marginplyr/vignettes/recipes.html}{recipes guide} works the case through. On a local data frame,
-the reason to expand is the shape of the rows instead; see Description.
+hands the expression the whole group; against a database the same expression
+has to compile to SQL aggregates, and a nested aggregate is rejected.
+Expanding first gives ordinary window functions over the copies and stays
+lazy, at the cost of one copy of the input per grouping set. \emph{Fix a
+nested-aggregate error on a database} in \href{https://sayuks.github.io/marginplyr/vignettes/recipes.html#fix-a-nested-aggregate-error-on-a-database}{Recipes for common reporting tasks} works the case through. On a local data frame, the reason to
+expand is the shape of the rows instead; see Description.
 }
 
 \section{Behavior shared with the other Margin verbs}{

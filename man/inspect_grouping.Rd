@@ -144,13 +144,12 @@ rebuild it with \code{immutable = TRUE} before passing it to one of them.
 The Grouping plan is not a SQL execution plan. Use \code{\link[dplyr:show_query]{dplyr::show_query()}}
 for generated SQL and backend-native tools for an optimizer plan.
 
-The \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide} walks through inspecting a plan and
-reading it back off a Margin result. The \href{https://sayuks.github.io/marginplyr/vignettes/recipes.html}{recipes guide} uses a
-plan to choose which grouping set to keep, and joins one against a Margin
-result's \code{\link[=summarize_with_margins]{.id}} column to name the set behind
-every row. Because the plan is local, that join needs a
-\code{copy} argument when the Margin result is lazy, and it does not preserve a
-Margin order.
+\emph{Inspect a Grouping plan as data} in \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html#inspect-a-grouping-plan-as-data}{Grouping identity} walks through
+inspecting a plan and reading it back off a Margin result. \href{https://sayuks.github.io/marginplyr/vignettes/recipes.html}{Recipes for common reporting tasks} uses a plan to choose which grouping set to
+keep, and joins one against a Margin result's \code{\link[=summarize_with_margins]{.id}}
+column to name the set behind every row. Because the plan is local, that join
+needs a \code{copy} argument when the Margin result is lazy, and it does not
+preserve a Margin order.
 }
 
 \examples{

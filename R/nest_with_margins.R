@@ -53,7 +53,7 @@
 #' *Nest locally or with dtplyr* in [Get started][started] shows both verbs
 #' side by side.
 #'
-#' [started]: https://sayuks.github.io/marginplyr/vignettes/get_started.html
+#' [started]: https://sayuks.github.io/marginplyr/vignettes/get_started.html#nest-locally-or-with-dtplyr
 #'
 #' @section Nested data frames:
 #' The list column is a regular list of data frames holding the input's

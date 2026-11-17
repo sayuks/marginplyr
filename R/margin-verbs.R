@@ -46,14 +46,14 @@
 #' column cannot be both a fixed key and a dimension that can be rolled up.
 #' Grouped local data created with `.drop = FALSE` is rejected because empty
 #' groups cannot be preserved on every backend. To retain empty keys, complete
-#' the input before the Margin operation, as *Keep unused factor levels* in the
-#' [Complete absent keys before margins][keys] guide shows.
+#' the input before the Margin operation, as *Keep unused factor levels* in
+#' [Complete absent keys before margins][keys] shows.
 #'
 #' Row-wise input is rejected; to keep row-wise identifiers as fixed keys,
 #' ungroup first and select them with `.by`. Each verb's page states the
 #' grouping of its result.
 #'
-#' [keys]: https://sayuks.github.io/marginplyr/vignettes/completing_keys.html
+#' [keys]: https://sayuks.github.io/marginplyr/vignettes/completing_keys.html#keep-unused-factor-levels
 #'
 #' @section Display labels and grouping identity:
 #' `.margin_label` is a display value, not the identity of a grouping set;
@@ -119,10 +119,11 @@
 #' observes. Later verbs can change it. It composes with every `.duplicates`
 #' policy the verb accepts.
 #'
-#' The [recipes guide][recipes] shows a Margin order before and after, and
-#' shows the key written as an `arrange()` you control.
+#' *Put each subtotal with the rows it summarizes* in
+#' [Recipes for common reporting tasks][recipes] shows a Margin order before
+#' and after, and shows the key written as an `arrange()` you control.
 #'
-#' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
+#' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html#put-each-subtotal-with-the-rows-it-summarizes
 #'
 #' @section Grouping set identifiers:
 #' When `.id` names an output column, each result row receives the one-based
@@ -139,14 +140,13 @@
 #' [summarize_with_margins()]. To learn which grouping set a row of
 #' [expand_with_margins()], [nest_with_margins()], or [nest_by_with_margins()]
 #' came from, pass `.id` and join it to the `set_id` column of
-#' [inspect_grouping()] called with the same `.by` and `.grouping`, as
-#' *Add a level column: detail, subtotal or total* in the
-#' [recipes guide][recipes] does. Without `.id`, a typed-missing
-#' `.margin_label` leaves a margin row indistinguishable from a source row
-#' whose dimension is missing, so summarizing an expansion again by its
-#' grouping columns merges the two.
+#' [inspect_grouping()] called with the same `.by` and `.grouping`, as *Add a
+#' level column: detail, subtotal or total* in [Recipes for common reporting
+#' tasks][recipes] does. Without `.id`, a typed-missing `.margin_label` leaves a
+#' margin row indistinguishable from a source row whose dimension is missing, so
+#' summarizing an expansion again by its grouping columns merges the two.
 #'
-#' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
+#' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html#add-a-level-column-detail-subtotal-or-total
 #'
 #' @section Option arguments:
 #' An argument documented as taking one of a listed set of strings —
@@ -186,22 +186,22 @@
 #'
 #' @section Arrow inputs:
 #' Arrow's tabular dplyr inputs are a `Table`, `RecordBatch`, `Dataset`,
-#' `RecordBatchReader`, or an `arrow_dplyr_query` built from them. marginplyr's
-#' contract depends on both the verb and the query's sources:
+#' `RecordBatchReader`, or an `arrow_dplyr_query` built from them. A summary or
+#' expansion of one stays an Arrow query, except that a `RecordBatchReader`, and
+#' a query whose source graph contains one, is refused: a reader is one-pass,
+#' while a Margin operation may build one branch per grouping set, so
+#' [arrow::as_arrow_table()] has to materialize the reusable `Table` first. The
+#' nesting verbs refuse every Arrow input; collect it first. Other Arrow
+#' objects, such as a `Scanner` or an `Array`, are not dplyr inputs; a Scanner
+#' materializes with `$ToTable()`. *Which Arrow inputs are supported* in
+#' [Database and lazy backends][db] tabulates these answers per verb.
 #'
-#' | Input | Summary or expansion | Nesting |
-#' | --- | --- | --- |
-#' | `Table`, `RecordBatch`, or `Dataset` | Accepted | Refused; collect first |
-#' | Query with no reader source | Accepted | Refused; collect first |
-#' | `RecordBatchReader` | Refused; materialize first | Refused; collect first |
-#' | Query with any reader source | Refused; materialize first | Refused; collect first | # nolint: line_length_linter
-#' | Non-tabular Arrow object | General input refusal | General input refusal |
+#' [db]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html#which-arrow-inputs-are-supported
 #'
-#' A translatable summary or expansion stays an Arrow query. For a summary or
-#' generated Margin label transformation Arrow's own engine cannot evaluate, a
-#' `Table` and `RecordBatch` (and queries built on them) would fall back to R
-#' by reading every column of the input, not only the ones the expression
-#' names. marginplyr refuses such an expression instead,
+#' For a summary or generated Margin label transformation Arrow's own engine
+#' cannot evaluate, a `Table` and `RecordBatch` (and queries built on them)
+#' would fall back to R by reading every column of the input, not only the
+#' ones the expression names. marginplyr refuses such an expression instead,
 #' before a row is read, and names the two rewrites that compute it: collect
 #' the input first, and select the columns the summary needs before
 #' collecting, which is the narrowing Arrow's own route cannot do for you. A
@@ -213,13 +213,6 @@
 #' collapsed into a single value, such as pasting one, a subset written inside
 #' an aggregate, and a statistic over two columns at once; ordinary numeric
 #' summaries, and arithmetic over them, are evaluated by Arrow and stay lazy.
-#'
-#' A `RecordBatchReader` is one-pass, while a Margin operation may build one
-#' branch per grouping set, so a reader and any query whose source graph
-#' contains one are refused. [arrow::as_arrow_table()] consumes every batch
-#' once and materializes the reusable `Table` those branches require. Other
-#' Arrow objects, such as a `Scanner` or an `Array`,
-#' are not dplyr inputs; a Scanner materializes with `$ToTable()`.
 #'
 #' Arrow does not hold factor levels in the schema marginplyr reads, so a
 #' non-missing `.margin_label` converts a factor dimension to character, and its
@@ -233,12 +226,12 @@
 #' @section Database backend coverage:
 #' Most summaries on DuckDB and PostgreSQL use one native
 #' `GROUP BY GROUPING SETS` query. Other database backends, every expansion,
-#' and the summaries listed under *Portable fallback SQL* in the
-#' [database guide][db] use a portable `UNION ALL` query with one branch per
-#' grouping set and the same result. Asking for a Margin order never changes
-#' which of the two runs. The text of a converted dimension is each backend's
-#' own cast, so it can differ from a local result's; *Converted dimension
-#' text* in the database guide tabulates it. The *Backend support matrix*
+#' and the summaries listed under *Portable fallback SQL* in
+#' [Database and lazy backends][db] use a portable `UNION ALL` query with one
+#' branch per grouping set and the same result. Asking for a Margin order never
+#' changes which of the two runs. The text of a converted dimension is each
+#' backend's own cast, so it can differ from a local result's; *Converted
+#' dimension text* in that guide tabulates it. The *Backend support matrix*
 #' there sets each backend family's answers side by side, including what
 #' becomes of a factor dimension.
 #'
@@ -256,7 +249,7 @@
 #' Impala, MariaDB, MySQL, Oracle, Amazon Redshift, Snowflake, Spark SQL, and
 #' Teradata, and for generic DBI and ODBC connections.
 #'
-#' [db]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html
+#' [db]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html#portable-fallback-sql
 #'
 #' On SQLite and DuckDB, identifiers differing only in ASCII letter case name
 #' the same column, so a result refuses two public columns that would collide
@@ -302,9 +295,10 @@
 #'   inside their bodies.
 #' - **At most two queries per share request until the SQL dialect answers**,
 #'   for a summary that requests a share, referencing none of your tables;
-#'   see *Parent shares use a staged lazy query* in the [database guide][db].
+#'   see *Parent shares use a staged lazy query* in
+#'   [Database and lazy backends][db].
 #'
-#' [db]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html
+#' [db]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html#parent-shares-use-a-staged-lazy-query
 #'
 #' A query is not safe merely because it returns no rows: some services bill
 #' by the bytes a query scans, and `LIMIT 0` is not exempt. marginplyr cannot

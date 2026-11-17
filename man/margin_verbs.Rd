@@ -53,8 +53,8 @@ groups. A grouping column also cannot appear in \code{.grouping}, because one
 column cannot be both a fixed key and a dimension that can be rolled up.
 Grouped local data created with \code{.drop = FALSE} is rejected because empty
 groups cannot be preserved on every backend. To retain empty keys, complete
-the input before the Margin operation, as \emph{Keep unused factor levels} in the
-\href{https://sayuks.github.io/marginplyr/vignettes/completing_keys.html}{Complete absent keys before margins} guide shows.
+the input before the Margin operation, as \emph{Keep unused factor levels} in
+\href{https://sayuks.github.io/marginplyr/vignettes/completing_keys.html#keep-unused-factor-levels}{Complete absent keys before margins} shows.
 
 Row-wise input is rejected; to keep row-wise identifiers as fixed keys,
 ungroup first and select them with \code{.by}. Each verb's page states the
@@ -127,8 +127,9 @@ data frame, or the ordering of a lazy result that \code{\link[dplyr:collect]{dpl
 observes. Later verbs can change it. It composes with every \code{.duplicates}
 policy the verb accepts.
 
-The \href{https://sayuks.github.io/marginplyr/vignettes/recipes.html}{recipes guide} shows a Margin order before and after, and
-shows the key written as an \code{arrange()} you control.
+\emph{Put each subtotal with the rows it summarizes} in
+\href{https://sayuks.github.io/marginplyr/vignettes/recipes.html#put-each-subtotal-with-the-rows-it-summarizes}{Recipes for common reporting tasks} shows a Margin order before
+and after, and shows the key written as an \code{arrange()} you control.
 }
 
 \section{Grouping set identifiers}{
@@ -147,12 +148,10 @@ with \code{\link[=inspect_grouping]{inspect_grouping()}}\verb{$set_id}, \code{\l
 \code{\link[=summarize_with_margins]{summarize_with_margins()}}. To learn which grouping set a row of
 \code{\link[=expand_with_margins]{expand_with_margins()}}, \code{\link[=nest_with_margins]{nest_with_margins()}}, or \code{\link[=nest_by_with_margins]{nest_by_with_margins()}}
 came from, pass \code{.id} and join it to the \code{set_id} column of
-\code{\link[=inspect_grouping]{inspect_grouping()}} called with the same \code{.by} and \code{.grouping}, as
-\emph{Add a level column: detail, subtotal or total} in the
-\href{https://sayuks.github.io/marginplyr/vignettes/recipes.html}{recipes guide} does. Without \code{.id}, a typed-missing
-\code{.margin_label} leaves a margin row indistinguishable from a source row
-whose dimension is missing, so summarizing an expansion again by its
-grouping columns merges the two.
+\code{\link[=inspect_grouping]{inspect_grouping()}} called with the same \code{.by} and \code{.grouping}, as \emph{Add a
+level column: detail, subtotal or total} in \href{https://sayuks.github.io/marginplyr/vignettes/recipes.html#add-a-level-column-detail-subtotal-or-total}{Recipes for common reporting tasks} does. Without \code{.id}, a typed-missing \code{.margin_label} leaves a
+margin row indistinguishable from a source row whose dimension is missing, so
+summarizing an expansion again by its grouping columns merges the two.
 }
 
 \section{Option arguments}{
@@ -199,22 +198,20 @@ after changing column types, factor definitions, or labels.
 \section{Arrow inputs}{
 
 Arrow's tabular dplyr inputs are a \code{Table}, \code{RecordBatch}, \code{Dataset},
-\code{RecordBatchReader}, or an \code{arrow_dplyr_query} built from them. marginplyr's
-contract depends on both the verb and the query's sources:\tabular{lll}{
-   Input \tab Summary or expansion \tab Nesting \cr
-   \code{Table}, \code{RecordBatch}, or \code{Dataset} \tab Accepted \tab Refused; collect first \cr
-   Query with no reader source \tab Accepted \tab Refused; collect first \cr
-   \code{RecordBatchReader} \tab Refused; materialize first \tab Refused; collect first \cr
-   Query with any reader source \tab Refused; materialize first \tab Refused; collect first \cr
-   Non-tabular Arrow object \tab General input refusal \tab General input refusal \cr
-}
+\code{RecordBatchReader}, or an \code{arrow_dplyr_query} built from them. A summary or
+expansion of one stays an Arrow query, except that a \code{RecordBatchReader}, and
+a query whose source graph contains one, is refused: a reader is one-pass,
+while a Margin operation may build one branch per grouping set, so
+\code{\link[arrow:as_arrow_table]{arrow::as_arrow_table()}} has to materialize the reusable \code{Table} first. The
+nesting verbs refuse every Arrow input; collect it first. Other Arrow
+objects, such as a \code{Scanner} or an \code{Array}, are not dplyr inputs; a Scanner
+materializes with \verb{$ToTable()}. \emph{Which Arrow inputs are supported} in
+\href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html#which-arrow-inputs-are-supported}{Database and lazy backends} tabulates these answers per verb.
 
-
-A translatable summary or expansion stays an Arrow query. For a summary or
-generated Margin label transformation Arrow's own engine cannot evaluate, a
-\code{Table} and \code{RecordBatch} (and queries built on them) would fall back to R
-by reading every column of the input, not only the ones the expression
-names. marginplyr refuses such an expression instead,
+For a summary or generated Margin label transformation Arrow's own engine
+cannot evaluate, a \code{Table} and \code{RecordBatch} (and queries built on them)
+would fall back to R by reading every column of the input, not only the
+ones the expression names. marginplyr refuses such an expression instead,
 before a row is read, and names the two rewrites that compute it: collect
 the input first, and select the columns the summary needs before
 collecting, which is the narrowing Arrow's own route cannot do for you. A
@@ -226,13 +223,6 @@ so they are not listed here. Among the summaries refused are a group
 collapsed into a single value, such as pasting one, a subset written inside
 an aggregate, and a statistic over two columns at once; ordinary numeric
 summaries, and arithmetic over them, are evaluated by Arrow and stay lazy.
-
-A \code{RecordBatchReader} is one-pass, while a Margin operation may build one
-branch per grouping set, so a reader and any query whose source graph
-contains one are refused. \code{\link[arrow:as_arrow_table]{arrow::as_arrow_table()}} consumes every batch
-once and materializes the reusable \code{Table} those branches require. Other
-Arrow objects, such as a \code{Scanner} or an \code{Array},
-are not dplyr inputs; a Scanner materializes with \verb{$ToTable()}.
 
 Arrow does not hold factor levels in the schema marginplyr reads, so a
 non-missing \code{.margin_label} converts a factor dimension to character, and its
@@ -248,12 +238,12 @@ and an observed collision is refused only when
 
 Most summaries on DuckDB and PostgreSQL use one native
 \verb{GROUP BY GROUPING SETS} query. Other database backends, every expansion,
-and the summaries listed under \emph{Portable fallback SQL} in the
-\href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html}{database guide} use a portable \verb{UNION ALL} query with one branch per
-grouping set and the same result. Asking for a Margin order never changes
-which of the two runs. The text of a converted dimension is each backend's
-own cast, so it can differ from a local result's; \emph{Converted dimension
-text} in the database guide tabulates it. The \emph{Backend support matrix}
+and the summaries listed under \emph{Portable fallback SQL} in
+\href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html#portable-fallback-sql}{Database and lazy backends} use a portable \verb{UNION ALL} query with one
+branch per grouping set and the same result. Asking for a Margin order never
+changes which of the two runs. The text of a converted dimension is each
+backend's own cast, so it can differ from a local result's; \emph{Converted
+dimension text} in that guide tabulates it. The \emph{Backend support matrix}
 there sets each backend family's answers side by side, including what
 becomes of a factor dimension.
 
@@ -318,7 +308,8 @@ the database holds no macro you defined, since one could replace a name
 inside their bodies.
 \item \strong{At most two queries per share request until the SQL dialect answers},
 for a summary that requests a share, referencing none of your tables;
-see \emph{Parent shares use a staged lazy query} in the \href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html}{database guide}.
+see \emph{Parent shares use a staged lazy query} in
+\href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html#parent-shares-use-a-staged-lazy-query}{Database and lazy backends}.
 }
 
 A query is not safe merely because it returns no rows: some services bill

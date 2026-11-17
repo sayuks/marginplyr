@@ -177,7 +177,7 @@ keys share their names with the outer columns, \code{\link[tidyr:unnest]{tidyr::
 On an ungrouped result, \code{data} in \code{\link[dplyr:mutate]{dplyr::mutate()}} is the whole list
 column and \code{\link[=nrow]{nrow()}} of a list is \code{NULL}, so compute over its elements
 with \code{\link[=lapply]{lapply()}}, \code{\link[=vapply]{vapply()}}, or \code{purrr::map()}, as the examples do.
-\emph{Nest locally or with dtplyr} in \href{https://sayuks.github.io/marginplyr/vignettes/get_started.html}{Get started} shows both verbs
+\emph{Nest locally or with dtplyr} in \href{https://sayuks.github.io/marginplyr/vignettes/get_started.html#nest-locally-or-with-dtplyr}{Get started} shows both verbs
 side by side.
 }
 

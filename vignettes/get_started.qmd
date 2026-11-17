@@ -341,9 +341,11 @@ retail_sales |>
 
 This refusal, like every error marginplyr raises for a call you can correct,
 inherits the `"marginplyr_error"` class, so one `marginplyr_error` handler
-catches them; *Errors and warnings* in the [package
-reference](https://sayuks.github.io/marginplyr/man/marginplyr-package.html)
-states the contract and the errors that need `rlang::try_fetch()`.
+catches them. The [condition
+reference](https://sayuks.github.io/marginplyr/man/marginplyr_conditions.html#the-marginplyr_error-class)
+states what the class promises, and *Errors and warnings* in the [package
+reference](https://sayuks.github.io/marginplyr/man/marginplyr-package.html#errors-and-warnings)
+the errors that need `rlang::try_fetch()`.
 
 `"drop"` retains one copy; `"keep"` retains both copies when repeated totals
 are intentionally meaningful. `.id` names an extra column numbering each row's
@@ -455,8 +457,8 @@ reference](https://sayuks.github.io/marginplyr/man/grouping_bit.html) compares
 `.id`, `inspect_grouping()$set_id`, `grouping_bit()`, and `grouping_id()` in
 full. The [Grouping identity
 guide](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html)
-works through the same values with executable examples, and
-[Recipes](https://sayuks.github.io/marginplyr/vignettes/recipes.html) uses
+works through the same values with executable examples, and [Recipes for common reporting
+tasks](https://sayuks.github.io/marginplyr/vignettes/recipes.html) uses
 them to keep one grouping set and to name the set behind every row.
 
 `grouping_id()` combines the flags as a bit mask. Its last argument is the
@@ -536,7 +538,7 @@ retail_sales |>
 output, with no label for `.check_margin_label` to look for among the source
 values. They differ only on a factor that already has an `NA` level.
 *Display labels and grouping identity* in the [`margin_verbs`
-reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html) gives
+reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html#display-labels-and-grouping-identity) gives
 those cases along with the naming rules, ordered-factor preservation, and
 level positioning; [Three kinds of apparent
 missingness](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html#three-kinds-of-apparent-missingness)
@@ -848,12 +850,12 @@ nested_by_dt$data[[1]]
 #### Relationship to tidyr and dplyr
 
 The nesting verbs share the result shapes of `tidyr::nest()` and
-`dplyr::nest_by()` but are not drop-in replacements; the first section of the
+`dplyr::nest_by()` but are not drop-in replacements; *Differences from nest()* in the
 [`nest_with_margins()`
-reference](https://sayuks.github.io/marginplyr/man/nest_with_margins.html) and
-of the [`nest_by_with_margins()`
-reference](https://sayuks.github.io/marginplyr/man/nest_by_with_margins.html)
-lists each verb's differences. Both take `.sort`, which orders the outer keys
+reference](https://sayuks.github.io/marginplyr/man/nest_with_margins.html#differences-from-nest)
+and *Differences from nest_by()* in the [`nest_by_with_margins()`
+reference](https://sayuks.github.io/marginplyr/man/nest_by_with_margins.html#differences-from-nest_by)
+list each verb's differences. Both take `.sort`, which orders the outer keys
 as it orders a summary; use `arrange()` for any order `.sort` does not express.
 
 Nesting rejects `.duplicates = "keep"`, with or without `.id`, where the value
@@ -998,7 +1000,7 @@ When those empty keys belong in the report, complete the input before the
 Margin operation, as [Complete absent keys before
 margins](https://sayuks.github.io/marginplyr/vignettes/completing_keys.html)
 shows. *Grouped and row-wise inputs* in the [`margin_verbs`
-reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html) states
+reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html#grouped-and-row-wise-inputs) states
 the rule for all four verbs.
 
 ### Intentional differences from `dplyr::summarize()`
@@ -1049,7 +1051,7 @@ retail_sales |>
 ```
 
 *Relationship to dplyr summaries* in the [`summarize_with_margins()`
-reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html)
+reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html#relationship-to-dplyr-summaries)
 states each of these rules in full, with the ones this guide does not show.
 
 ## Next steps

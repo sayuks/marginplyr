@@ -78,7 +78,7 @@ column.
 Constructors select existing columns; they do not compute one, so
 \code{rollup(format(day, "\%Y"))} fails even when \code{day} exists. Create a derived
 dimension with \code{\link[dplyr:mutate]{dplyr::mutate()}} first, as \emph{Computed grouping columns} in
-the \href{https://sayuks.github.io/marginplyr/vignettes/get_started.html}{Get started guide} shows.
+\href{https://sayuks.github.io/marginplyr/vignettes/get_started.html#computed-grouping-columns}{Get started} shows.
 
 Each form expands to these grouping sets. A \code{\link[=rollup]{rollup()}} of n dimensions
 gives n + 1 sets, a \code{\link[=cube]{cube()}} gives 2^n, and a \code{\link[=grouping_spec]{grouping_spec()}} the
@@ -96,8 +96,8 @@ product of its arguments' counts:\tabular{ll}{
 
 A \code{\link[=cube]{cube()}} lists its sets from the most dimensions to the fewest.
 \code{\link[=inspect_grouping]{inspect_grouping()}} lists the sets any specification expands to, in the
-order \code{.id} numbers them, and \emph{Choose the grouping operation} in the
-\href{https://sayuks.github.io/marginplyr/vignettes/get_started.html}{Get started guide} works through each form.
+order \code{.id} numbers them, and \emph{Choose the grouping operation} in
+\href{https://sayuks.github.io/marginplyr/vignettes/get_started.html#choose-the-grouping-operation}{Get started} works through each form.
 
 Combining forms can produce the same grouping set more than once. Every
 \code{\link[=rollup]{rollup()}} and \code{\link[=cube]{cube()}} contains the empty set, so
@@ -117,7 +117,7 @@ it is a Margin dimension instead, so the plan has no Grand total set and
 
 A resolved Grouping plan can be read back in four ways: \code{.id},
 \code{\link[=inspect_grouping]{inspect_grouping()}}\verb{$set_id}, \code{\link[=grouping_bit]{grouping_bit()}}, and \code{\link[=grouping_id]{grouping_id()}}.
-\code{\link[=grouping_bit]{grouping_bit()}} compares them; the \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide} works
+\code{\link[=grouping_bit]{grouping_bit()}} compares them; \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{Grouping identity} works
 through the same values with executable examples.
 }
 \section{How an argument is read}{

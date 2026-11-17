@@ -77,7 +77,7 @@ On other pages:
   in Get started.
 - Keep a failure of your own warning callback separate from the summary's
   error or cancellation: *R's handler boundary* in the [condition
-  contract](https://sayuks.github.io/marginplyr/man/marginplyr_conditions.html).
+  contract](https://sayuks.github.io/marginplyr/man/marginplyr_conditions.html#rs-handler-boundary).
 
 ## Installation
 
@@ -296,7 +296,7 @@ key a factor or use `.margin_label = NULL`, as in [Keep a numeric dimension in
 numeric order](#keep-a-numeric-dimension-in-numeric-order).
 
 *Margin order* in the [`margin_verbs`
-reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html)
+reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html#margin-order)
 states the whole key.
 
 ### Sort a lazy table the same way
@@ -873,7 +873,7 @@ retail_sales |>
 
 The last row is East's region subtotal, and its share is greater than one: it
 took the unnamed store's revenue as its denominator. [Grouping
-identity](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html)
+identity](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html#three-kinds-of-apparent-missingness)
 sets out the three kinds of apparent missingness this confuses, and why
 `share_of_parent()` cannot make the same mistake internally.
 
@@ -1584,7 +1584,7 @@ report_by_spec(retail_sales, store_hierarchy) |>
 read a bare name rather than a `.data[[ ]]` subscript; a name held as a string
 reaches them as `!!rlang::sym(name)`. *Forwarding a column from your own
 function* in
-[`grouping_bit()`](https://sayuks.github.io/marginplyr/man/grouping_bit.html)
+[`grouping_bit()`](https://sayuks.github.io/marginplyr/man/grouping_bit.html#forwarding-a-column-from-your-own-function)
 and *Forwarding a name from your own function* in
-[`share_of_parent()`](https://sayuks.github.io/marginplyr/man/share_of_parent.html)
+[`share_of_parent()`](https://sayuks.github.io/marginplyr/man/share_of_parent.html#forwarding-a-name-from-your-own-function)
 say how a forwarded name is resolved.

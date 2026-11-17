@@ -24,9 +24,9 @@
 #' @section Guides:
 #' - [Get started][g1]
 #' - [Recipes for common reporting tasks][g5]
-#' - [Database and lazy backends][g2]
 #' - [Grouping identity][g3]
 #' - [Complete absent keys before margins][g4]
+#' - [Database and lazy backends][g2]
 #'
 #' [g1]: https://sayuks.github.io/marginplyr/vignettes/get_started.html
 #' [g2]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html
@@ -50,10 +50,25 @@
 #'
 #' @section Errors and warnings:
 #' Every error marginplyr raises for a call you can correct inherits the
-#' `"marginplyr_error"` class. A Margin verb raises it directly, so
-#' `tryCatch()` catches it:
+#' `"marginplyr_error"` class, and a Margin verb raises it directly, so a
+#' `tryCatch()` handler for that class catches it. A marginplyr helper such as
+#' [grouping_bit()] used inside an ordinary dplyr verb, and an error your own
+#' summary expression raises, instead arrive as the `$parent` of the error
+#' dplyr raises, so match them through the parent with [rlang::try_fetch()],
+#' as the examples below do.
 #'
-#' ```r
+#' [marginplyr_conditions] states the rest of the contract.
+#'
+#' @section Recording the SQL marginplyr prepares:
+#' With `options(marginplyr.audit_sql = TRUE)` set before a Margin verb call,
+#' [last_sent_queries()] reads back the SQL that call prepared. Its internal
+#' rows are what marginplyr sent while building the call, and its `"result"`
+#' row is what your own [dplyr::collect()] will send.
+#'
+#' [last_sent_queries()] states what the record holds and promises.
+#'
+#' @examples
+#' # A Margin verb raises the class directly, so `tryCatch()` catches it.
 #' tryCatch(
 #'   summarize_with_margins(
 #'     retail_sales,
@@ -63,80 +78,11 @@
 #'   ),
 #'   marginplyr_error = function(cnd) conditionMessage(cnd)
 #' )
-#' ```
 #'
-#' `"marginplyr_error"` is the only package-specific class marginplyr promises.
-#' Narrower subclasses and the wording of any message are implementation details
-#' that can change without a deprecation cycle, so match on the class rather
-#' than on message text. No field of the condition names the argument it
-#' refuses; only the message does.
-#'
-#' Two kinds of error arrive as the `$parent` of an error dplyr raises, so a
-#' `tryCatch()` handler for their class does not see them: a marginplyr helper
-#' such as [grouping_bit()] used inside an ordinary dplyr verb, and an error
-#' your own summary expression raises, as it does in [dplyr::summarize()].
-#' Match them
-#' with [rlang::try_fetch()], which also searches the parent chain and hands
-#' its handler the matching condition, test with [rlang::cnd_inherits()], or
-#' read `cnd$parent`:
-#'
-#' ```r
+#' # A helper inside an ordinary dplyr verb arrives as the parent of dplyr's
+#' # error, which `rlang::try_fetch()` searches.
 #' rlang::try_fetch(
 #'   dplyr::mutate(retail_sales, bit = grouping_bit(region)),
 #'   marginplyr_error = function(cnd) conditionMessage(cnd)
-#' )
-#' ```
-#'
-#' Errors raised by tidyselect, by dplyr, or by a database backend fall outside
-#' the class and propagate with their original class, diagnostic, and cause
-#' intact. So do marginplyr's internal invariant checks, which report a defect
-#' no change to your call can avoid; please report those at
-#' <https://github.com/sayuks/marginplyr/issues>.
-#'
-#' marginplyr itself raises no warning: it states what it will not do by
-#' refusing. How a Margin operation reports the conditions your expressions
-#' raise, and what an interrupt, a warning handler, or a failed SQLite cleanup
-#' leaves you to catch, are stated in [marginplyr_conditions].
-#'
-#' @section Recording the SQL marginplyr prepares:
-#' marginplyr records prepared SQL representations only when you ask for them.
-#' `options(marginplyr.audit_sql = TRUE)` switches the record on, and
-#' [last_sent_queries()] reads the most recent call's record in recording order:
-#'
-#' ```r
-#' # `sales_db` is a lazy table on a SQL connection.
-#' old <- options(marginplyr.audit_sql = TRUE)
-#'
-#' report <- summarize_with_margins(
-#'   sales_db,
-#'   revenue = sum(revenue, na.rm = TRUE),
-#'   .grouping = rollup(region, store)
-#' )
-#'
-#' internal <- last_sent_queries(include_result = FALSE)
-#' last_sent_queries()
-#' options(old)
-#' ```
-#'
-#' The default view includes the prepared, unexecuted result SQL;
-#' `include_result = FALSE` selects internal work. Add `details = TRUE` for
-#' observed internal outcomes and condition summaries, captured during every
-#' audited call. Recording renders queries
-#' locally or records literal SQL controls, adding no backend operation.
-#' A missing SQL value means diagnostic rendering failed, and a recorded
-#' representation does not prove database receipt or completion.
-#' *[When marginplyr queries your data][margin_verbs]* in [margin_verbs]
-#' states which internal operations can run. Copy or export the record before
-#' the next call replaces it; a failed call leaves its own partial record
-#' readable.
-#'
-#' What the record holds, which calls keep one, and what an empty or incomplete
-#' read means are stated in [last_sent_queries()]'s own reference.
-#'
-#' @examples
-#' summarize_with_margins(
-#'   .data = retail_sales,
-#'   revenue = sum(revenue),
-#'   .grouping = rollup(region, store)
 #' )
 "_PACKAGE"

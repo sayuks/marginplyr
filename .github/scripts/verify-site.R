@@ -267,9 +267,6 @@ markers <- list(
     "SQL-style grouping sets",
     "A total is not the same thing as",
     "Choose the tool for the job",
-    # The same section as its anchor, which Get started links in place of a
-    # comparison table of its own.
-    "id=\"choose-the-tool-for-the-job\"",
     "grouping_identity.html",
     "completing_keys.html",
     "database_backends.html"
@@ -368,7 +365,7 @@ markers <- list(
     "never copies, collects, uploads, downloads"
   ),
   "docs/vignettes/database_backends.html" = c(
-    "is already present in grouping column:",
+    "is already a factor level in grouping column:",
     "One report, two execution locations",
     "GROUP BY GROUPING SETS",
     "Execute in DuckDB",
@@ -382,13 +379,12 @@ markers <- list(
     "share_of_total",
     "Completion stays in the lazy input pipeline",
     "Record the SQL marginplyr prepares",
-    # The dialect question's row and its handled condition, from the record
-    # chunk's printed tibbles. Both appear only when that chunk is the page's
-    # first DuckDB share request, since a cached answer records neither, so a
-    # chunk moved after another share request fails here rather than rendering
-    # an empty record.
-    "share_dialect         errored",
-    "1 invocation handled",
+    # The dialect question's control row, from the record chunk's printed
+    # tibble. It appears only when that chunk is the page's first DuckDB share
+    # request, since a cached answer records neither question, so a chunk moved
+    # after another share request fails here rather than rendering an empty
+    # record.
+    "4 share_dialect_control",
     # The backend support matrix and the converted-dimension table, by their
     # anchors and by one cell each. The verification paragraph beside them
     # states no scope of its own: the `margin_verbs` reference owns that, so a
@@ -403,7 +399,7 @@ markers <- list(
     "Which claim rests on which is stated in one place",
     # The dtplyr rejected-call chunk is guarded by `has_dtplyr`; this prose
     # carries the refusal even when that optional backend is absent.
-    "faithful metadata from isolated zero-row sources",
+    "refused before processing source rows, including an aggregate",
     # The unconditional half of the mutable-step refusal (ADR 0029). Its
     # rejected-call chunk is behind `has_dtplyr`, so the prose introducing it is
     # what a marker can reach, and this run of it holds no apostrophe and no
@@ -445,23 +441,12 @@ markers <- list(
     # cross-reference.
     "Summaries a lazy backend cannot carry",
     "cannot carry back a summary with no columns in it",
-    # The single home of the SQLite `compute()` contract, by its anchor: the
-    # database guide links it with this fragment, so a heading change that
-    # moved the id would leave that link landing at the top of the page.
-    "id=\"sqlite-materialization\"",
     "cannot select any column named in the complete Grouping plan",
     "cur_group_id"
   ),
   # The one home of what the Margin verbs share, which every verb page links.
   "docs/man/margin_verbs.html" = c(
     "Display labels and grouping identity",
-    # The same section again, as the anchor rather than as its heading text.
-    # `grouping_identity.qmd` is the one vignette that links a man page with a
-    # fragment, and a heading whose words survive a change to how quarto
-    # derives its `id` would leave that link landing at the top of this page
-    # with nothing failing. The heading marker above cannot stand for it: it
-    # matches the words wherever they are written.
-    "id=\"display-labels-and-grouping-identity\"",
     "NA is already a factor level",
     # The Arrow fallback refusal, which `R/share.R` and the summary page link
     # here for. The claim does not survive a section reduced to a
@@ -484,9 +469,9 @@ markers <- list(
     # promises, not by the name alone: a name survives a section reduced to a
     # cross-reference.
     "Errors and warnings",
-    "is the only package-specific class marginplyr promises",
+    "match them through the parent",
     "Recording the SQL marginplyr prepares",
-    "switches the record on",
+    "reads back the SQL that call prepared",
     # The Guides list, by its heading and by one entry's href. No entry's text
     # can serve: all five are vignette titles, and the sidebar renders every
     # one of them on all 21 pages, so a marker quoting one passes on a page
@@ -498,6 +483,7 @@ markers <- list(
   # The condition contract `?marginplyr` links to. Each field is quoted by
   # the section stating it, and the boundary by the sentence naming it.
   "docs/man/marginplyr_conditions.html" = c(
+    "is the only package-specific class marginplyr promises",
     "handler boundary.",
     "$replay_error",
     "$cleanup",
@@ -508,7 +494,7 @@ markers <- list(
     "Formats and ordinary tibble behavior",
     "Positron",
     "31 Margin dimensions",
-    "separate from a SQL execution plan"
+    "is not a SQL execution plan"
   ),
   "docs/man/share_of_parent.html" = c(
     "Direct shares",
@@ -560,6 +546,80 @@ for (page in pages) {
   if (!is.null(markers[[page]])) {
     assert_markers(text, markers[[page]], page)
   }
+}
+
+# Every link into the site that names a fragment must land on an element
+# carrying that id, so a renamed heading fails here instead of sending the
+# reader to the top of the page. The links are read from the rendered pages
+# rather than listed, so a fragment added to any source is covered without an
+# edit here. A link is into the site when it is relative or starts with the
+# site root DESCRIPTION's `URL` names, which is how a README link and a
+# roxygen `\href` reach a page.
+site_root <- grep(
+  "github\\.io",
+  trimws(strsplit(read.dcf("DESCRIPTION", "URL")[[1L]], ",")[[1L]]),
+  value = TRUE
+)
+if (length(site_root) != 1L) {
+  stop(call. = FALSE, "DESCRIPTION's `URL` must name exactly one site root.")
+}
+site_root <- sub("/?$", "/", site_root)
+
+# The site file a link names, with `.` and `..` segments resolved against the
+# directory of the page holding it. `NA` for a link that leaves the site.
+link_target <- function(href, page) {
+  if (startsWith(href, site_root)) {
+    path <- file.path("docs", substring(href, nchar(site_root) + 1L))
+  } else if (grepl("^[A-Za-z][A-Za-z0-9+.-]*:|^//", href)) {
+    return(NA_character_)
+  } else if (href == "") {
+    return(page)
+  } else {
+    path <- file.path(dirname(page), href)
+  }
+  if (path == "docs/" || endsWith(path, "/")) {
+    path <- paste0(path, "index.html")
+  }
+  parts <- strsplit(path, "/", fixed = TRUE)[[1L]]
+  kept <- character()
+  for (part in parts[nzchar(parts) & parts != "."]) {
+    kept <- if (part == "..") utils::head(kept, -1L) else c(kept, part)
+  }
+  paste(kept, collapse = "/")
+}
+
+dangling <- character()
+for (page in pages) {
+  hrefs <- regmatches(
+    texts[[page]],
+    gregexpr('href="[^"#]*#[^"]+"', texts[[page]])
+  )[[1L]]
+  hrefs <- unique(gsub("&amp;", "&", substr(hrefs, 7L, nchar(hrefs) - 1L)))
+  for (href in hrefs) {
+    target <- link_target(sub("#.*", "", href), page)
+    if (is.na(target)) {
+      next
+    }
+    fragment <- utils::URLdecode(sub("^[^#]*#", "", href))
+    text <- if (target %in% names(texts)) {
+      texts[[target]]
+    } else if (file.exists(target)) {
+      read_page(target)
+    }
+    if (
+      is.null(text) ||
+        !grepl(paste0('id="', fragment, '"'), text, fixed = TRUE)
+    ) {
+      dangling <- c(dangling, sprintf("%s: %s", page, href))
+    }
+  }
+}
+if (length(dangling) > 0L) {
+  stop(
+    call. = FALSE,
+    "Links whose fragment names no id on the target page:\n",
+    paste0("- ", dangling, collapse = "\n")
+  )
 }
 
 # The one assertion about a page's structure rather than its text: the first

@@ -248,7 +248,7 @@ distinct counts overlap, and medians do not combine.
 A Grouping specification declares which grouping sets exist, not the value
 domain of each dimension. `share_of_parent()` and `share_of_total()` hold the
 same line: *Value rules* in the [`share_of_parent()`
-reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html) states
+reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html#value-rules) states
 that neither ever completes keys, so a denominator with no row behind it gives
 `NA_real_` rather than a number.
 
@@ -415,7 +415,7 @@ completion data implicitly. Connection choice, data movement, and execution
 remain ordinary dplyr and dbplyr operations owned by the caller.
 
 Execution, not completion, is where each backend starts to impose rules of its
-own. [Database
+own. [Database and lazy
 backends](https://sayuks.github.io/marginplyr/vignettes/database_backends.html)
 takes the lazy pipeline from here through query shape, `collect()`, and what
 each backend is verified to do.
