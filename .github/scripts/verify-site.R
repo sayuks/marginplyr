@@ -319,15 +319,22 @@ markers <- list(
   "docs/vignettes/recipes.html" = c(
     "Task index",
     "Put each subtotal with the rows it summarizes",
+    "Put the totals above the rows they summarize",
     "Sort the newest year first",
     "Sort regions and stores by revenue",
+    "Show the top stores in each region with full totals",
+    "Report by year, quarter and month",
     "Show each row as a percent of the total",
     "Show each row as a percent of a level further up",
-    "Show only the subtotals of one level",
+    "Show only the subtotals, only the detail, or one level",
     "Add a level column: detail, subtotal or total",
     "The same join against a lazy table",
+    "Style the total rows in a printed table",
+    "Report a mean, a median or a distinct count",
+    "Report a weighted mean",
     "Fix a nested-aggregate error on a database",
     "Make a crosstab (pivot table) with totals on both edges",
+    "Show each crosstab cell as a percent of its row or column",
     "share_of_total",
     "expand_with_margins",
     # The guide's rejected-call chunks, by the diagnostics they render. Prose
@@ -375,9 +382,15 @@ markers <- list(
     # an empty record.
     "share_dialect         errored",
     "1 invocation handled",
-    # The verification section, which states no scope of its own: the
-    # `summarize_with_margins()` reference owns that, so a marker naming a
-    # backend here would pin a restatement this section does not carry.
+    # The backend support matrix and the converted-dimension table, by their
+    # anchors and by one cell each. The verification paragraph beside them
+    # states no scope of its own: the `margin_verbs` reference owns that, so a
+    # marker naming a backend there would pin a restatement the paragraph does
+    # not carry.
+    "id=\"backend-support-matrix\"",
+    "A catalog query and a zero-row read",
+    "id=\"converted-dimension-text\"",
+    "19723.0",
     "SQL simulation is useful evidence about rendering",
     "treat a simulator-only backend as SQL-generation support",
     "Which claim rests on which is stated in one place",

@@ -82,10 +82,11 @@ Margin dimension is equal to that dimension's display label. Each
 dimension is checked independently, and a typed-missing label opts its
 own dimension out -- \code{NULL} or \code{NA_character_}, chosen per dimension in a
 named-list \code{.margin_label}.
-Every Margin verb uses the same default: \code{TRUE} for local data frames and
-\code{FALSE} for lazy inputs, which are read only when the caller asks. A label
-check after collecting a lazy input therefore defaults to \code{TRUE} instead
-of \code{FALSE}; set \code{.check_margin_label} explicitly when following a
+The default is \code{TRUE} for local data frames and \code{FALSE} for lazy inputs,
+which are read only when the caller asks. \code{\link[=nest_by_with_margins]{nest_by_with_margins()}} reads
+a \code{dtplyr} step's rows when called, so it also checks one by default. A
+label check after collecting a lazy input therefore defaults to \code{TRUE}
+instead of \code{FALSE}; set \code{.check_margin_label} explicitly when following a
 collect-first remediation.
 A label equal to a declared factor \emph{level} is rejected wherever
 marginplyr holds the levels, whatever this argument says, because finding
@@ -142,9 +143,14 @@ except for the leading class described in \emph{SQLite materialization}; see
 With a character \code{.margin_label}, the default, a Margin dimension that
 is not a factor becomes character so that it can hold the label:
 \code{.grouping = rollup(year)} over an integer \code{year} returns \code{year} as
-character, with \code{"Total"} on the margin row. A factor dimension instead
-gains the label as a new level. \code{.margin_label = NULL} or \code{NA_character_}
-keeps every dimension's type and marks margin rows with a missing value.
+character, with \code{"Total"} on the margin row. On a lazy input the text is
+the backend's own cast, so a double \code{10} reads \code{"10.0"} on DuckDB and
+SQLite and a logical \code{TRUE} reads \code{"true"} or \code{"1"}; \emph{Converted
+dimension text} in the \href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html}{database guide} tabulates them. When the
+text matters, give the column the type you want with \code{\link[dplyr:mutate]{dplyr::mutate()}}
+first. A factor dimension instead gains the label as a new level.
+\code{.margin_label = NULL} or \code{NA_character_} keeps every dimension's type and
+marks margin rows with a missing value.
 }
 \description{
 \code{\link[=summarize_with_margins]{summarize_with_margins()}} extends \code{\link[dplyr:summarize]{dplyr::summarize()}} with grouping sets,
@@ -248,6 +254,12 @@ and \code{.y = mean(v)} are refused, although \code{\link[dplyr:summarise]{dplyr
 them as columns. A name further away, such as \code{.margin_lable} or
 \code{.sotr = "last"}, is not caught and becomes a summary column; check option
 names when a result has an unexpected column.
+
+A Grouping specification written in \code{...} rather than in \code{.grouping} --
+\code{rollup(region)} passed unnamed, or as \code{grouping = rollup(region)} -- is
+refused with the \code{.grouping = rollup(region)} spelling to use, on a local
+and a lazy input alike. A constructor name is looked up as R looks it up, so
+a function of your own named \code{rollup()} still runs as a summary.
 }
 
 \section{Summaries a lazy backend cannot carry}{
