@@ -419,7 +419,8 @@ Config/testthat/start-first:
     share-unresolved-frames,
     share-captured-removals,
     share-evaluation-frames,
-    share-removal-targets
+    share-removal-targets,
+    grouping-spec-as-summary
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
