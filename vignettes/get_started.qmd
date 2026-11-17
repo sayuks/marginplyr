@@ -312,6 +312,12 @@ retail_sales |>
   )
 ```
 
+This refusal, like every error marginplyr raises for a call you can correct,
+inherits the `"marginplyr_error"` class, so one `marginplyr_error` handler
+catches them; *Errors and warnings* in the [package
+reference](https://sayuks.github.io/marginplyr/man/marginplyr-package.html)
+states the contract and the errors that need `rlang::try_fetch()`.
+
 `"drop"` retains one copy; `"keep"` retains both copies when repeated totals
 are intentionally meaningful:
 

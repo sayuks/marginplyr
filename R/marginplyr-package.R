@@ -50,7 +50,8 @@
 #'
 #' @section Errors and warnings:
 #' Every error marginplyr raises for a call you can correct inherits the
-#' `"marginplyr_error"` class, so one handler catches them all:
+#' `"marginplyr_error"` class. A Margin verb raises it directly, so
+#' `tryCatch()` catches it:
 #'
 #' ```r
 #' tryCatch(
@@ -67,13 +68,29 @@
 #' `"marginplyr_error"` is the only package-specific class marginplyr promises.
 #' Narrower subclasses and the wording of any message are implementation details
 #' that can change without a deprecation cycle, so match on the class rather
-#' than on message text.
+#' than on message text. No field of the condition names the argument it
+#' refuses; only the message does.
 #'
-#' Other errors deliberately fall outside the class. Errors raised by
-#' your own summary expressions, by tidyselect, by dplyr, or by a database
-#' backend propagate with their original class, diagnostic, and cause intact.
-#' So do marginplyr's internal invariant checks, which report a defect no
-#' change to your call can avoid; please report those at
+#' Two kinds of error arrive as the `$parent` of an error dplyr raises, so a
+#' `tryCatch()` handler for their class does not see them: a marginplyr helper
+#' such as [grouping_bit()] used inside an ordinary dplyr verb, and an error
+#' your own summary expression raises, as it does in [dplyr::summarize()].
+#' Match them
+#' with [rlang::try_fetch()], which also searches the parent chain and hands
+#' its handler the matching condition, test with [rlang::cnd_inherits()], or
+#' read `cnd$parent`:
+#'
+#' ```r
+#' rlang::try_fetch(
+#'   dplyr::mutate(retail_sales, bit = grouping_bit(region)),
+#'   marginplyr_error = function(cnd) conditionMessage(cnd)
+#' )
+#' ```
+#'
+#' Errors raised by tidyselect, by dplyr, or by a database backend fall outside
+#' the class and propagate with their original class, diagnostic, and cause
+#' intact. So do marginplyr's internal invariant checks, which report a defect
+#' no change to your call can avoid; please report those at
 #' <https://github.com/sayuks/marginplyr/issues>.
 #'
 #' marginplyr itself raises no warning: it states what it will not do by

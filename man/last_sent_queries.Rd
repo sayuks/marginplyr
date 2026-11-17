@@ -172,6 +172,16 @@ marginplyr keeps no accumulated history and writes no file automatically:
 utils::write.csv(internal, path, row.names = FALSE)
 }\if{html}{\out{</div>}}
 
+The \code{details = TRUE} view's \code{conditions} column is a list, which
+\code{write.csv()} cannot write. Drop that column first, or keep the whole view
+with \code{saveRDS()}:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{detailed <- last_sent_queries(details = TRUE)
+utils::write.csv(detailed[names(detailed) != "conditions"], path,
+                 row.names = FALSE)
+saveRDS(detailed, rds_path)
+}\if{html}{\out{</div>}}
+
 For a batch of calls, read the record after each one and bind the pieces:
 
 \if{html}{\out{<div class="sourceCode r">}}\preformatted{records <- lapply(specs, function(spec) \{

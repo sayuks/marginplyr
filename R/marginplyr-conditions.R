@@ -44,8 +44,7 @@
 #' interrupt inherits `"interrupt"` and `"condition"`, not `"error"` or
 #' `"marginplyr_error"`. Its `$interrupt` holds the original interrupt and its
 #' `$parent` holds the earlier execution error, including that error's own
-#' cause chain. A lone interrupt needs no wrapper. Absent information may be
-#' `NULL` or absent.
+#' cause chain. A lone interrupt needs no wrapper.
 #'
 #' With no exiting interrupt handler, interruption retains native R recovery
 #' and interruption hooks. A returning calling handler first receives the
@@ -199,6 +198,37 @@
 #' stopifnot(
 #'   is.data.frame(completed$operation$value),
 #'   identical(completed$callback_failure, logger_failure)
+#' )
+#' }
+#'
+#' # An interrupt that arrives after an error keeps that error. The grand
+#' # total fails, then `warning.expression` simulates cancellation while the
+#' # regional warning is replayed.
+#' old <- options(warning.expression = quote(rlang::interrupt()))
+#' enriched <- tryCatch(
+#'   summarize_with_margins(
+#'     retail_sales,
+#'     revenue = {
+#'       if (grouping_bit(region) == 1L) stop("The grand total failed")
+#'       warning("Check regional revenue")
+#'       sum(revenue)
+#'     },
+#'     .grouping = rollup(region)
+#'   ),
+#'   interrupt = function(cnd) {
+#'     list(interrupt = cnd$interrupt, earlier_error = cnd$parent)
+#'   }
+#' )
+#' options(old)
+#'
+#' conditionMessage(enriched$earlier_error)
+#' \dontshow{
+#' stopifnot(
+#'   inherits(enriched$interrupt, "interrupt"),
+#'   identical(
+#'     conditionMessage(enriched$earlier_error$parent),
+#'     "The grand total failed"
+#'   )
 #' )
 #' }
 #' @name marginplyr_conditions

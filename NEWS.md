@@ -56,7 +56,7 @@ Initial CRAN release.
   the SQL a Margin verb prepares or sends.
 
 * Every error marginplyr raises for a correctable call inherits the
-  `"marginplyr_error"` class; see `?marginplyr_conditions`.
+  `"marginplyr_error"` class; see *Errors and warnings* in `?marginplyr`.
 
 * Guides cover getting started, common reporting recipes, Grouping identity,
   completing absent keys, and database and lazy backends.
