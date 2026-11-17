@@ -26,7 +26,7 @@ immediate rollup parent, and \code{share_of_total()} by the grand total.
 \tabular{lll}{
    Helper \tab Denominator \tab Accepted \code{.grouping} \cr
    \code{share_of_parent()} \tab The immediately less detailed \code{\link[=rollup]{rollup()}} level \tab One pure \code{\link[=rollup]{rollup()}} \cr
-   \code{share_of_total()} \tab The Grand total set, in which every grouping dimension is omitted \tab Any specification whose plan contains one \cr
+   \code{share_of_total()} \tab The Grand total set, in which every Margin dimension is omitted \tab Any specification whose plan contains one \cr
 }
 
 
@@ -54,9 +54,11 @@ nothing in the plan says which of them is \emph{the} parent.
 \code{share_of_total()} has no such choice to make: a Grand total set is not
 selected, and a plan either contains one or does not. It therefore accepts
 any Grouping specification whose plan contains one. \code{\link[=rollup]{rollup()}} and \code{\link[=cube]{cube()}}
-always produce one; \code{\link[=grouping_sets]{grouping_sets()}} produces one only when it includes an
-empty \code{\link[=grouping_set]{grouping_set()}}, a \code{\link[=grouping_spec]{grouping_spec()}} product only when every factor
-produces an empty set, and a lone \code{\link[=grouping_set]{grouping_set()}} only when it is empty. A
+always produce one, and so does \code{.grouping = NULL}; \code{\link[=grouping_sets]{grouping_sets()}}
+produces one only when some member produces the empty set, as an empty
+\code{\link[=grouping_set]{grouping_set()}} or a \code{\link[=rollup]{rollup()}} member does, a \code{\link[=grouping_spec]{grouping_spec()}} product
+only when every factor produces an empty set, and a lone \code{\link[=grouping_set]{grouping_set()}}
+only when it is empty. A
 specification without one is rejected naming the change that gives it one.
 
 Neither helper reaches a level between the two. For a denominator at a
@@ -87,6 +89,10 @@ revenue_percent = 100 * share_of_parent(revenue)
 # Rewrite: derive from the finished share afterwards
 result |> dplyr::mutate(revenue_percent = 100 * revenue_share)
 }\if{html}{\out{</div>}}
+
+On a lazy input that \code{mutate()} wraps the result in a subquery, which drops
+an order \code{.sort} requested; \code{\link[dplyr:collect]{dplyr::collect()}} first, or \code{\link[dplyr:arrange]{dplyr::arrange()}}
+afterwards, as \emph{Execute in DuckDB} in the \href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html}{database guide} shows.
 
 A direct call cannot be unnamed, use a string, use a forward reference,
 redefine the source name, or use a share as another share's source.
@@ -201,7 +207,7 @@ reorder the public result.
 
 In \code{across(.cols, share_of_parent, .names = ...)} and its
 \code{share_of_total} counterpart, \code{.cols} sees only preceding eligible ordinary
-summaries. Source-data columns, fixed \code{.by} keys, variable grouping
+summaries. Source-data columns, fixed \code{.by} keys, Margin
 dimensions, and earlier shares are outside this selection context.
 \code{\link[dplyr:everything]{dplyr::everything()}} therefore means every preceding ordinary summary, not
 every input column.
@@ -345,7 +351,8 @@ With \code{.check_share_source = FALSE} on live SQLite, direct
 \code{\link[dplyr:collect]{dplyr::collect()}} keeps a declared double share when the result is
 empty or a finite prefix contains only missing shares.
 For direct \code{\link[dplyr:compute]{dplyr::compute()}}, see
-\emph{\link[=summarize_with_margins]{SQLite materialization}}.
+\emph{\link[=summarize_with_margins]{SQLite materialization}} in
+\code{\link[=summarize_with_margins]{summarize_with_margins()}}.
 
 Syntax, source-name, written-order, and \code{across()} errors are always
 reported locally, before execution, on every backend. The eligible-type
@@ -369,6 +376,9 @@ exactly-one-value cardinality rule is established with it:\tabular{ll}{
    General dbplyr \tab Type from the dialect, and cardinality as below \cr
 }
 
+
+The \emph{Backend support matrix} in the \href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html}{database guide} sets each backend
+family's share support beside its other answers.
 
 Arrow inputs reject both helpers after expression planning and common
 Margin-operation validation but before constructing a summary query. The

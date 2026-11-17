@@ -84,7 +84,7 @@ through each form.
 
 A column that belongs in every grouping set, such as a reporting month, is
 best passed as the Margin verb's \code{.by}. Written inside \code{\link[=grouping_spec]{grouping_spec()}}
-it is a grouping dimension instead, so the plan has no Grand total set and
+it is a Margin dimension instead, so the plan has no Grand total set and
 \code{\link[=share_of_total]{share_of_total()}} and \code{\link[=share_of_parent]{share_of_parent()}} are refused.
 
 A resolved Grouping plan can be read back in four ways: \code{.id},
@@ -140,7 +140,7 @@ value: after \code{s <- grouping_set(region)}, write
 under the same name makes \code{s} refer to the new specification itself.
 Reusing a specification in independent branches is allowed.
 
-A Grouping dimension keeps its input column name. Inside a selection,
+A Margin dimension keeps its input column name. Inside a selection,
 \code{c(region = region)} and \code{all_of(c(region = "region"))} both select \code{region}
 under its own name. A selection that changes the name, such as
 \code{c(area = region)}, is refused. Rename the result with \code{\link[dplyr:rename]{dplyr::rename()}}.

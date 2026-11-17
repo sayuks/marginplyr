@@ -9,7 +9,7 @@
 #' | Helper | Denominator | Accepted `.grouping` |
 #' |---|---|---|
 #' | `share_of_parent()` | The immediately less detailed [rollup()] level | One pure [rollup()] | # nolint: line_length_linter
-#' | `share_of_total()` | The Grand total set, in which every grouping dimension is omitted | Any specification whose plan contains one | # nolint: line_length_linter
+#' | `share_of_total()` | The Grand total set, in which every Margin dimension is omitted | Any specification whose plan contains one | # nolint: line_length_linter
 #'
 #' Fixed `.by` columns partition both calculations, so a fixed key never
 #' contributes to another partition's denominator. Everything else on this
@@ -36,9 +36,11 @@
 #' `share_of_total()` has no such choice to make: a Grand total set is not
 #' selected, and a plan either contains one or does not. It therefore accepts
 #' any Grouping specification whose plan contains one. [rollup()] and [cube()]
-#' always produce one; [grouping_sets()] produces one only when it includes an
-#' empty [grouping_set()], a [grouping_spec()] product only when every factor
-#' produces an empty set, and a lone [grouping_set()] only when it is empty. A
+#' always produce one, and so does `.grouping = NULL`; [grouping_sets()]
+#' produces one only when some member produces the empty set, as an empty
+#' [grouping_set()] or a [rollup()] member does, a [grouping_spec()] product
+#' only when every factor produces an empty set, and a lone [grouping_set()]
+#' only when it is empty. A
 #' specification without one is rejected naming the change that gives it one.
 #'
 #' Neither helper reaches a level between the two. For a denominator at a
@@ -71,6 +73,12 @@
 #' # Rewrite: derive from the finished share afterwards
 #' result |> dplyr::mutate(revenue_percent = 100 * revenue_share)
 #' ```
+#'
+#' On a lazy input that `mutate()` wraps the result in a subquery, which drops
+#' an order `.sort` requested; [dplyr::collect()] first, or [dplyr::arrange()]
+#' afterwards, as *Execute in DuckDB* in the [database guide][db] shows.
+#'
+#' [db]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html
 #'
 #' A direct call cannot be unnamed, use a string, use a forward reference,
 #' redefine the source name, or use a share as another share's source.
@@ -186,7 +194,7 @@
 #' @section Column-wise shares:
 #' In `across(.cols, share_of_parent, .names = ...)` and its
 #' `share_of_total` counterpart, `.cols` sees only preceding eligible ordinary
-#' summaries. Source-data columns, fixed `.by` keys, variable grouping
+#' summaries. Source-data columns, fixed `.by` keys, Margin
 #' dimensions, and earlier shares are outside this selection context.
 #' [dplyr::everything()] therefore means every preceding ordinary summary, not
 #' every input column.
@@ -332,7 +340,8 @@
 #' [dplyr::collect()] keeps a declared double share when the result is
 #' empty or a finite prefix contains only missing shares.
 #' For direct [dplyr::compute()], see
-#' *[SQLite materialization][summarize_with_margins]*.
+#' *[SQLite materialization][summarize_with_margins]* in
+#' [summarize_with_margins()].
 #'
 #' Syntax, source-name, written-order, and `across()` errors are always
 #' reported locally, before execution, on every backend. The eligible-type
@@ -356,6 +365,11 @@
 #' | `dtplyr` step | Both, at execution, before an invalid row |
 #' | Arrow | Neither; shares are rejected outright |
 #' | General dbplyr | Type from the dialect, and cardinality as below |
+#'
+#' The *Backend support matrix* in the [database guide][db] sets each backend
+#' family's share support beside its other answers.
+#'
+#' [db]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html
 #'
 #' Arrow inputs reject both helpers after expression planning and common
 #' Margin-operation validation but before constructing a summary query. The

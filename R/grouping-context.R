@@ -7,13 +7,13 @@
 #' [grouping_bit()] corresponds to SQL `GROUPING(x)`: it returns `1L` when
 #' `x` is absent from the grouping set and `0L` otherwise.
 #' [grouping_id()] combines those flags as a bit mask; its last argument is
-#' the least-significant bit. It accepts up to 31 distinct grouping columns.
+#' the least-significant bit. It accepts up to 31 distinct columns.
 #'
-#' Written with no columns, [grouping_id()] reads every `.grouping` column of
-#' the resolved plan, in plan order. That is the order [inspect_grouping()]
-#' reports, so a bare [grouping_id()] equals that function's `grouping_id` for
-#' the grouping set the row came from. Columns fixed by `.by` are not part of
-#' that default.
+#' Written with no columns, [grouping_id()] reads every Margin dimension --
+#' each column `.grouping` selects -- of the resolved plan, in plan order. That
+#' is the order [inspect_grouping()] reports, so a bare [grouping_id()] equals
+#' that function's `grouping_id` for the grouping set the row came from.
+#' Columns fixed by `.by` are not part of that default.
 #'
 #' The `_bit` suffix emphasizes the `0`/`1` result and deliberately avoids
 #' masking [base::grouping()], an unrelated function that returns a permutation
@@ -53,9 +53,9 @@
 #' Displayed Margin labels are not identity. A source value can equal its
 #' Margin label, and a source missing value can print exactly like a
 #' typed-missing Margin value, so retain one of these helpers or `.id` when
-#' structural identity matters. The complete label, factor, and missing-value
-#' contract is *[Display labels and grouping identity][summarize_with_margins]*
-#' in [summarize_with_margins()].
+#' the two must be told apart. The complete label, factor, and missing-value
+#' contract is *[Display labels and grouping identity][margin_verbs]* in
+#' [margin_verbs].
 #'
 #' The [grouping identity guide][guide] works through these values with
 #' executable examples.
@@ -70,9 +70,10 @@
 #' anything but a name is refused exactly where writing that expression out
 #' would be.
 #'
-#' @param x A bare grouping column.
-#' @param ... Bare grouping columns. Passing none reads every `.grouping`
-#'   column of the resolved plan.
+#' @param x A bare Margin dimension -- a column `.grouping` selects -- or a
+#'   fixed `.by` key, whose bit is always `0L`.
+#' @param ... Bare Margin dimensions or fixed `.by` keys. Passing none reads
+#'   every Margin dimension of the resolved plan.
 #'
 #' @return Used inside [summarize_with_margins()], one value per result row.
 #'   [grouping_bit()] gives an integer flag: `1L` where the column is absent
@@ -100,7 +101,9 @@
 #' `sum(grouping_id(a, b))`, aggregates a constant and follows its
 #' backend: it counts the constant once per group on a local data frame and
 #' in `dtplyr`, and once per row wherever the helper is a query literal, as
-#' plain `sum(1)` differs between a data frame and a database table. Combine
+#' plain `sum(1)` differs between a data frame and a database table. Arrow is
+#' the exception: it cannot aggregate the constant, so the summary is refused
+#' until the Arrow input is collected. Combine
 #' the helper with a column that varies by row, as in
 #' `sum(v * grouping_id(a, b))`, or put it outside the aggregate, as in
 #' `n() * grouping_id(a, b)`, for a value that agrees everywhere.

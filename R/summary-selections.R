@@ -161,6 +161,70 @@ check_empty_summaries <- function(dots) {
   ))
 }
 
+# The refusal for a Grouping specification written into `...` rather than
+# `.grouping` (#1699). A local input would refuse it as a non-vector summary
+# that never names `.grouping`, and a lazy one would translate the constructor
+# into SQL, so it is refused here, before any backend work. `data` is the
+# admitted input; only its column names are read.
+#
+# Constructor heads follow ordinary lookup (ADR 0019), so a bare head is
+# refused only where it resolves to marginplyr's own constructor, and a caller's
+# own `rollup()` still runs. A bare name is refused where it is bound to a
+# specification and no column of that name would win the data-mask lookup.
+check_grouping_spec_summaries <- function(dots, data) {
+  exprs <- lapply(dots, rlang::quo_get_expr)
+  data_vars <- if (any(vapply(exprs, rlang::is_symbol, logical(1)))) {
+    margin_col_names(data)
+  }
+  is_spec_dot <- function(dot) {
+    expr <- rlang::quo_get_expr(dot)
+    env <- rlang::quo_get_env(dot)
+    name <- static_spelling_name(expr, "grouping_constructor")
+    if (!is.null(name)) {
+      return(
+        !is.null(static_call_ns(expr)) ||
+          identical(
+            get0(name, envir = env, mode = "function"),
+            get(name, envir = asNamespace("marginplyr"))
+          )
+      )
+    }
+    if (!rlang::is_symbol(expr)) {
+      return(FALSE)
+    }
+    symbol <- rlang::as_string(expr)
+    if (symbol %in% data_vars) {
+      return(FALSE)
+    }
+    # An unbound name, or one whose promise fails, is left for the data mask
+    # to report as it would without this check.
+    value <- tryCatch(
+      rlang::env_get(env, symbol, default = NULL, inherit = TRUE),
+      error = function(cnd) NULL
+    )
+    inherits(value, "margin_grouping_spec")
+  }
+  spec_dots <- which(vapply(dots, is_spec_dot, logical(1), USE.NAMES = FALSE))
+  if (length(spec_dots) == 0L) {
+    return(invisible(NULL))
+  }
+
+  # The first one the caller wrote, as the checks above answer theirs.
+  # `written` and `rewrite` are read from the cli template below and nowhere
+  # else, which `codetools` cannot follow into.
+  position <- spec_dots[[1L]]
+  spelled <- call_part_label(exprs[[position]])
+  name <- rlang::names2(dots)[[position]]
+  prefix <- if (nzchar(name)) paste0(name, " = ") else ""
+  written <- paste0(prefix, spelled) # nolint: object_usage_linter.
+  rewrite <- paste0(".grouping = ", spelled) # nolint: object_usage_linter.
+  abort_marginplyr(c(
+    "A Grouping specification was captured as a summary:",
+    i = "{.code {written}}",
+    i = "Did you mean {.code {rewrite}}?"
+  ))
+}
+
 check_summary_context_helpers <- function(dots) {
   unsupported <- unique(unlist(
     lapply(
