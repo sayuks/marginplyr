@@ -222,7 +222,7 @@ binds_call_parts_with_for <- function(expr) {
     if (
       identical(node[[1L]], quote(`for`)) &&
         length(node) >= 3L &&
-        is_call_arguments(node[[3L]], locals)
+        is_call_arguments(strip_coverage_wrapper(node[[3L]]), locals)
     ) {
       found <<- TRUE
     }
@@ -315,6 +315,15 @@ test_that("the walk scan detects the shape it is written to forbid", {
   expect_true(binds_call_parts_with_for(body(through_derived)))
   expect_true(binds_call_parts_with_for(body(through_derived_parameter)))
   expect_false(binds_call_parts_with_for(body(compliant)))
+  # The sequence reads through `strip_coverage_wrapper()`.
+  for (generation in names(coverage_counters)) {
+    sequence <- coverage_wrap(
+      quote(static_call_args(expr)),
+      coverage_counters[[generation]]
+    )
+    instrumented <- bquote(for (part in .(sequence)) part)
+    expect_true(binds_call_parts_with_for(instrumented), info = generation)
+  }
   # An empty argument in the scanned code must not abort the scan, which is the
   # bug one level up.
   expect_false(binds_call_parts_with_for(quote(sum(value[]))))

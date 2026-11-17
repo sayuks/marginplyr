@@ -1126,22 +1126,12 @@ test_that("the reset scan tells an opening statement from a later one", {
 })
 
 test_that("the reset scan reads through covr's instrumentation", {
-  # The shapes covr rewrites a statement into, written out rather than produced
-  # by calling covr: covr is supplied by the coverage workflow and is in no
-  # dependency field, so a test that called it would put it in one. Measured on
-  # covr 3.6.5.9001 and on covr 4.0.0, the two counter calls the coverage job
-  # has installed. Only the counter is substituted in, for the reason
-  # `covr_internal()` gives; the wrapper around it is the literal covr writes.
+  # The literal wrapper covr writes, around each generation's counter from
+  # `coverage_counters`.
   reset <- quote(reset_sent_queries())
   forced <- quote(force(.data))
-  counters <- list(
-    "covr < 4.0.0" = function(key) as.call(list(covr_internal("count"), key)),
-    "covr >= 4.0.0" = function(key) {
-      call(".Call", covr_internal("covr_count"), key)
-    }
-  )
-  for (generation in names(counters)) {
-    counter <- counters[[generation]]
+  for (generation in names(coverage_counters)) {
+    counter <- coverage_counters[[generation]]
 
     braced <- function() NULL
     # jarl-ignore if_always_true: This reproduces covr's literal wrapper.

@@ -196,22 +196,21 @@ test_that("the readings behind the coverage gate", {
   # is a call that is not `stop()` at all.
   expect_identical(invariant_plural_sites(body(invariants)), 1L)
 
-  # covr >= 4.0.0 gives each arm of an unbraced `if` its own counter, measured
-  # on covr 4.0.0; the arms are still the two literals the count picks between.
-  arm <- function(key, literal) {
-    counter <- call(".Call", covr_internal("covr_count"), key)
-    # jarl-ignore if_always_true: This reproduces covr's literal wrapper.
-    bquote(if (TRUE) {
-      .(counter)
-      .(literal)
-    })
+  # The arms read through `strip_coverage_wrapper()`.
+  for (generation in names(coverage_counters)) {
+    counter <- coverage_counters[[generation]]
+    instrumented <- bquote(stop(
+      "column",
+      if (n == 1L) .(coverage_wrap(" ", counter)) else
+        .(coverage_wrap("s ", counter)),
+      call. = FALSE
+    ))
+    expect_identical(
+      invariant_plural_sites(instrumented),
+      1L,
+      info = generation
+    )
   }
-  instrumented <- bquote(stop(
-    "column",
-    if (n == 1L) .(arm("R/f.R:1", " ")) else .(arm("R/f.R:2", "s ")),
-    call. = FALSE
-  ))
-  expect_identical(invariant_plural_sites(instrumented), 1L)
 
   # `cli::pluralize()` is written qualified and `abort_marginplyr()` is not, so
   # the head reader has to answer both spellings and refuse the wrong name.
