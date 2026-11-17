@@ -84,7 +84,9 @@ A local packed data-frame, matrix, or array Margin dimension accepts only
 represent such a key; split it into separate columns if it needs display
 text.
 The same holds for a list-column dimension, locally or under dtplyr, and
-for an Arrow list, large list, or fixed-size list dimension.
+for an Arrow list, large list, or fixed-size list dimension. A DuckDB
+\code{LIST} dimension takes a label: DuckDB converts it to text itself, in a
+spelling that keeps distinct lists apart.
 
 A factor observation that uses an NA level can print as \verb{<NA>} while
 \code{is.na()} is false. A missing factor code has \code{is.na()} equal to true.
@@ -94,8 +96,8 @@ identically, so keep \code{.id} in the result when the difference matters.
 
 \section{Margin order}{
 
-\code{.sort} orders a result by the structure of its Grouping plan rather than by
-displayed values. The key is the result's own leading key columns, left
+\code{.sort} orders a result by a key built from its Grouping plan and its
+values. The key is the result's own leading key columns, left
 to right, with each Margin dimension preceded by its Grouping bit -- \code{1} on a
 row whose grouping set omits that dimension, \code{0} otherwise -- and by
 whether its value is missing:
@@ -112,11 +114,12 @@ block, and \code{.id}, when it names a column, breaks the remaining ties.
 \code{"first"} reverses the Grouping bits alone: missing values come last
 wherever they appear, on every backend.
 
-Whether there is a label does decide how a non-factor dimension sorts: a
-non-missing \code{.margin_label} makes it character, so a numeric dimension sorts
-as text, \code{"10"} before \code{"9"}. Keep its type with \code{.margin_label = NULL},
-or make it a factor first. Factor dimensions sort by their levels, except on
-Arrow, which sorts a factor by value; see \emph{Arrow inputs}.
+Whether there is a label does decide how a non-factor dimension sorts: under
+a non-missing \code{.margin_label} it is character, as each verb's Value says,
+so a numeric dimension sorts as text, \code{"10"} before \code{"9"}. Keep its type
+with \code{.margin_label = NULL}, or make it a factor first. Factor dimensions
+sort by their levels, except on Arrow, which sorts a factor by value; see
+\emph{Arrow inputs}.
 \code{.margin_label_position} positions a synthetic factor level and never a
 row.
 
@@ -315,9 +318,8 @@ see \emph{Parent shares use a staged lazy query} in
 A query is not safe merely because it returns no rows: some services bill
 by the bytes a query scans, and \verb{LIMIT 0} is not exempt. marginplyr cannot
 tell a billed connection from a free one, so \code{.check_margin_label} defaults
-to \code{is.data.frame(.data)} and a lazy input is checked only when asked,
-except that \code{\link[=nest_by_with_margins]{nest_by_with_margins()}}, which reads a \code{dtplyr} step's rows
-when called, also checks one by default. The
+to \code{is.data.frame(.data)} and a lazy input is checked only when asked;
+\emph{dtplyr inputs} in \code{\link[=nest_by_with_margins]{nest_by_with_margins()}} states the one exception. The
 observed check scans every input row of the checked columns and retrieves
 one row of collision counts.
 

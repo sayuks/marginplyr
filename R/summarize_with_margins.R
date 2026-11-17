@@ -50,14 +50,14 @@
 #'   `NA_character_` or `NULL`.
 #' @param .check_margin_label Whether to check that no value of a Margin
 #'   dimension equals that dimension's display label. The default is `TRUE`
-#'   for a local data frame and `FALSE` for a lazy input -- a database table,
-#'   a `dtplyr` step, or an Arrow object -- because there the check runs a
-#'   query that reads your data; see
-#'   *[When marginplyr queries your data][margin_verbs]* in [margin_verbs].
-#'   [nest_by_with_margins()] reads a `dtplyr` step's rows when called, so it
-#'   also checks one by default. Collecting a lazy input therefore turns the
-#'   check on, so set this explicitly when re-running a call on collected
-#'   data.
+#'   for a local data frame and `FALSE` for a lazy input the verb accepts --
+#'   a `dtplyr` step, and for a summary or expansion also a database table or
+#'   an Arrow object -- because there the check runs a query that reads your
+#'   data; see *[When marginplyr queries your data][margin_verbs]* in
+#'   [margin_verbs], and *dtplyr inputs* in [nest_by_with_margins()] for the
+#'   one exception. A collected input is a local data frame, so collecting
+#'   turns the check on; set this explicitly when re-running a call on
+#'   collected data.
 #'
 #'   A label equal to a declared factor level is refused wherever marginplyr
 #'   holds the levels, whatever this argument says, because finding it reads
@@ -86,10 +86,10 @@
 #'   nothing else; see *[Option arguments][margin_verbs]* in [margin_verbs].
 #'   `"none"` leaves row order unspecified. `"last"` places each margin row
 #'   after the rows it summarizes and `"first"` before them, within each fixed
-#'   `.by` key, with missing values last. A non-missing `.margin_label` makes a
-#'   non-factor dimension character, so a numeric one sorts as text; use
-#'   `.margin_label = NULL` or a factor to keep numeric order. See
-#'   *[Margin order][margin_verbs]* in [margin_verbs].
+#'   `.by` key, with missing values last. Under a non-missing
+#'   `.margin_label` a numeric dimension sorts as text; `.margin_label = NULL`
+#'   or a factor keeps numeric order. See *[Margin order][margin_verbs]* in
+#'   [margin_verbs].
 #' @param .id `NULL`, or one non-missing, non-empty character string naming an
 #'   integer output column of one-based Grouping set identifiers. Each value
 #'   identifies one occurrence in the resolved Grouping plan. The name must not

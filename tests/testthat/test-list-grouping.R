@@ -143,3 +143,21 @@ test_that("an Arrow binary dimension still takes a string label", {
   expect_identical(result$l[[3L]], "Total")
   expect_identical(result$total, c(1L, 2L, 3L))
 })
+
+# DuckDB casts a LIST key to text itself, quoting an element that holds the
+# separator, so distinct lists stay distinct under a label.
+test_that("a DuckDB LIST dimension takes a non-missing label", {
+  skip_if_suggest_absent("duckdb")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE))
+  DBI::dbExecute(con, paste(
+    "CREATE TABLE list_keys AS SELECT * FROM",
+    "(VALUES (['a, b'], 1), (['a', 'b'], 2), (['a, b'], 3)) v(l, value)"
+  ))
+  result <- dplyr::collect(summarize_with_margins(
+    dplyr::tbl(con, "list_keys"), total = sum(value, na.rm = TRUE),
+    .grouping = rollup(l), .check_margin_label = TRUE, .sort = "last"
+  ))
+  expect_identical(result$l, c("['a, b']", "[a, b]", "Total"))
+  expect_identical(result$total, c(4, 2, 6))
+})

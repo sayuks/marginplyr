@@ -336,8 +336,8 @@ exactly-one-value cardinality rule is established with it:\tabular{ll}{
 Arrow inputs refuse both helpers before any summary query is built; other
 Arrow Margin operations stay lazy, as \emph{\link[=margin_verbs]{Arrow inputs}} in
 \link{margin_verbs} says. Collect an Arrow input first to calculate shares
-locally, and choose \code{.check_margin_label} explicitly on that re-run, since
-collection changes its default from \code{FALSE} to \code{TRUE}. A \code{dtplyr} step
+locally; \code{.check_margin_label} in \code{\link[=summarize_with_margins]{summarize_with_margins()}} says what
+collecting changes. A \code{dtplyr} step
 stays a lazy query, with nothing collected on your behalf, and its
 execution-time diagnostics name the share, its source summary, and the
 original call, as the local ones do.

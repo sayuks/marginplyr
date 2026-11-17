@@ -77,7 +77,9 @@
 #' represent such a key; split it into separate columns if it needs display
 #' text.
 #' The same holds for a list-column dimension, locally or under dtplyr, and
-#' for an Arrow list, large list, or fixed-size list dimension.
+#' for an Arrow list, large list, or fixed-size list dimension. A DuckDB
+#' `LIST` dimension takes a label: DuckDB converts it to text itself, in a
+#' spelling that keeps distinct lists apart.
 #'
 #' A factor observation that uses an NA level can print as `<NA>` while
 #' `is.na()` is false. A missing factor code has `is.na()` equal to true.
@@ -85,8 +87,8 @@
 #' identically, so keep `.id` in the result when the difference matters.
 #'
 #' @section Margin order:
-#' `.sort` orders a result by the structure of its Grouping plan rather than by
-#' displayed values. The key is the result's own leading key columns, left
+#' `.sort` orders a result by a key built from its Grouping plan and its
+#' values. The key is the result's own leading key columns, left
 #' to right, with each Margin dimension preceded by its Grouping bit -- `1` on a
 #' row whose grouping set omits that dimension, `0` otherwise -- and by
 #' whether its value is missing:
@@ -104,11 +106,12 @@
 #' `"first"` reverses the Grouping bits alone: missing values come last
 #' wherever they appear, on every backend.
 #'
-#' Whether there is a label does decide how a non-factor dimension sorts: a
-#' non-missing `.margin_label` makes it character, so a numeric dimension sorts
-#' as text, `"10"` before `"9"`. Keep its type with `.margin_label = NULL`,
-#' or make it a factor first. Factor dimensions sort by their levels, except on
-#' Arrow, which sorts a factor by value; see *Arrow inputs*.
+#' Whether there is a label does decide how a non-factor dimension sorts: under
+#' a non-missing `.margin_label` it is character, as each verb's Value says,
+#' so a numeric dimension sorts as text, `"10"` before `"9"`. Keep its type
+#' with `.margin_label = NULL`, or make it a factor first. Factor dimensions
+#' sort by their levels, except on Arrow, which sorts a factor by value; see
+#' *Arrow inputs*.
 #' `.margin_label_position` positions a synthetic factor level and never a
 #' row.
 #'
@@ -303,9 +306,8 @@
 #' A query is not safe merely because it returns no rows: some services bill
 #' by the bytes a query scans, and `LIMIT 0` is not exempt. marginplyr cannot
 #' tell a billed connection from a free one, so `.check_margin_label` defaults
-#' to `is.data.frame(.data)` and a lazy input is checked only when asked,
-#' except that [nest_by_with_margins()], which reads a `dtplyr` step's rows
-#' when called, also checks one by default. The
+#' to `is.data.frame(.data)` and a lazy input is checked only when asked;
+#' *dtplyr inputs* in [nest_by_with_margins()] states the one exception. The
 #' observed check scans every input row of the checked columns and retrieves
 #' one row of collision counts.
 #'

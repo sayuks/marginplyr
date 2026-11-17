@@ -77,14 +77,14 @@ ordered-factor levels. It does not sort result rows and has no effect for
 
 \item{.check_margin_label}{Whether to check that no value of a Margin
 dimension equals that dimension's display label. The default is \code{TRUE}
-for a local data frame and \code{FALSE} for a lazy input -- a database table,
-a \code{dtplyr} step, or an Arrow object -- because there the check runs a
-query that reads your data; see
-\emph{\link[=margin_verbs]{When marginplyr queries your data}} in \link{margin_verbs}.
-\code{\link[=nest_by_with_margins]{nest_by_with_margins()}} reads a \code{dtplyr} step's rows when called, so it
-also checks one by default. Collecting a lazy input therefore turns the
-check on, so set this explicitly when re-running a call on collected
-data.
+for a local data frame and \code{FALSE} for a lazy input the verb accepts --
+a \code{dtplyr} step, and for a summary or expansion also a database table or
+an Arrow object -- because there the check runs a query that reads your
+data; see \emph{\link[=margin_verbs]{When marginplyr queries your data}} in
+\link{margin_verbs}, and \emph{dtplyr inputs} in \code{\link[=nest_by_with_margins]{nest_by_with_margins()}} for the
+one exception. A collected input is a local data frame, so collecting
+turns the check on; set this explicitly when re-running a call on
+collected data.
 
 A label equal to a declared factor level is refused wherever marginplyr
 holds the levels, whatever this argument says, because finding it reads
@@ -122,10 +122,10 @@ collide with source columns, grouping keys, or other output columns. See
 nothing else; see \emph{\link[=margin_verbs]{Option arguments}} in \link{margin_verbs}.
 \code{"none"} leaves row order unspecified. \code{"last"} places each margin row
 after the rows it summarizes and \code{"first"} before them, within each fixed
-\code{.by} key, with missing values last. A non-missing \code{.margin_label} makes a
-non-factor dimension character, so a numeric one sorts as text; use
-\code{.margin_label = NULL} or a factor to keep numeric order. See
-\emph{\link[=margin_verbs]{Margin order}} in \link{margin_verbs}.}
+\code{.by} key, with missing values last. Under a non-missing
+\code{.margin_label} a numeric dimension sorts as text; \code{.margin_label = NULL}
+or a factor keeps numeric order. See \emph{\link[=margin_verbs]{Margin order}} in
+\link{margin_verbs}.}
 }
 \value{
 An ungrouped data frame, or a lazy table when \code{.data} is lazy,
