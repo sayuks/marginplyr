@@ -2032,6 +2032,37 @@ test_that("a named list refuses an element that is not a label", {
   }
 })
 
+# A logical `NA` is the natural spelling of a missing label, and is not a
+# character one (#1703).
+test_that("a logical missing label is answered with the missing spellings", {
+  data <- data.frame(first = "a", value = 1L)
+
+  for (label in list(NA, c(first = NA), NA_integer_)) {
+    error <- expect_error(
+      expand_with_margins(
+        data, .grouping = rollup(first), .margin_label = label
+      ),
+      class = "marginplyr_error"
+    )
+    expect_match(
+      conditionMessage(error),
+      "must be `NULL`, an unnamed character scalar",
+      fixed = TRUE
+    )
+    expect_match(
+      conditionMessage(error),
+      "Use `NA_character_` or `NULL` for a typed-missing label.",
+      fixed = TRUE
+    )
+  }
+
+  error <- expect_error(
+    expand_with_margins(data, .grouping = rollup(first), .margin_label = 1L),
+    class = "marginplyr_error"
+  )
+  expect_no_match(conditionMessage(error), "NA_character_", fixed = TRUE)
+})
+
 # The name rules are the vector's rules, so a list reaches the same refusals
 # rather than a second set. An unnamed dimension stays a refusal: read as
 # `NULL` it would turn a misspelled name into a silent whole-call change.

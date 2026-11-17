@@ -14,6 +14,19 @@ normalize_margin_label <- function(.margin_label) {
   if (!is_label_list &&
         (!is.character(.margin_label) ||
            rlang::is_character(.margin_label, n = 0L))) {
+    if (is.atomic(.margin_label) && length(.margin_label) > 0L &&
+          all(is.na(.margin_label))) {
+      abort_marginplyr(c(
+        paste0(
+          "{.arg .margin_label} must be {.code NULL}, an unnamed character ",
+          "scalar, or a named character vector or list."
+        ),
+        i = paste0(
+          "Use {.code NA_character_} or {.code NULL} for a typed-missing ",
+          "label."
+        )
+      ))
+    }
     abort_marginplyr(paste0(
       "{.arg .margin_label} must be {.code NULL}, an unnamed character ",
       "scalar, or a named character vector or list."
