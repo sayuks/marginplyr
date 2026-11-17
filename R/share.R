@@ -375,9 +375,7 @@
 #' Margin-operation validation but before constructing a summary query. The
 #' reason belongs to the source summary they share, so it applies to both, and
 #' the diagnostic names whichever helpers the call used. Other Arrow Margin
-#' operations remain supported and lazy, apart from a summary Arrow's own
-#' engine cannot evaluate, which is refused for its own reason and before any
-#' row is read; see [summarize_with_margins()]. Explicitly collect an Arrow
+#' operations are not affected by this refusal. Explicitly collect an Arrow
 #' input first when local share execution is appropriate. Collection changes
 #' `.check_margin_label`'s default from `FALSE` to `TRUE`, so choose that
 #' policy explicitly on the re-run.
@@ -393,23 +391,16 @@
 #' [dplyr::show_query()] remains non-executing, and no query is run over your
 #' data to improve an error.
 #'
-#' Which of two things a dialect does is what decides the case, and asking
-#' takes at most two queries referencing none of your tables: a probe, and —
-#' only when the probe is rejected — a control, which is what tells a dialect
-#' that genuinely refuses apart from one whose connection or SQL scaffolding
-#' failed and could not answer at all. An answer is a property of the dialect,
-#' so it settles the case once and is reused for every later connection
-#' carrying that dialect. Where it refuses an
-#' ineligible summary, that refusal is the answer
-#' and reaches you as the database's own diagnostic when [dplyr::collect()]
-#' executes the staged query; the internal denominator column is named after
-#' the summary to rewrite so that diagnostic is actionable. Where it converts
-#' a value of another type to a number instead, it applies no rule at all and
-#' no reading of your data would recover one, so the share is refused rather
-#' than calculated from values nothing has checked —
-#' `.check_share_source = FALSE` calculates it from sources you have
-#' established yourself. A backend that cannot be asked, such as a
-#' `dbplyr::simulate_*()` connection, is refused the same way.
+#' Asking which of the two a dialect does takes at most two queries
+#' referencing none of your tables: a probe, and — only when the probe is
+#' rejected — a control, which tells a dialect that genuinely refuses apart
+#' from one whose connection or SQL scaffolding failed and could not answer at
+#' all. An answer is a property of the dialect, so it is reused for every later
+#' connection carrying that dialect. A refusing dialect's diagnostic arrives
+#' when [dplyr::collect()] executes the staged query, and names the internal
+#' denominator column after the summary to rewrite. A converting dialect
+#' applies no rule at all, and no reading of your data would recover one,
+#' which is why it is refused.
 #'
 #' A question left unanswered refuses the share the same way, but nothing about
 #' it is remembered. Neither outcome was read there, which is where a dropped

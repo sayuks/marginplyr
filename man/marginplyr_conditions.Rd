@@ -6,24 +6,37 @@
 \description{
 A Margin operation can summarize your expression once per grouping set,
 buffers the warnings that raises, and on SQLite may roll back a write it
-started. This topic states what reaches your handlers when that work
-raises conditions: how an error or warning from your expressions is
-reported, what an interrupt carries when it competes with an earlier
-error, how buffered warnings are replayed, where R's own handler boundary
-limits those guarantees and how to keep your own warning callback's failure
-apart from them, and what a failed SQLite cleanup reports. It applies to
+started. This topic states what the \code{"marginplyr_error"} class promises and
+what reaches your handlers when that work raises conditions: how an error
+or warning from your expressions is reported, what an interrupt carries
+when it competes with an earlier error, how buffered warnings are replayed,
+where R's own handler boundary limits those guarantees and how to keep your
+own warning callback's failure apart from them, and what a failed SQLite
+cleanup reports. It applies to
 local and lazy inputs alike.
 }
-\details{
-Which errors are marginplyr's own, and the one class to match them on, is
-\emph{\link[=marginplyr-package]{Errors and warnings}} in \link{marginplyr-package}.
+\section{The marginplyr_error class}{
+
+\code{"marginplyr_error"} is the only package-specific class marginplyr promises.
+Narrower subclasses and the wording of any message are implementation details
+that can change without a deprecation cycle, so match on the class rather
+than on message text. No field of the condition names the argument it
+refuses; only the message does.
+
+Errors raised by tidyselect, by dplyr, or by a database backend fall outside
+the class and propagate with their original class, diagnostic, and cause
+intact. So do marginplyr's internal invariant checks, which report a defect
+no change to your call can avoid; please report those at
+\url{https://github.com/sayuks/marginplyr/issues}. marginplyr itself raises no
+warning: it states what it will not do by refusing.
 }
+
 \section{How your conditions are reported}{
 
-The wording is marginplyr's to change; the columns, values, and arguments a
-message quotes are yours, and a marginplyr error spells them as you spelled
-them. Two spellings it cannot keep: a line break and a no-break space inside
-a name are both shown as an ordinary space. This says nothing about the
+The columns, values, and arguments a marginplyr error quotes are yours, and
+it spells them as you spelled them. Two spellings it cannot keep: a line
+break and a no-break space inside a name are both shown as an ordinary
+space. This says nothing about the
 errors marginplyr does not write.
 
 What a Margin verb does adjust, for an error and a warning alike, is the
@@ -245,7 +258,6 @@ stopifnot(
 }
 }
 \seealso{
-\link{marginplyr-package} for the \code{"marginplyr_error"} class, and
-\code{\link[=summarize_with_margins]{summarize_with_margins()}} for the SQLite materialization these cleanup
-fields describe.
+\code{\link[=summarize_with_margins]{summarize_with_margins()}} for the SQLite materialization these
+cleanup fields describe.
 }

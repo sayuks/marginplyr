@@ -26,25 +26,63 @@ A failed diagnostic render leaves \code{NA_character_} in \code{sql}. Read a
 multi-line statement with \code{writeLines(x$sql[!is.na(x$sql)])}.
 }
 \description{
-A Margin verb applied to a SQL backend returns its result unexecuted and
-may send queries of its own on the way. With
-\code{options(marginplyr.audit_sql = TRUE)} set, marginplyr keeps a record of
-the SQL of one call -- the most recent call to \code{\link[=summarize_with_margins]{summarize_with_margins()}},
+With \code{options(marginplyr.audit_sql = TRUE)} set before a call, marginplyr
+keeps a record of the SQL that call prepared, and this function reads it
+back. Its internal rows are what marginplyr sent while building the call;
+its \code{"result"} row is what your own \code{\link[dplyr:collect]{dplyr::collect()}} will send.
+
+The call recorded is the most recent to \code{\link[=summarize_with_margins]{summarize_with_margins()}},
 \code{\link[=expand_with_margins]{expand_with_margins()}}, \code{\link[=nest_with_margins]{nest_with_margins()}}, \code{\link[=nest_by_with_margins]{nest_by_with_margins()}},
-or \code{\link[=inspect_grouping]{inspect_grouping()}} -- and this function reads it back. A call to one
-of those five functions is what this page, and the errors it raises, call a
-\emph{tracked call}. The record is started afresh for every call, so what it
-holds belongs to that call alone. Piping one Margin verb into another is
-two calls, and the outer one is the most recent: the inner call is its input
-and records first, and the outer call then starts a fresh record holding
-only its own SQL.
+or \code{\link[=inspect_grouping]{inspect_grouping()}}. A call to one of those five functions is what this
+page, and the errors it raises, call a \emph{tracked call}. The record is started
+afresh for every call, so what it holds belongs to that call alone. Piping
+one Margin verb into another is two calls, and the outer one is the most
+recent: the inner call is its input and records first, and the outer call
+then starts a fresh record holding only its own SQL.
 }
+\section{What the record promises}{
+
+Only SQL prepared while the call builds its query is recorded. Finite
+collection and direct materialization do not append LIMIT, destination
+metadata, savepoint, DDL, INSERT, or ANALYZE statements, and computing an
+older result leaves a newer call's record unchanged. An audited call on a
+data frame, dtplyr, or Arrow table prepares no SQL and records nothing; that
+zero-row answer is correct.
+
+An internal query is recorded before invoking the backend operation. The SQL
+is a render, not a capture of DBI arguments or proof that the database
+received or completed the query. A call that fails leaves its own earlier
+rows readable.
+
+\code{include_result = FALSE} removes only the \code{"result"} rows, retaining
+internal rows even when their SQL is missing. Reading either view does no
+rendering, query, fetch, or EXPLAIN and changes neither the stored rows nor
+a copy you already hold.
+
+With \code{.check_margin_label = TRUE}, an observed label check aggregates
+collision counts in the database and retrieves one row, with one count per
+checked column. It does not retrieve all unique values. On DuckDB, the
+zero-row read of the input's column types and the system-catalog query
+that first checks the input is safe to bind are separate internal
+operations. Recording requests none of this work: a cache hit or a
+label check with no columns adds no query.
+
+Two identical calls need not produce identical records: the answer to
+whether a backend can compute a contextual share is cached per SQL dialect
+for the session, so the query that asks it is sent once.
+Savepoint controls used during RPostgres dialect detection are recorded too.
+
+The record is a package environment, which is invisible across \code{fork},
+PSOCK, and callr workers, so a read after a parallel run reports the last
+call made in this process and not one made in a worker.
+}
+
 \section{Diagnostic details}{
 
 Details are captured during an audited call even when you first read only
 the default view. Both accessor arguments select stored rows and columns.
 \code{source} is \code{"render"} for an attempted diagnostic render or \code{"literal"}
-for SQL supplied by the package. Neither proves database receipt.
+for SQL supplied by the package.
 
 \code{status} describes only the database operation marginplyr itself ran for
 the row:
@@ -82,50 +120,8 @@ rollback, and release controls each have their own row.
 
 A label-count query can be \code{"returned"} before validation refuses a Margin
 label collision. That public error belongs to the whole call and is not
-attached to the successful SQL row. Neither status nor SQL establishes
-server completion or the outcome of the entire public call.
-}
-
-\section{What the record promises}{
-
-The record belongs to the last Margin verb or inspection call during query
-construction. It holds SQL prepared for that call's internal work and a
-render of its unexecuted result. Finite collection and direct
-materialization do not append LIMIT, destination metadata, savepoint, DDL,
-INSERT, or ANALYZE statements. Computing an older result leaves a newer
-call's record unchanged. An audited call on a data frame, dtplyr, or Arrow
-table therefore records nothing; that zero-row answer is correct.
-
-\code{"result"} is the one \code{purpose} promised: the query the Margin verb returns
-unexecuted, rendered before it is handed to you, which your own
-\code{\link[dplyr:collect]{dplyr::collect()}} is still what runs. Every other row is a query marginplyr
-prepares for its own work. \code{include_result = FALSE} removes only the
-\code{"result"} rows, retaining internal rows even when their SQL is missing.
-Reading either view does no rendering, query, fetch, or EXPLAIN and changes
-neither the stored rows nor a copy you already hold.
-
-With \code{.check_margin_label = TRUE}, an observed label check aggregates
-collision counts in the database and retrieves one row, with one count per
-checked column. It does not retrieve all unique values. On DuckDB, the
-zero-row read of the input's column types and the system-catalog query
-that first checks the input is safe to bind are separate internal
-operations. Recording requests none of this work: a cache hit or a
-label check with no columns adds no query.
-
-An internal query is recorded before invoking the backend operation.
-The SQL is a render, not a capture of DBI arguments or proof that the
-database received or completed the query. A call that fails leaves its
-own earlier rows readable; the detailed view describes observed internal
-outcomes at the package boundary.
-
-Two identical calls need not produce identical records: the answer to
-whether a backend can compute a contextual share is cached per SQL dialect
-for the session, so the query that asks it is sent once.
-Savepoint controls used during RPostgres dialect detection are recorded too.
-
-The record is a package environment, which is invisible across \code{fork},
-PSOCK, and callr workers, so a read after a parallel run reports the last
-call made in this process and not one made in a worker.
+attached to the successful SQL row: a status never reports the outcome of
+the entire public call.
 }
 
 \section{Nested calls and evaluation order}{
@@ -133,14 +129,13 @@ call made in this process and not one made in a worker.
 When user code inside a tracked call A invokes another tracked call B,
 the record belongs to B while B runs, then to A again as soon as B exits.
 A keeps its earlier rows and its own audit setting, including when it
-catches B's error. After A returns or fails, its own complete or partial
-record remains readable; B's rows are not appended or retained separately.
-An error handler running while B is still active can read B's partial
-record. This applies to inspection as well as Margin verbs.
+catches B's error. After A returns or fails, the record is A's alone; B's
+rows are not appended or retained separately. An error handler running
+while B is still active can read B's partial record. This applies to
+inspection as well as Margin verbs.
 
 The input \code{.data} is evaluated before that call starts recording. If the
-input fails first, the outer call starts no record. Other arguments do
-not gain this early evaluation, and recording does not restore user options.
+input fails first, the outer call starts no record.
 }
 
 \section{Reading an empty or incomplete record}{
@@ -232,7 +227,7 @@ if (
   path <- tempfile(fileext = ".rds")
   saveRDS(internal, path)
 
-  # A failed call also leaves its own partial record readable.
+  # Read a failed call's record inside its error handler.
   tryCatch(
     summarize_with_margins(
       dplyr::mutate(sales_db, region = "Total"),

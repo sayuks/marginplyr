@@ -209,31 +209,19 @@ Every row above is decided whatever \code{.check_margin_label} says.
 \section{Arrow inputs}{
 
 Arrow's tabular dplyr inputs are a \code{Table}, \code{RecordBatch}, \code{Dataset},
-\code{RecordBatchReader}, or an \code{arrow_dplyr_query} built from them. marginplyr's
-contract depends on both the verb and the query's sources:\tabular{lll}{
-   Input \tab Summary or expansion \tab Nesting \cr
-   \code{Table}, \code{RecordBatch}, or \code{Dataset} \tab Accepted \tab Refused; collect first \cr
-   Query with no reader source \tab Accepted \tab Refused; collect first \cr
-   \code{RecordBatchReader} \tab Refused; materialize first \tab Refused; collect first \cr
-   Query with any reader source \tab Refused; materialize first \tab Refused; collect first \cr
-   Non-tabular Arrow object \tab General input refusal \tab General input refusal \cr
-}
+\code{RecordBatchReader}, or an \code{arrow_dplyr_query} built from them. A summary or
+expansion of one stays an Arrow query, except that a \code{RecordBatchReader}, and
+a query whose source graph contains one, is refused: a reader is one-pass,
+while a Margin operation may build one branch per grouping set, so
+\code{\link[arrow:as_arrow_table]{arrow::as_arrow_table()}} has to materialize the reusable \code{Table} first. The
+nesting verbs refuse every Arrow input; collect it first. Other Arrow
+objects, such as a \code{Scanner} or an \code{Array}, are not dplyr inputs; a Scanner
+materializes with \verb{$ToTable()}. \emph{Which Arrow inputs are supported} in the
+\href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html}{database guide} tabulates these answers per verb.
 
-
-A translatable summary or expansion stays an Arrow query. For a summary or
-generated Margin label transformation Arrow cannot translate, a \code{Table} and
-\code{RecordBatch} (and queries built on them) would fall back to R, so marginplyr
-refuses it before a row is read. Collect the input first to perform that
-operation locally, selecting the columns you need before collecting. A
-\code{Dataset} and a query built on one instead keep Arrow's own
-unsupported-expression error.
-
-A \code{RecordBatchReader} is one-pass, while a Margin operation may build one
-branch per grouping set, so a reader and any query whose source graph
-contains one are refused. \code{\link[arrow:as_arrow_table]{arrow::as_arrow_table()}} consumes every batch
-once and materializes the reusable \code{Table} those branches require. Other
-Arrow objects, such as a \code{Scanner} or an \code{Array},
-are not dplyr inputs; a Scanner materializes with \verb{$ToTable()}.
+A summary Arrow cannot evaluate is refused as \emph{\link[=summarize_with_margins]{Summaries a lazy backend cannot carry}} in \code{\link[=summarize_with_margins]{summarize_with_margins()}} states,
+and a generated Margin label transformation Arrow cannot translate is
+refused on the same terms.
 
 Arrow does not hold factor levels in the schema marginplyr reads, so a
 non-missing \code{.margin_label} converts a factor dimension to character, its
@@ -315,10 +303,8 @@ including a function dbplyr translates to that macro's name. Call
 DuckDB's own scalar macros, such as \code{nullif()}, are admitted only while
 the database holds no macro you defined, since one could replace a name
 inside their bodies.
-\item \strong{At most two queries per share request until the SQL dialect answers},
-for a summary that requests a share, referencing none of your tables;
-see \emph{\link[=summarize_with_margins]{Contextual shares}} in
-\code{\link[=summarize_with_margins]{summarize_with_margins()}}.
+\item \strong{A table-free dialect question}, for a summary that requests a share,
+until the SQL dialect answers; \emph{\link[=share_of_parent]{Lazy execution boundaries}} in \code{\link[=share_of_parent]{share_of_parent()}} states what it asks.
 }
 
 A query is not safe merely because it returns no rows: some services bill

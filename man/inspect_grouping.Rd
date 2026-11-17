@@ -109,10 +109,7 @@ from a SQL execution plan. Use \code{\link[dplyr:show_query]{dplyr::show_query()
 backend-native tools for an optimizer plan. With recording enabled before
 inspection, \code{\link[=last_sent_queries]{last_sent_queries(include_result = FALSE)}}
 shows its prepared internal SQL, such as DuckDB's system-catalog check and
-zero-row metadata read, in recording order. It performs no query on access;
-missing SQL denotes a failed diagnostic render, not proof of database
-receipt or completion. Add
-\code{details = TRUE} for each internal operation's outcome and conditions.
+zero-row metadata read, in recording order.
 
 Every tabular Arrow input is accepted, including a \code{RecordBatchReader},
 which inspection does not consume. Non-tabular Arrow objects are refused.

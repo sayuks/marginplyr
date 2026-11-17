@@ -374,13 +374,12 @@ markers <- list(
     "share_of_total",
     "Completion stays in the lazy input pipeline",
     "Record the SQL marginplyr prepares",
-    # The dialect question's row and its handled condition, from the record
-    # chunk's printed tibbles. Both appear only when that chunk is the page's
-    # first DuckDB share request, since a cached answer records neither, so a
-    # chunk moved after another share request fails here rather than rendering
-    # an empty record.
-    "share_dialect         errored",
-    "1 invocation handled",
+    # The dialect question's control row, from the record chunk's printed
+    # tibble. It appears only when that chunk is the page's first DuckDB share
+    # request, since a cached answer records neither question, so a chunk moved
+    # after another share request fails here rather than rendering an empty
+    # record.
+    "4 share_dialect_control",
     # The backend support matrix and the converted-dimension table, by their
     # anchors and by one cell each. The verification paragraph beside them
     # states no scope of its own: the `margin_verbs` reference owns that, so a

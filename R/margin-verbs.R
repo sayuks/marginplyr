@@ -196,31 +196,22 @@
 #'
 #' @section Arrow inputs:
 #' Arrow's tabular dplyr inputs are a `Table`, `RecordBatch`, `Dataset`,
-#' `RecordBatchReader`, or an `arrow_dplyr_query` built from them. marginplyr's
-#' contract depends on both the verb and the query's sources:
+#' `RecordBatchReader`, or an `arrow_dplyr_query` built from them. A summary or
+#' expansion of one stays an Arrow query, except that a `RecordBatchReader`, and
+#' a query whose source graph contains one, is refused: a reader is one-pass,
+#' while a Margin operation may build one branch per grouping set, so
+#' [arrow::as_arrow_table()] has to materialize the reusable `Table` first. The
+#' nesting verbs refuse every Arrow input; collect it first. Other Arrow
+#' objects, such as a `Scanner` or an `Array`, are not dplyr inputs; a Scanner
+#' materializes with `$ToTable()`. *Which Arrow inputs are supported* in the
+#' [database guide][db] tabulates these answers per verb.
 #'
-#' | Input | Summary or expansion | Nesting |
-#' | --- | --- | --- |
-#' | `Table`, `RecordBatch`, or `Dataset` | Accepted | Refused; collect first |
-#' | Query with no reader source | Accepted | Refused; collect first |
-#' | `RecordBatchReader` | Refused; materialize first | Refused; collect first |
-#' | Query with any reader source | Refused; materialize first | Refused; collect first | # nolint: line_length_linter
-#' | Non-tabular Arrow object | General input refusal | General input refusal |
+#' [db]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html
 #'
-#' A translatable summary or expansion stays an Arrow query. For a summary or
-#' generated Margin label transformation Arrow cannot translate, a `Table` and
-#' `RecordBatch` (and queries built on them) would fall back to R, so marginplyr
-#' refuses it before a row is read. Collect the input first to perform that
-#' operation locally, selecting the columns you need before collecting. A
-#' `Dataset` and a query built on one instead keep Arrow's own
-#' unsupported-expression error.
-#'
-#' A `RecordBatchReader` is one-pass, while a Margin operation may build one
-#' branch per grouping set, so a reader and any query whose source graph
-#' contains one are refused. [arrow::as_arrow_table()] consumes every batch
-#' once and materializes the reusable `Table` those branches require. Other
-#' Arrow objects, such as a `Scanner` or an `Array`,
-#' are not dplyr inputs; a Scanner materializes with `$ToTable()`.
+#' A summary Arrow cannot evaluate is refused as *[Summaries a lazy backend
+#' cannot carry][summarize_with_margins]* in [summarize_with_margins()] states,
+#' and a generated Margin label transformation Arrow cannot translate is
+#' refused on the same terms.
 #'
 #' Arrow does not hold factor levels in the schema marginplyr reads, so a
 #' non-missing `.margin_label` converts a factor dimension to character, its
@@ -299,10 +290,9 @@
 #'   DuckDB's own scalar macros, such as `nullif()`, are admitted only while
 #'   the database holds no macro you defined, since one could replace a name
 #'   inside their bodies.
-#' - **At most two queries per share request until the SQL dialect answers**,
-#'   for a summary that requests a share, referencing none of your tables;
-#'   see *[Contextual shares][summarize_with_margins]* in
-#'   [summarize_with_margins()].
+#' - **A table-free dialect question**, for a summary that requests a share,
+#'   until the SQL dialect answers; *[Lazy execution
+#'   boundaries][share_of_parent]* in [share_of_parent()] states what it asks.
 #'
 #' A query is not safe merely because it returns no rows: some services bill
 #' by the bytes a query scans, and `LIMIT 0` is not exempt. marginplyr cannot
