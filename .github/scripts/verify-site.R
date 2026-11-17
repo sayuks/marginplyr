@@ -376,6 +376,8 @@ markers <- list(
     "show_query",
     "collect",
     "Parent shares use a staged lazy query",
+    # The SQL cardinality boundary the share reference links here for.
+    "causes a database error on execution",
     "share_of_total",
     "Completion stays in the lazy input pipeline",
     "Record the SQL marginplyr prepares",
@@ -465,6 +467,10 @@ markers <- list(
     # cross-reference.
     "before a row is read, and names the two rewrites that compute it",
     "Database backend coverage",
+    # What a share request sends instead of reading the caller's data (ADR
+    # 0020), which this section is the reference for. The count is the part a
+    # later edit is most likely to drift back to "one".
+    "At most two queries per share request",
     "Microsoft SQL Server"
   ),
   # `@keywords internal` on the `"_PACKAGE"` topic takes it out of
@@ -519,14 +525,7 @@ markers <- list(
     "revenue_quantile",
     "Missing fixed and included keys",
     "where(is.numeric)",
-    ".unpack = TRUE",
-    # The SQL cardinality boundary in Lazy execution boundaries.
-    "causes a database error on execution",
-    # What a general dbplyr backend does instead of reading the caller's data
-    # (ADR 0020). This page is the canonical reference for both helpers'
-    # source contract, so it is the page that has to carry the count, and the
-    # count is the part a later edit is most likely to drift back to "one".
-    "at most two queries"
+    ".unpack = TRUE"
   ),
   "docs/man/nest_with_margins.html" = c(
     "Differences from nest()",

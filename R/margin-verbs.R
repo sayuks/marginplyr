@@ -292,8 +292,9 @@
 #'   inside their bodies.
 #' - **At most two queries per share request until the SQL dialect answers**,
 #'   for a summary that requests a share, referencing none of your tables;
-#'   see *[Lazy execution boundaries][share_of_parent]* in
-#'   [share_of_parent()].
+#'   see *Parent shares use a staged lazy query* in the [database guide][db].
+#'
+#' [db]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html
 #'
 #' A query is not safe merely because it returns no rows: some services bill
 #' by the bytes a query scans, and `LIMIT 0` is not exempt. marginplyr cannot

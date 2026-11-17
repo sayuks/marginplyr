@@ -308,8 +308,7 @@ the database holds no macro you defined, since one could replace a name
 inside their bodies.
 \item \strong{At most two queries per share request until the SQL dialect answers},
 for a summary that requests a share, referencing none of your tables;
-see \emph{\link[=share_of_parent]{Lazy execution boundaries}} in
-\code{\link[=share_of_parent]{share_of_parent()}}.
+see \emph{Parent shares use a staged lazy query} in the \href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html}{database guide}.
 }
 
 A query is not safe merely because it returns no rows: some services bill
