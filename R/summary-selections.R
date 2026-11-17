@@ -363,13 +363,14 @@ separate_local_across_labels <- function(dots) {
 
 # The arguments are matched to `across()`'s formals as dplyr matches them,
 # partial names included. The selection is the argument matching `.cols`,
-# which the local selection rewrite has given every such call, and it is always
-# hoisted. Its binding is called inside the selection `across()` makes, so it
-# selects from the same data, and the locations it returns are what tidyselect
-# resolves the selection's own spelling to. The arguments matching `.fns`,
-# `.names` and `.unpack` are hoisted, longest first, while the call still
-# deparses onto several lines; one reaching `...` stays as written, and a call
-# that still overflows then has its head bound as well. Each argument's
+# which the local selection rewrite has written into every such call, so it is
+# always present and always hoisted. Its binding is called inside the
+# selection `across()` makes, so it selects from the same data, and the
+# locations it returns are what tidyselect resolves the selection's own
+# spelling to. The arguments matching `.fns`, `.names` and `.unpack` are
+# hoisted, longest first, while the call still deparses onto several lines;
+# one reaching `...` stays as written, and a call that still overflows then
+# has its head bound as well. Each argument's
 # binding evaluates its argument in the frame dplyr calls the binding from,
 # which is the frame the argument itself was evaluated in, so a lambda it
 # returns has the environment dplyr's inlining requires of one written in the
@@ -382,7 +383,8 @@ hoist_local_across_arguments <- function(dot, position) {
   supplied <- function(index) {
     index > 0L && !rlang::is_missing(args[[index]])
   }
-  selection <- if (supplied(parsed$cols_index)) parsed$cols_index else 0L
+  selection <- parsed$cols_index
+  stopifnot(supplied(selection))
   others <- Filter(supplied, c(
     parsed$fns_index, parsed$names_index, parsed$unpack_index
   ))
@@ -394,7 +396,7 @@ hoist_local_across_arguments <- function(dot, position) {
   overflows <- function() {
     length(deparse(rlang::call2(expr[[1L]], !!!args), 60L)) > 1L
   }
-  for (k in c(selection[selection > 0L], others[order(-widths)])) {
+  for (k in c(selection, others[order(-widths)])) {
     if (k != selection && !overflows()) {
       break
     }

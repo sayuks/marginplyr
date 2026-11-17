@@ -569,7 +569,8 @@ absorbing_warning_label <- function(cnd) {
 # Which summaries the refusal names, spelled as the caller spelled them (ADR
 # 0024). Arrow blames one expression at a time, so a warning it can be placed
 # from names one argument; a warning it cannot names them all, which is also
-# what the backstop below has to do, having no warning to read.
+# what the backstop below has to do, having no warning to read. `dots` are
+# quosures, captured by `summarize_margin_branch()`'s `rlang::enquos()`.
 absorbed_summary_labels <- function(cnd, dots, caller_labels) {
   # The same invariant `branch_argument_map()` opens with, for the same reason
   # (ADR-0015): the pair is parallel, and a misaligned one would quote one
@@ -588,8 +589,7 @@ absorbed_summary_labels <- function(cnd, dots, caller_labels) {
   labels <- vapply(
     dots,
     function(dot) {
-      expr <- if (rlang::is_quosure(dot)) rlang::quo_get_expr(dot) else dot
-      absorbed_expression_label(expr)
+      absorbed_expression_label(rlang::quo_get_expr(dot))
     },
     character(1),
     USE.NAMES = FALSE

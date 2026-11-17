@@ -3451,3 +3451,45 @@ test_that("cardinality mapping skips an unanalyzed source", {
   ))
   expect_identical(share_cardinality_records(list(), requests), list())
 })
+
+# An absent `.grouping` is no rollup, so the Grouping specification's
+# validator refuses it before any plan exists, `.by` or not.
+test_that("a Parent share without a Grouping specification is refused", {
+  data <- data.frame(a = "x", value = 1)
+  calls <- list(
+    rlang::expr(summarize_with_margins(
+      data, total = sum(value), share = share_of_parent(total)
+    )),
+    rlang::expr(summarize_with_margins(
+      data, total = sum(value), share = share_of_parent(total), .by = a
+    ))
+  )
+
+  for (call in calls) {
+    error <- expect_error(
+      rlang::eval_tidy(call),
+      "requires `.grouping` to be one pure `rollup\\(\\)`"
+    )
+    expect_s3_class(error, "marginplyr_error")
+  }
+})
+
+# Only a local input defers its selections to dplyr's execution, so a named
+# `across()` over a lazy one is classified where selections are resolved first,
+# and is refused in the same terms as a local one.
+test_that("a named across() source over a lazy input is one packed column", {
+  source <- dbplyr::lazy_frame(
+    group = "a", v = 1, con = dbplyr::simulate_postgres()
+  )
+  condition <- expect_error(
+    summarize_with_margins(
+      source,
+      tot = dplyr::across(v, sum),
+      sh = share_of_parent(tot),
+      .grouping = rollup(group)
+    ),
+    "a named `across\\(\\)` packs its outputs"
+  )
+  expect_s3_class(condition, "marginplyr_error")
+  expect_match(conditionMessage(condition), "Drop the `tot =` name")
+})

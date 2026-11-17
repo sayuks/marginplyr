@@ -432,3 +432,28 @@ test_that("computed list transfer heads use caller value lookup", {
     read(remapping, rlang::env(), NULL), read(branch, rlang::env(), NULL)
   ), expected = 1)
 })
+
+# A factory returned by another factory carries that factory's frame, and the
+# frame it invokes in encloses there. Calling it one frame below its
+# definition is what separates that frame from the definition's own
+# enclosure: the inner `prior` shadows the removed argument.
+test_that("a returned factory reads through the frame it captured", {
+  read <- function(inner) {
+    substitute((function(prior) {
+      outer <- function() {
+        INNER
+        function() function() sum(prior)
+      }
+      rm(prior)
+      (function() {
+        copied <- outer()()
+        copied()
+      })()
+    })(1), list(INNER = inner))
+  }
+  data <- visible_closure_data()
+  expect_share_dependencies(data, list(read(NULL)))
+  expect_share_dependency_values(
+    data, list(read(quote(prior <- 11))), expected = 11
+  )
+})

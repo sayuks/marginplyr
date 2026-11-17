@@ -1704,3 +1704,28 @@ test_that("malformed relation SQL is left to DuckDB's parser", {
     expect_match(conditionMessage(error), "Parser Error", fixed = TRUE)
   }
 })
+
+test_that("a continued escape string spelling a CSV path is refused", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  # The quote in the name is spelled `\'`, which only an escape string reads.
+  path <- tempfile(pattern = "it's", fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  writeLines(c("k", "101"), path)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  head <- gsub("(['\\\\])", "\\\\\\1", sub("sv$", "", path))
+  sql <- paste0("SELECT * FROM E'", head, "'\n'sv'")
+  source <- dplyr::tbl(con, dbplyr::sql(sql), vars = "k")
+  expect_error(
+    inspect_grouping(source, .grouping = grouping_set(where(is.numeric))),
+    "source rows", fixed = TRUE, class = "marginplyr_error"
+  )
+  expect_duckdb_catalog_only()
+  expect_error(
+    summarize_with_margins(source, n = dplyr::n(), .grouping = rollup(k)),
+    "DuckDB CSV input", fixed = TRUE, class = "marginplyr_error"
+  )
+  expect_duckdb_catalog_only()
+})

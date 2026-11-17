@@ -592,6 +592,9 @@ report_branch_warnings <- function(conditions) {
 # rather than dplyr's `expr_as_label()`. What this site writes is a condition
 # label, and that is what ADR 0022 decides; a name a caller reads back falls
 # the other way, under the same ADR's amendment for #439.
+#
+# Each of `dots` is a quosure, the form every summary argument keeps from its
+# capture at the public verb on (ADR 0007).
 summary_argument_labels <- function(dots) {
   arg_names <- names(dots)
   if (is.null(arg_names)) {
@@ -600,9 +603,7 @@ summary_argument_labels <- function(dots) {
   vapply(
     seq_along(dots),
     function(i) {
-      dot <- dots[[i]]
-      expr <- if (rlang::is_quosure(dot)) rlang::quo_get_expr(dot) else dot
-      label <- rlang::as_label(expr)
+      label <- rlang::as_label(rlang::quo_get_expr(dots[[i]]))
       if (nzchar(arg_names[[i]])) {
         paste0(arg_names[[i]], " = ", label)
       } else {

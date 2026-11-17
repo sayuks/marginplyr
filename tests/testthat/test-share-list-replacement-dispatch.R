@@ -102,3 +102,22 @@ test_that("local member and name setters refuse a removed capture", {
   )
   expect_share_dependencies(list_replacement_data(), reads)
 })
+
+# A replacement a factory returned carries that factory's frame, which the
+# replacement's own frame encloses in while its body is read.
+test_that("a factory-made replacement keeps a removed capture", {
+  read <- function(remove) {
+    substitute((function(prior) {
+      `$<-` <- local(function(x, name, value) {
+        x
+      })
+      carrier <- list(read = function() sum(prior))
+      carrier$read <- function() 7
+      REMOVE
+      carrier$read()
+    })(1), list(REMOVE = remove))
+  }
+  data <- list_replacement_data()
+  expect_share_dependencies(data, list(read(quote(rm(prior)))))
+  expect_share_dependency_values(data, list(read(NULL)), expected = 1)
+})

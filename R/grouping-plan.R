@@ -1957,11 +1957,10 @@ compile_grouping_spec <- function(
     choices = duplicates_choices,
     arg_name = ".duplicates"
   )
-  stopifnot(identical(preflight$spec, .grouping))
-  preflight <- complete_grouping_preflight(
-    preflight, data_vars,
-    if (is.null(data_proxy)) grouping_name_proxy(data_vars) else data_proxy
-  )
+  # A preflight reaches here complete: a name-only one never suspends, and
+  # `prepare_grouping_plan()` resumes any other against the typed snapshot
+  # before compiling it (ADR 0008).
+  stopifnot(identical(preflight$spec, .grouping), !isTRUE(preflight$deferred))
   compile_grouping_spec_impl(
     preflight,
     data_vars = data_vars,
