@@ -173,7 +173,13 @@ check_empty_summaries <- function(dots) {
 # specification and no column of that name would win the data-mask lookup.
 check_grouping_spec_summaries <- function(dots, data) {
   exprs <- lapply(dots, rlang::quo_get_expr)
-  data_vars <- if (any(vapply(exprs, rlang::is_symbol, logical(1)))) {
+  # An Arrow Table or Dataset has no `dplyr::tbl_vars()` method, and this runs
+  # before the input is normalized; its `names()` are its columns.
+  data_vars <- if (!any(vapply(exprs, rlang::is_symbol, logical(1)))) {
+    NULL
+  } else if (inherits(data, arrow_input_classes())) {
+    names(data)
+  } else {
     margin_col_names(data)
   }
   is_spec_dot <- function(dot) {
