@@ -21,7 +21,8 @@ sub-heading when the local answer is all you need. Read the recipes in any
 order and skip the rest — no recipe uses a value another recipe defined, so
 every one starts from
 [`retail_sales`](https://sayuks.github.io/marginplyr/man/retail_sales.html),
-the package's 24-row example sales table, or from its own lazy table.
+the package's 24-row example sales table, or from a small table it builds
+itself.
 
 Read [Get
 started](https://sayuks.github.io/marginplyr/vignettes/get_started.html) first
@@ -36,18 +37,30 @@ On this page:
   summarizes](#put-each-subtotal-with-the-rows-it-summarizes)
 - [Keep a numeric dimension in numeric
   order](#keep-a-numeric-dimension-in-numeric-order) once it carries a label
+- [Put the totals above the rows they
+  summarize](#put-the-totals-above-the-rows-they-summarize)
 - [Sort the newest year first](#sort-the-newest-year-first)
 - [Sort regions and stores by revenue](#sort-regions-and-stores-by-revenue)
+- [Show the top stores in each region with full
+  totals](#show-the-top-stores-in-each-region-with-full-totals)
+- [Report by year, quarter and month](#report-by-year-quarter-and-month)
 - [Make a crosstab (pivot table) with totals on both
   edges](#make-a-crosstab-pivot-table-with-totals-on-both-edges)
+- [Show each crosstab cell as a percent of its row or
+  column](#show-each-crosstab-cell-as-a-percent-of-its-row-or-column)
 - [Show each row as a percent of the
   total](#show-each-row-as-a-percent-of-the-total)
 - [Show each row as a percent of a level further
   up](#show-each-row-as-a-percent-of-a-level-further-up)
-- [Show only the subtotals of one
-  level](#show-only-the-subtotals-of-one-level)
+- [Show only the subtotals, only the detail, or one
+  level](#show-only-the-subtotals-only-the-detail-or-one-level)
 - [Add a level column: detail, subtotal or
   total](#add-a-level-column-detail-subtotal-or-total)
+- [Style the total rows in a printed
+  table](#style-the-total-rows-in-a-printed-table)
+- [Report a mean, a median or a distinct
+  count](#report-a-mean-a-median-or-a-distinct-count)
+- [Report a weighted mean](#report-a-weighted-mean)
 - [Fix a nested-aggregate error on a
   database](#fix-a-nested-aggregate-error-on-a-database)
 
@@ -74,9 +87,9 @@ Install marginplyr from GitHub:
 install.packages("pak")
 pak::pkg_install("sayuks/marginplyr")
 
-# Used for the parts of this guide that execute against a database, and for
-# the crosstab.
-install.packages(c("DBI", "duckdb", "tidyr"))
+# Used for the parts of this guide that execute against a database, for the
+# crosstabs, and for the printed table.
+install.packages(c("DBI", "duckdb", "knitr", "tidyr"))
 ```
 
 ```{r setup}
@@ -87,10 +100,11 @@ library(dplyr)
 ```
 
 Nothing beyond marginplyr's own dependencies is required. The chunks that run
-against a database use DuckDB, and the crosstab reshapes its result with tidyr,
-so those chunks evaluate only when the package they need is installed at the
-version marginplyr asks for. Where a package is missing or too old the code is
-still shown, but its output is absent. Everything else runs either locally or
+against a database use DuckDB, the crosstabs reshape their result with tidyr,
+and the printed table uses knitr, so those chunks evaluate only when the
+package they need is installed at the version marginplyr asks for. Where a
+package is missing or too old the code is still shown, but its output is
+absent. Everything else runs either locally or
 against `dbplyr::simulate_postgres()`, which needs no database and no optional
 package.
 
@@ -109,6 +123,7 @@ source(system.file("suggests", "guard.R", package = "marginplyr"))
 has_duckdb <- marginplyr_suggest_available("DBI") &&
   marginplyr_suggest_available("duckdb")
 has_tidyr <- marginplyr_suggest_available("tidyr")
+has_knitr <- marginplyr_suggest_available("knitr")
 ```
 
 ## Put each subtotal with the rows it summarizes
@@ -140,9 +155,10 @@ retail_sales |>
   )
 ```
 
-`"first"` puts each subtotal above its rows instead. Neither choice looks at
-`.margin_label`, so the placement does not change if the label does, and it
-does not depend on the locale. The `NA` store sorts after the named stores but
+`"first"` puts each subtotal above its rows instead, as [Put the totals above
+the rows they summarize](#put-the-totals-above-the-rows-they-summarize) shows.
+Neither choice looks at `.margin_label`, so the placement does not change if
+the label does, and it does not depend on the locale. The `NA` store sorts after the named stores but
 still ahead of the region subtotal: each dimension contributes its Grouping
 bit before its missingness, so a margin outranks a missing value rather than
 competing with one.
@@ -205,6 +221,45 @@ months |>
     .sort = "last"
   )
 ```
+
+## Put the totals above the rows they summarize
+
+A report that reads top-down — the grand total first, then each region's
+subtotal ahead of its stores — is `.sort = "first"`. It is the same Margin
+order as `"last"` with every Grouping bit sorted the other way, so each
+subtotal sits directly above the rows it summarizes:
+
+```{r}
+retail_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    .grouping = rollup(region, store),
+    .sort = "first"
+  )
+```
+
+### Put the grand total on top and subtotals under their rows
+
+No `.sort` value mixes the two placements. Write the key as an `arrange()`
+instead: retain the Grouping bits, sort the region's bit descending so the
+grand total comes first, and the store's bit ascending so each region's
+subtotal comes after its stores. Each value follows its bit, missing values
+last, as in the Margin order:
+
+```{r}
+retail_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    rb = grouping_bit(region),
+    sb = grouping_bit(store),
+    .grouping = rollup(region, store)
+  ) |>
+  arrange(desc(rb), is.na(region), region, sb, is.na(store), store) |>
+  select(-rb, -sb)
+```
+
+[Sort the newest year first](#sort-the-newest-year-first) writes the same kind
+of key with one value reversed.
 
 ## Sort the newest year first
 
@@ -410,6 +465,74 @@ get a report with no helper columns in it.
 DBI::dbDisconnect(con, shutdown = TRUE)
 ```
 
+## Show the top stores in each region with full totals
+
+A report that lists each region's two largest stores still owes the reader
+each region's whole revenue in its subtotal. Summarize first, then rank the
+detail rows within each region and keep the top ones together with every
+margin row. `rb` and `sb` are the region's and the store's Grouping bits, and
+`min_rank()` gives the margin rows no rank:
+
+```{r}
+retail_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    rb = grouping_bit(region),
+    sb = grouping_bit(store),
+    .grouping = rollup(region, store),
+    .sort = "last"
+  ) |>
+  mutate(
+    .by = c(rb, region),
+    store_rank = min_rank(desc(ifelse(sb == 0L, revenue, NA)))
+  ) |>
+  filter(sb == 1L | store_rank <= 2L) |>
+  select(region, store, revenue, store_rank)
+```
+
+East's subtotal is still 41900, although its unnamed store is not listed.
+Keeping only the top stores *before* the summary is the mistake to avoid: the
+dropped store then leaves every total that includes it, and East's subtotal
+and the grand total shrink to the stores shown. The `mutate()` groups by `rb`
+as well as `region` for the reason [Sort regions and stores by
+revenue](#sort-regions-and-stores-by-revenue) gives.
+
+## Report by year, quarter and month
+
+A calendar hierarchy is a `rollup()` over date parts, and the parts are
+ordinary columns: derive them with `mutate()` before the summary. Make the
+month a factor with the calendar's levels, because the Margin order sorts the
+values the result holds and month names sort alphabetically, Feb before Jan:
+
+```{r}
+orders <- tibble(
+  date = as.Date(c(
+    "2025-01-15", "2025-02-03", "2025-11-20",
+    "2026-01-08", "2026-04-30", "2026-05-12"
+  )),
+  revenue = c(120, 80, 200, 150, 90, 60)
+)
+
+orders |>
+  mutate(
+    year = as.integer(format(date, "%Y")),
+    quarter = quarters(date),
+    month = factor(month.abb[as.integer(format(date, "%m"))], levels = month.abb)
+  ) |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    .grouping = rollup(year, quarter, month),
+    .sort = "last"
+  )
+```
+
+`month.abb` and `quarters()` give the same names in every locale, where
+`months()` and `format(date, "%b")` follow the session's language. The quarters
+need no factor, since `"Q1"` to `"Q4"` already sort in calendar order. [Keep
+a numeric dimension in numeric
+order](#keep-a-numeric-dimension-in-numeric-order) explains why the label
+turns `year` into text.
+
 ## Make a crosstab (pivot table) with totals on both edges
 
 A crosstab, or pivot table, puts one dimension down the side, another across
@@ -488,6 +611,61 @@ duckdb_crosstab |>
 #| eval: !expr has_duckdb && has_tidyr
 
 DBI::dbDisconnect(con, shutdown = TRUE)
+```
+
+## Show each crosstab cell as a percent of its row or column
+
+A crosstab of percents — each product's revenue split across channels, with
+the totals still on both edges — divides every cell by its row's `Total`. The
+share helpers do not reach it: `share_of_parent()` refuses a `cube()`, which
+has no single parent level, and `share_of_total()` with `.by = product` gives
+the row percents but has no all-products row to show. Retain both Grouping
+bits instead, and divide each cell by the cell of its row whose channel bit is
+one — grouped by the product's bit and value, for the reason [Sort regions and
+stores by revenue](#sort-regions-and-stores-by-revenue) gives:
+
+```{r}
+#| eval: !expr has_tidyr
+
+retail_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    pb = grouping_bit(product),
+    cb = grouping_bit(channel),
+    .grouping = cube(product, channel),
+    .sort = "last"
+  ) |>
+  mutate(
+    .by = c(pb, product),
+    pct_of_row = round(100 * revenue / revenue[cb == 1L], 1)
+  ) |>
+  select(product, channel, pct_of_row) |>
+  tidyr::pivot_wider(names_from = channel, values_from = pct_of_row) |>
+  relocate(Total, .after = last_col())
+```
+
+Every row reads 100 in its `Total` column, and the `Total` row splits all
+revenue across channels. For percents of each column, swap the roles: group by
+the channel's bit and value, and divide by the row whose product bit is one:
+
+```{r}
+#| eval: !expr has_tidyr
+
+retail_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    pb = grouping_bit(product),
+    cb = grouping_bit(channel),
+    .grouping = cube(product, channel),
+    .sort = "last"
+  ) |>
+  mutate(
+    .by = c(cb, channel),
+    pct_of_column = round(100 * revenue / revenue[pb == 1L], 1)
+  ) |>
+  select(product, channel, pct_of_column) |>
+  tidyr::pivot_wider(names_from = channel, values_from = pct_of_column) |>
+  relocate(Total, .after = last_col())
 ```
 
 ## Show each row as a percent of the total
@@ -647,7 +825,8 @@ its key, and `na_matches = "na"` on a database.
 
 The level is
 selected by `grouping_bit()` rather than by a Margin label, for the reason
-[Show only the subtotals of one level](#show-only-the-subtotals-of-one-level)
+[Show only the subtotals, only the detail, or one
+level](#show-only-the-subtotals-only-the-detail-or-one-level)
 gives: a source
 value can equal the label. The same argument reaches the join key, which is
 why each dimension's bit travels beside its value. Without the bits, a row
@@ -776,10 +955,12 @@ as [The same join against a lazy
 table](#the-same-join-against-a-lazy-table) shows, dbplyr drops a Margin order
 a join reads, so `arrange()` after the join, or collect first.
 
-## Show only the subtotals of one level
+## Show only the subtotals, only the detail, or one level
 
 A report that shows only the region subtotals of a cube — every region, with
-the channels pooled — keeps the rows of that one grouping set. Filter on
+the channels pooled — keeps the rows of that one grouping set; [Keep every
+margin, only the detail, or one
+depth](#keep-every-margin-only-the-detail-or-one-depth) keeps several. Filter on
 Grouping identity
 rather than on a Margin label: a source value can equal the label, and the
 label can be changed or set to `NULL`. The obstacle is knowing which value to
@@ -854,6 +1035,66 @@ all four identity values and states their duplicate-occurrence rules, and the
 [Grouping identity
 guide](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html)
 works through what that comparison means in practice.
+
+### Keep every margin, only the detail, or one depth
+
+The Grouping identifier is `0` on the detail rows and positive on every
+margin, so one comparison keeps either side. `grouping_id() > 0` keeps every
+subtotal and the grand total:
+
+```{r}
+retail_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    absence = grouping_id(),
+    .grouping = cube(region, channel),
+    .sort = "last"
+  ) |>
+  filter(absence > 0L)
+```
+
+`filter(absence == 0L)` keeps the detail alone.
+
+A depth — every two-way subtotal of a three-way cube, say — is the sets that
+omit one dimension each. The sum of the Grouping bits counts the dimensions a
+row omits:
+
+```{r}
+retail_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    rb = grouping_bit(region),
+    pb = grouping_bit(product),
+    cb = grouping_bit(channel),
+    .grouping = cube(region, product, channel),
+    .sort = "last"
+  ) |>
+  filter(rb + pb + cb == 1L) |>
+  select(-rb, -pb, -cb)
+```
+
+The plan answers the same question without a bit column per dimension: in its
+`.format = "list"` form, `lengths(omitted)` counts each set's omitted
+dimensions, and `.id` carries the set onto the result:
+
+```{r}
+two_way_sets <- retail_sales |>
+  inspect_grouping(
+    .grouping = cube(region, product, channel),
+    .format = "list"
+  ) |>
+  filter(lengths(omitted) == 1L) |>
+  pull(set_id)
+
+retail_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    .grouping = cube(region, product, channel),
+    .id = "set",
+    .sort = "last"
+  ) |>
+  filter(set %in% two_way_sets)
+```
 
 ## Add a level column: detail, subtotal or total
 
@@ -1031,9 +1272,89 @@ DBI::dbDisconnect(con, shutdown = TRUE)
 backends](https://sayuks.github.io/marginplyr/vignettes/database_backends.html)
 covers query shape and execution for lazy inputs generally.
 
+## Style the total rows in a printed table
+
+A table package styles rows by a column it can test, and a Grouping bit is
+that column: `1` on every row where aggregation removed its dimension, whatever
+the label reads. Retain it, use it to style the rows — here by setting them in bold in
+`knitr::kable()`'s Markdown — and drop it before printing:
+
+```{r}
+#| eval: !expr has_knitr
+
+retail_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    sb = grouping_bit(store),
+    .grouping = rollup(region, store),
+    .sort = "last"
+  ) |>
+  mutate(
+    across(
+      c(region, store, revenue),
+      function(x) ifelse(sb == 1L, paste0("**", x, "**"), x)
+    )
+  ) |>
+  select(-sb) |>
+  knitr::kable()
+```
+
+`sb` is `1` on the region subtotals and on the grand total, since the store is
+omitted from both. A package with its own row styling takes the same column in
+place of the `mutate()`; [Add a level column: detail, subtotal or
+total](#add-a-level-column-detail-subtotal-or-total) names the levels when one
+style per level is wanted.
+
+## Report a mean, a median or a distinct count
+
+Measures that cannot be added up — an average sale, a median, a count of
+distinct values — are written as ordinary summary expressions:
+
+```{r}
+retail_sales |>
+  summarize_with_margins(
+    avg_sale = mean(revenue),
+    median_units = median(units),
+    channels = n_distinct(channel),
+    .grouping = rollup(region, store),
+    .sort = "last"
+  )
+```
+
+Each level is computed from the source rows, not from the rows below it:
+West's average sale is taken over its twelve sales rather than its two stores'
+averages, and East's two channels are counted once rather than summed across
+its three stores.
+
+## Report a weighted mean
+
+`weighted.mean()` works on a data frame, but not on every backend: dbplyr
+passes it to the database as written, which DuckDB rejects with a binder
+error, and marginplyr refuses it on an Arrow input when Arrow's engine cannot
+evaluate it. Written as two sums the same measure runs on a data frame,
+DuckDB, Arrow and dtplyr alike. Here the average price per unit sold, against
+the plain mean of the prices:
+
+```{r}
+retail_sales |>
+  mutate(price = revenue / units) |>
+  summarize_with_margins(
+    mean_price = mean(price),
+    avg_price = sum(price * units) / sum(units),
+    .grouping = rollup(region),
+    .sort = "last"
+  )
+```
+
+[Other lazy
+backends](https://sayuks.github.io/marginplyr/vignettes/database_backends.html#other-lazy-backends)
+in Database and lazy backends shows the Arrow refusal.
+
 ## Fix a nested-aggregate error on a database
 
-A calculation that compares each row with an aggregate of its own group — here,
+An ordinary mean, median or distinct count needs none of what follows; see
+[Report a mean, a median or a distinct
+count](#report-a-mean-a-median-or-a-distinct-count). A calculation that compares each row with an aggregate of its own group — here,
 the share of revenue coming from rows above their own set's mean — works on a
 local data frame and fails on a database with a nested-aggregate error. On a
 local data frame dplyr hands the summary expression the whole group, so it
