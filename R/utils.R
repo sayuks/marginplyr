@@ -248,9 +248,18 @@ assert_nest_possible <- function(x) {
 # `x`'s classes. dplyr registers no default for the generics this is asked
 # about, so `FALSE` means the generic cannot dispatch on `x`.
 dispatches_dplyr_generic <- function(x, generic) {
+  # `getS3method()` finds the registration table through the generic's
+  # environment, so a generic rebound in dplyr's namespace, as
+  # `testthat::local_mocked_bindings()` does, hides every registered method.
+  # dplyr's own table holds the registrations either way.
+  registered <- get(".__S3MethodsTable__.", envir = asNamespace("dplyr"))
   any(vapply(
     class(x),
     function(cls) {
+      if (exists(paste(generic, cls, sep = "."), envir = registered,
+                 inherits = FALSE)) {
+        return(TRUE)
+      }
       # `envir` names the namespace that owns the generic. The default is the
       # caller's frame, where the generic is not visible from inside this
       # package, so every class would look unsupported.
