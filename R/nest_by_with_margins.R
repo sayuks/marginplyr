@@ -1,9 +1,17 @@
 #' Nest by SQL-style grouping margins
 #'
-#' [nest_by_with_margins()] creates one row-wise nested data frame for every
-#' group in every grouping set. It is a margin-aware counterpart of
-#' [dplyr::nest_by()], and the row-wise counterpart of [nest_with_margins()];
-#' it works with local data frames and `dtplyr` steps.
+#' @description
+#' [nest_by_with_margins()] returns a row-wise data frame with one row for
+#' every group in every grouping set, holding that group's rows as a nested
+#' data frame. It is a margin-aware counterpart of [dplyr::nest_by()], and
+#' the row-wise counterpart of [nest_with_margins()]; it works with local
+#' data frames and `dtplyr` steps.
+#'
+#' Use it when the next step computes one value per nested table, because
+#' [dplyr::mutate()] on a row-wise result sees each row's table as `data`.
+#' Use [nest_with_margins()] to keep the result ungrouped or a `dtplyr` result
+#' lazy; *[Choosing a nesting verb][nest_with_margins]* in
+#' [nest_with_margins()] compares the two.
 #'
 #' @section Differences from nest_by():
 #' - Fixed keys are selected with `.by` rather than `...`, and `.grouping`
@@ -18,18 +26,33 @@
 #'   values of every outer key, so an outer `East / Total` subtotal keeps the
 #'   original store values inside instead of `"Total"`. This is the closest
 #'   margin-aware analogue of dplyr's rule that `.keep` retains grouping
-#'   columns.
+#'   columns. The kept keys come first in each nested data frame, in the
+#'   order of the outer columns, followed by the other columns in input
+#'   order; [dplyr::nest_by()] keeps input order. Because the kept keys share
+#'   their names with the outer columns, [tidyr::unnest()] needs `names_sep`
+#'   for such a result.
+#' - dplyr reserves `.rows` in row-wise grouping metadata, so a fixed `.by`
+#'   key, Margin dimension, or `.id` named `.rows` is refused before
+#'   nesting. Rename that outer key or use [nest_with_margins()] for an
+#'   ungrouped result. A payload column or `.key` named `.rows` is supported.
 #' - The list column is a regular list of data frames rather than the
 #'   `vctrs::list_of` column [dplyr::nest_by()] returns; see *Nested data
 #'   frames*.
-#' - With no grouping keys, an empty input returns one row holding the empty
-#'   input, as [dplyr::nest_by()] does.
+#' - An empty input returns one row holding the empty input only when the
+#'   call names no key at all: no `.by` column, no group, and no Margin
+#'   dimension. This is what [dplyr::nest_by()] does without grouping
+#'   columns. Any key gives zero rows, a Margin dimension included: on an
+#'   empty input, `.grouping = rollup(region)` returns no rows, although its
+#'   grand-total set omits `region` and [summarize_with_margins()] returns
+#'   one total row for it.
 #'
 #' @section dtplyr inputs:
 #' A row-wise data frame exists only locally, so a `dtplyr` input is expanded
 #' and nested lazily and then collected before it is made row-wise: unlike
 #' the other Margin verbs, [nest_by_with_margins()] processes a `dtplyr`
 #' step's rows when called. Use [nest_with_margins()] to keep the result lazy.
+#' For the same reason, `.check_margin_label` checks a `dtplyr` step's
+#' values by default.
 #'
 #' @inheritParams nest_with_margins
 #' @inheritSection nest_with_margins Nested data frames
@@ -47,10 +70,6 @@
 #' @param .key A non-missing string naming the list column. Unlike
 #'   [nest_with_margins()] and [tidyr::nest()], `NULL` is not converted to
 #'   `"data"`; this follows [dplyr::nest_by()].
-#' @details dplyr reserves `.rows` in row-wise grouping metadata. A fixed `.by`
-#'   key, Margin dimension, or `.id` named `.rows` is therefore refused
-#'   before nesting. Rename that outer key or use [nest_with_margins()] for an
-#'   ungrouped result. A payload column or `.key` named `.rows` is supported.
 #' @return A row-wise data frame, a tibble subclass whatever the class of
 #'   `.data`, with one row per group per grouping set. Its columns are the
 #'   fixed `.by` keys, then the Margin dimensions, then `.id` when supplied,
@@ -72,10 +91,11 @@
 #' )
 #'
 #' # A row-wise result makes it natural to calculate one report summary from
-#' # every nested detail table.
+#' # every nested detail table. `.sort` puts each subtotal after its stores.
 #' nested_by <- january_sales |>
 #'   nest_by_with_margins(
-#'     .grouping = rollup(region, store)
+#'     .grouping = rollup(region, store),
+#'     .sort = "last"
 #'   )
 #' nested_by |>
 #'   dplyr::mutate(
@@ -106,9 +126,11 @@
 #' )
 #' east_total$data[[1]][c("region", "store")]
 #'
-#' # With no grouping keys, nest_by semantics retain one empty nested table.
+#' # An empty input keeps one empty nested table only when the call names no
+#' # key; a Margin dimension gives zero rows.
 #' empty_sales <- january_sales[0, ]
 #' nrow(nest_by_with_margins(.data = empty_sales))
+#' nrow(nest_by_with_margins(.data = empty_sales, .grouping = rollup(region)))
 #'
 #' # A dtplyr input is nested lazily, then collected to make the local
 #' # row-wise result. Runs only when a recent enough dtplyr is installed.

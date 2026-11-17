@@ -126,6 +126,15 @@ dimension instead gains the label as a new level.
 \code{\link[=nest_with_margins]{nest_with_margins()}} creates one nested data frame for every group in every
 grouping set. It is a margin-aware counterpart of \code{\link[tidyr:nest]{tidyr::nest()}} with
 \code{.by}, and works with local data frames and \code{dtplyr} steps.
+
+Use it to keep the source rows behind each detail, subtotal, and total
+row, for example to feed each to its own report section, or to keep a
+\code{dtplyr} result lazy. Use \code{\link[=nest_by_with_margins]{nest_by_with_margins()}} instead when the next
+step computes one value per nested table with ordinary \code{\link[dplyr:mutate]{dplyr::mutate()}}
+calls; \emph{Choosing a nesting verb} compares the two. With the default
+\code{.keep = FALSE}, \code{tidyr::unnest(result, data)} on a local result gives the
+rows \code{\link[=expand_with_margins]{expand_with_margins()}} returns for the same other arguments, in some
+order.
 }
 \section{Differences from nest()}{
 
@@ -145,10 +154,32 @@ implemented.
 which \code{\link[tidyr:nest]{tidyr::nest()}} does when the keys are selected, as in
 \code{nest(data = everything(), .by = region)}. It is a logical argument
 because the Margin dimensions must stay outside to identify detail,
-subtotal, and total rows.
-\item An empty ungrouped input returns zero outer rows, as \code{\link[tidyr:nest]{tidyr::nest()}}
-does.
+subtotal, and total rows. The kept keys come first in each nested data
+frame, in the order of the outer columns, followed by the other columns
+in input order; \code{\link[tidyr:nest]{tidyr::nest()}} keeps input order. Because the kept
+keys share their names with the outer columns, \code{\link[tidyr:unnest]{tidyr::unnest()}} needs
+\code{names_sep} for such a result.
+\item An empty input returns zero outer rows, as \code{\link[tidyr:nest]{tidyr::nest()}} does.
 }
+}
+
+\section{Choosing a nesting verb}{
+\tabular{lll}{
+    \tab \code{nest_with_margins()} \tab \code{nest_by_with_margins()} \cr
+   Result \tab Ungrouped \tab Row-wise by every outer column \cr
+   \code{mutate(n = nrow(data))} \tab Adds nothing, no error \tab One value per row \cr
+   \code{dtplyr} input \tab Stays lazy until collected \tab Collected when called \cr
+   \code{.key = NULL} \tab Uses \code{"data"} \tab Error \cr
+   Empty input, no key in the call \tab Zero rows \tab One row \cr
+   Outer key named \code{.rows} \tab Allowed \tab Refused \cr
+}
+
+
+On an ungrouped result, \code{data} in \code{\link[dplyr:mutate]{dplyr::mutate()}} is the whole list
+column and \code{\link[=nrow]{nrow()}} of a list is \code{NULL}, so compute over its elements
+with \code{\link[=lapply]{lapply()}}, \code{\link[=vapply]{vapply()}}, or \code{purrr::map()}, as the examples do.
+\emph{Nest locally or with dtplyr} in \href{https://sayuks.github.io/marginplyr/vignettes/get_started.html}{Get started} shows both verbs
+side by side.
 }
 
 \section{Nested data frames}{
@@ -211,6 +242,19 @@ nested <- nest_with_margins(
 # The result is a tibble, which prints each nested table as its dimensions.
 head(nested)
 nested$data[[1]]
+
+# Compute over the list column element by element. `.id` records each
+# row's grouping set and `.sort` puts each subtotal after its stores.
+january_sales |>
+  nest_with_margins(
+    .grouping = rollup(region, store),
+    .id = "set",
+    .sort = "last"
+  ) |>
+  dplyr::mutate(
+    records = vapply(data, nrow, integer(1)),
+    revenue = vapply(data, function(d) sum(d$revenue), numeric(1))
+  )
 
 # Keep original region and store values inside each nested table as well.
 # The outer columns still identify the margin level.
