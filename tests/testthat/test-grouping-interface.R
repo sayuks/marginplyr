@@ -1989,7 +1989,10 @@ test_that("a printed Grouping specification names the constructor called", {
     expect_identical(spec$type, kind, info = kind)
     expect_identical(
       utils::capture.output(print(spec)),
-      paste0("<marginplyr Grouping specification: ", constructor, ">"),
+      c(
+        paste0("<marginplyr Grouping specification: ", constructor, ">"),
+        paste0(constructor, "(a)")
+      ),
       info = kind
     )
   }
@@ -1999,6 +2002,58 @@ test_that("a printed Grouping specification names the constructor called", {
   expect_identical(
     utils::capture.output(print(new_grouping_spec("nonesuch", list()))),
     "<marginplyr Grouping specification: nonesuch>"
+  )
+})
+
+# A stored specification reads back without data: its arguments print as the
+# constructor call they were written in, nested constructors included (#1703).
+test_that("a printed Grouping specification shows its arguments", {
+  col <- "store"
+  inner <- rollup(store)
+  cases <- list(
+    list(
+      spec = rollup(region, store),
+      call = "rollup(region, store)"
+    ),
+    list(
+      spec = grouping_sets(region, cube(store, product), grouping_set()),
+      call = "grouping_sets(region, cube(store, product), grouping_set())"
+    ),
+    list(
+      spec = grouping_spec(c(a, b), all_of(col), inner),
+      call = "grouping_spec(c(a, b), all_of(col), inner)"
+    ),
+    list(
+      spec = rollup(!!rlang::quo(region), .data$store),
+      call = "rollup(region, .data$store)"
+    )
+  )
+  for (case in cases) {
+    expect_identical(
+      utils::capture.output(print(case$spec))[-1L],
+      case$call,
+      info = case$call
+    )
+  }
+
+  # The header says all an argument list that is empty would.
+  expect_identical(
+    utils::capture.output(print(grouping_set())),
+    "<marginplyr Grouping specification: grouping_set>"
+  )
+  # A specification no rule names, or whose arguments cannot be read, prints
+  # its header alone, as it did.
+  expect_identical(
+    utils::capture.output(print(new_grouping_spec("nonesuch", list(quote(a))))),
+    "<marginplyr Grouping specification: nonesuch>"
+  )
+  unreadable <- rlang::new_environment(list(type = "rollup"))
+  makeActiveBinding("args", function() stop("no arguments"), unreadable)
+  expect_identical(
+    utils::capture.output(
+      print(structure(unreadable, class = "margin_grouping_spec"))
+    ),
+    "<marginplyr Grouping specification: rollup>"
   )
 })
 

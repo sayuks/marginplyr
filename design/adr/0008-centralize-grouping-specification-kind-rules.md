@@ -913,6 +913,17 @@ alone: the refusal is a `marginplyr_error` where the displaced rejection was
 tidyselect's class, and both are blamed on the same call. The predicate and
 nested-specification refusals keep their Package conditions.
 
+## Amendment: a printed specification shows its call (#1703)
+
+The printed line the amendments above settle is unchanged and is now followed
+by the constructor call the specification was written as, so a stored
+specification reads back without data. The call is written only where the
+header names a constructor the registry holds and the argument list reads as a
+nonempty list of quosures; an empty list adds nothing the header does not say.
+The argument list is read once, inside a catch of its own, for the reason the
+kind's read is: a print method has no refusal to reach, so a specification
+whose arguments cannot be read prints the header alone, as it did.
+
 ## Test strategy
 
 Before replacing the branches, add characterization coverage for:

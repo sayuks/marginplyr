@@ -31,8 +31,9 @@ A Grouping specification for use in \code{.grouping}. Its arguments are
 stored unevaluated and read when a Margin verb or \code{\link[=inspect_grouping]{inspect_grouping()}}
 receives data, so one specification can be reused across inputs, and a
 misspelled column is reported by that call rather than by the
-constructor. \code{\link[=inspect_grouping]{inspect_grouping()}} shows the grouping sets it expands to
-for an input.
+constructor. Printing it shows the constructor call as written, nested
+constructors included; \code{\link[=inspect_grouping]{inspect_grouping()}} shows the grouping sets it
+expands to for an input.
 }
 \description{
 These constructors describe SQL-style grouping operations for the

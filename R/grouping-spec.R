@@ -93,8 +93,9 @@
 #'   stored unevaluated and read when a Margin verb or [inspect_grouping()]
 #'   receives data, so one specification can be reused across inputs, and a
 #'   misspelled column is reported by that call rather than by the
-#'   constructor. [inspect_grouping()] shows the grouping sets it expands to
-#'   for an input.
+#'   constructor. Printing it shows the constructor call as written, nested
+#'   constructors included; [inspect_grouping()] shows the grouping sets it
+#'   expands to for an input.
 #'
 #' @section How an argument is read:
 #' A nested Grouping specification is recognized by how it is written: a
@@ -423,13 +424,40 @@ print.margin_grouping_spec <- function(x, ...) {
   # amendment for a specification the printer could not read decides that
   # count, and states what reading through a shared function costs.
   kind <- grouping_spec_kind(x)
+  printed <- grouping_kind_printed_name(kind)
   cat(
     "<marginplyr Grouping specification: ",
-    grouping_kind_printed_name(kind),
+    printed,
     ">\n",
     sep = ""
   )
+  call_lines <- grouping_spec_call_lines(x, printed)
+  cat(paste0(call_lines, "\n", recycle0 = TRUE), sep = "")
   invisible(x)
+}
+
+# The constructor call a specification was written as, as the lines it
+# deparses to, so a stored specification reads back without data. `printed` is
+# the name the header printed; only a constructor the registry holds is
+# written as a call, so a kind no rule names keeps the header alone. An
+# argument list that cannot be read, or is empty, adds nothing the header does
+# not say, and is caught as the kind's read is, since a print method has no
+# refusal to reach.
+grouping_spec_call_lines <- function(x, printed) {
+  constructors <- vapply(
+    grouping_kind_rules(), function(rule) rule$constructor, character(1)
+  )
+  if (!printed %in% constructors) {
+    return(character())
+  }
+  args <- tryCatch(x$args, error = function(cnd) NULL)
+  if (!is.list(args) || length(args) == 0L ||
+        !all(vapply(args, rlang::is_quosure, logical(1)))) {
+    return(character())
+  }
+  rlang::expr_deparse(
+    rlang::call2(printed, !!!lapply(args, rlang::quo_squash))
+  )
 }
 
 # The name a kind prints under, or the empty string where it has none. The
