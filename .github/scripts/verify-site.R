@@ -430,15 +430,13 @@ markers <- list(
     "summarise_with_margins",
     "Relationship to dplyr summaries",
     "Contextual shares",
-    # The section holding the two summaries a lazy backend refuses, and one
-    # claim from each half of it. The heading alone would pass a section folded
-    # back into `@details`, where it stands ahead of the usage a first reader
-    # needs (#461). Neither claim survives a section reduced to a
-    # cross-reference, and the Arrow half is the one `R/share.R` points here
-    # for.
+    # The section holding the summaries a lazy backend cannot carry back, and
+    # the claim it owns. The heading alone would pass a section folded back
+    # into `@details`, where it stands ahead of the usage a first reader needs
+    # (#461), and the claim does not survive a section reduced to a
+    # cross-reference.
     "Summaries a lazy backend cannot carry",
     "cannot carry back a summary with no columns in it",
-    "before a row is read, and names the two rewrites that compute it",
     # The single home of the SQLite `compute()` contract, by its anchor: the
     # database guide links it with this fragment, so a heading change that
     # moved the id would leave that link landing at the top of the page.
@@ -457,6 +455,10 @@ markers <- list(
     # matches the words wherever they are written.
     "id=\"display-labels-and-grouping-identity\"",
     "NA is already a factor level",
+    # The Arrow fallback refusal, which `R/share.R` and the summary page link
+    # here for. The claim does not survive a section reduced to a
+    # cross-reference.
+    "before a row is read, and names the two rewrites that compute it",
     "Database backend coverage",
     "Microsoft SQL Server"
   ),

@@ -27,16 +27,15 @@ cannot rename it: \code{c(area = region)} is an error rather than a fixed key
 named \code{area}. Rename the result afterwards with \code{\link[dplyr:rename]{dplyr::rename()}}.}
 
 \item{.grouping}{A Grouping specification made with \code{\link[=grouping_set]{grouping_set()}},
-\code{\link[=grouping_sets]{grouping_sets()}}, \code{\link[=rollup]{rollup()}}, \code{\link[=cube]{cube()}}, or \code{\link[=grouping_spec]{grouping_spec()}}. \code{NULL}
-represents one empty grouping set. Any expression returning a
-specification can be written here, while a specification nested inside
-another must be a constructor call or a name bound to one, and a nested
-name the input also has a column for is refused rather than read either
-way; see \code{\link[=grouping_set]{grouping_set()}}. The specification expands to the call's
-Grouping plan: the ordered list of grouping sets it computes, which
-\code{\link[=inspect_grouping]{inspect_grouping()}} returns. The columns it selects are the call's
+\code{\link[=grouping_sets]{grouping_sets()}}, \code{\link[=rollup]{rollup()}}, \code{\link[=cube]{cube()}}, or \code{\link[=grouping_spec]{grouping_spec()}}. A bare
+column or a \code{c()} of columns is refused; wrap it in a constructor, as in
+\code{.grouping = rollup(region)}. \code{NULL} is one grouping set with no Margin
+dimension, so only the fixed \code{.by} keys group the result. The
+specification expands to the call's Grouping plan, which
+\code{\link[=inspect_grouping]{inspect_grouping()}} returns, and the columns it selects are the call's
 Margin dimensions; see
-\emph{\link[=margin_verbs]{Fixed columns and Margin dimensions}} in \link{margin_verbs}.}
+\emph{\link[=margin_verbs]{Fixed columns and Margin dimensions}} in \link{margin_verbs}.
+See \code{\link[=grouping_set]{grouping_set()}} for how one specification nests inside another.}
 
 \item{.margin_label}{A display label for dimensions omitted from a grouping
 set. An unnamed character scalar applies to every resolved Margin
@@ -55,25 +54,23 @@ This controls the position of a non-missing synthetic label in factor and
 ordered-factor levels. It does not sort result rows and has no effect for
 \code{NA_character_} or \code{NULL}.}
 
-\item{.check_margin_label}{A logical scalar controlling the half of the
-Margin label collision check that reads the data: whether any \emph{value} of a
-Margin dimension is equal to that dimension's display label. Each
-dimension is checked independently, and a typed-missing label opts its
-own dimension out -- \code{NULL} or \code{NA_character_}, chosen per dimension in a
-named-list \code{.margin_label}.
-The default is \code{TRUE} for local data frames and \code{FALSE} for lazy inputs,
-which are read only when the caller asks. \code{\link[=nest_by_with_margins]{nest_by_with_margins()}} reads
-a \code{dtplyr} step's rows when called, so it also checks one by default. A
-label check after collecting a lazy input therefore defaults to \code{TRUE}
-instead of \code{FALSE}; set \code{.check_margin_label} explicitly when following a
-collect-first remediation.
-A label equal to a declared factor \emph{level} is rejected wherever
-marginplyr holds the levels, whatever this argument says, because finding
-it reads no rows. Left unchecked, a colliding value gives the result a
-margin row and a source row that no key column tells apart; keeping
-\code{.id} in the result distinguishes them at no added cost. See
-\emph{\link[=margin_verbs]{Display labels and grouping identity}} in \link{margin_verbs}
-for the factor missing-value contract.}
+\item{.check_margin_label}{Whether to check that no value of a Margin
+dimension equals that dimension's display label. The default is \code{TRUE}
+for a local data frame and \code{FALSE} for a lazy input -- a database table,
+a \code{dtplyr} step, or an Arrow object -- because there the check runs a
+query that reads your data; see
+\emph{\link[=margin_verbs]{When marginplyr queries your data}} in \link{margin_verbs}.
+\code{\link[=nest_by_with_margins]{nest_by_with_margins()}} reads a \code{dtplyr} step's rows when called, so it
+also checks one by default. Collecting a lazy input therefore turns the
+check on, so set this explicitly when re-running a call on collected
+data.
+
+A label equal to a declared factor level is refused wherever marginplyr
+holds the levels, whatever this argument says, because finding it reads
+no rows. A typed-missing label, \code{NULL} or \code{NA_character_}, takes its
+dimension out of the check. Left unchecked, a colliding value gives the
+result a margin row and a source row that no key column tells apart;
+keeping \code{.id} in the result distinguishes them.}
 
 \item{.duplicates}{One of \code{"error"}, \code{"drop"}, or \code{"keep"}, and nothing
 else; see \emph{\link[=margin_verbs]{Option arguments}} in \link{margin_verbs}. A

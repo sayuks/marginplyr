@@ -377,10 +377,10 @@
 #' the diagnostic names whichever helpers the call used. Other Arrow Margin
 #' operations remain supported and lazy, apart from a summary Arrow's own
 #' engine cannot evaluate, which is refused for its own reason and before any
-#' row is read; see [summarize_with_margins()]. Explicitly collect an Arrow
-#' input first when local share execution is appropriate. Collection changes
-#' `.check_margin_label`'s default from `FALSE` to `TRUE`, so choose that
-#' policy explicitly on the re-run.
+#' row is read; see *[Arrow inputs][margin_verbs]* in [margin_verbs].
+#' Explicitly collect an Arrow input first when local share execution is
+#' appropriate. Collection changes `.check_margin_label`'s default from
+#' `FALSE` to `TRUE`, so choose that policy explicitly on the re-run.
 #'
 #' A `dtplyr` step remains a native lazy query: no validation-only query is
 #' added and nothing is collected on your behalf. Its execution-time
