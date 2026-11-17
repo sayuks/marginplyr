@@ -46,10 +46,11 @@ library(marginplyr)
 library(dplyr)
 ```
 
-Nothing beyond marginplyr's own dependencies is required. A few sections below
-illustrate optional tooling, so their chunks evaluate only when that tooling is
-installed at the version marginplyr asks for. Where a package is missing or too
-old the code is still shown, but its output is absent.
+Nothing beyond marginplyr's own dependencies is required. Two sections below
+also use an optional package — dtplyr in *Nest locally or with dtplyr* and
+quartabs in *Optional Quarto tabsets with quartabs* — so their chunks evaluate
+only when that package is installed at the version marginplyr asks for. Where
+it is missing or too old the code is still shown, but its output is absent.
 
 ```{r}
 #| include: false
@@ -124,28 +125,37 @@ january_report <- january_sales |>
 january_report
 ```
 
-The result is one ordinary data frame. What is written in `.grouping` is a
-Grouping specification; the ordered list of grouping sets it expands to is its
-Grouping plan, which
-[`inspect_grouping()`](https://sayuks.github.io/marginplyr/man/inspect_grouping.html)
-prints. This plan is:
+The result is one ordinary data frame. Every summary is evaluated on the source
+rows of each group in each grouping set, so a subtotal's mean, distinct count
+or median is computed from its own rows, never combined from the detail-level
+results.
 
-```text
-(region, store)  store detail
-(region)         region subtotal
-()               company total
+What is written in `.grouping` is a Grouping specification; the ordered list of
+grouping sets it expands to is its Grouping plan.
+[`inspect_grouping()`](https://sayuks.github.io/marginplyr/man/inspect_grouping.html)
+returns that plan without summarizing anything, which makes it the quickest way
+to check a specification:
+
+```{r}
+inspect_grouping(
+  january_sales,
+  .grouping = rollup(region, store)
+) |>
+  select(set_id, included)
 ```
 
-`region` and `store` are its Margin dimensions: the columns supplied through
-`.grouping`, which a grouping set can remove to form a margin.
-
+Set 1 is the store detail, set 2 the region subtotals, and set 3 the company
+total. `region` and `store` are the plan's Margin dimensions: the columns
+supplied through `.grouping`, which a grouping set can remove to form a margin.
 The empty set `()` means that neither dimension remains, so it produces the
 grand total.
 
 `.grouping` takes one of these constructor calls: `rollup()`,
-`grouping_sets()`, `cube()`, `grouping_set()`, or `grouping_spec()`. A bare
-column such as `.grouping = region`, or `.grouping = c(region, store)`, is
-refused with a message suggesting the constructor call to write instead.
+`grouping_sets()`, `cube()`, `grouping_set()`, or `grouping_spec()`. Always
+name it: written without `.grouping =`, the specification lands among the
+summaries and is refused. A bare column such as `.grouping = region`, or
+`.grouping = c(region, store)`, is refused too, with a message suggesting the
+constructor call to write instead.
 
 ### Put subtotals next to their rows
 
@@ -256,7 +266,7 @@ retail_sales |>
   )
 ```
 
-An empty `grouping_set()` represents `()` and produces the grand total.
+An empty `grouping_set()` writes the empty set `()`.
 
 ### CUBE
 
@@ -350,45 +360,26 @@ absent from both, so only `occurrence` tells them apart. `.sort` keeps them
 next to each other: `.id` breaks the remaining ties in that order, so a kept
 duplicate sits beside the occurrence it repeats.
 
-SQL combines comma-separated grouping items by Cartesian product.
-`grouping_spec()` provides that operation:
+`grouping_spec()` combines the same two rollups by Cartesian product instead,
+as SQL combines comma-separated grouping items: every time level crossed with
+every geography level. Each rollup has three sets, so the plan has nine:
 
 ```{r}
-combined_totals <- retail_sales |>
-  summarize_with_margins(
-    revenue = sum(revenue),
-    .grouping = grouping_spec(
-      rollup(year, month),
-      rollup(region, store)
-    )
+inspect_grouping(
+  retail_sales,
+  .grouping = grouping_spec(
+    rollup(year, month),
+    rollup(region, store)
   )
-
-combined_totals |>
-  head(n = 12)
-```
-
-The two families each contain three sets, so their Cartesian product contains
-nine sets:
-
-```text
-(year, month, region, store)
-(year, month, region)
-(year, month)
-(year, region, store)
-(year, region)
-(year)
-(region, store)
-(region)
-()
+) |>
+  select(set_id, included)
 ```
 
 ### Composite dimensions and tidy-select
 
 A `grouping_set()` nested directly inside `rollup()` or `cube()` is one
-indivisible dimension. `inspect_grouping()` lists the grouping sets a
-specification resolves to, without summarizing anything, which makes it the
-quickest way to check one. In this cube, `region` and `store` are always
-included or removed together:
+indivisible dimension. In this cube, `region` and `store` are always included
+or removed together:
 
 ```{r}
 inspect_grouping(
@@ -525,6 +516,14 @@ retail_sales |>
   )
 ```
 
+On local data, the default `.check_margin_label = TRUE` refuses a label that
+already occurs as a source value, such as a store named `"Total"`; the
+[Database and lazy backends
+guide](https://sayuks.github.io/marginplyr/vignettes/database_backends.html)
+explains how lazy inputs and Arrow differ. A label is only a display value;
+retain `grouping_bit()` or `grouping_id()` whenever source values can equal
+the label.
+
 Use `.margin_label = NULL` or `NA_character_` to preserve each Margin
 dimension's input type and mark its margin rows with a typed missing Margin
 value — a missing value of the column's own type — instead of a label:
@@ -542,26 +541,15 @@ retail_sales |>
 ```
 
 `.margin_label = NULL` and `NA_character_` are the same request: typed missing
-output, and no observed collision check on that dimension. They part on
-factors, where an existing NA level is always a structural conflict for
-`NA_character_`, whatever `.check_margin_label` says, while `NULL` preserves
-it. [Three kinds of apparent
+output, with no label for `.check_margin_label` to look for among the source
+values. They differ only on a factor that already has an `NA` level.
+*Display labels and grouping identity* in the [`margin_verbs`
+reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html) gives
+those cases along with the naming rules, ordered-factor preservation, and
+level positioning; [Three kinds of apparent
 missingness](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html#three-kinds-of-apparent-missingness)
 works one factor through an NA level, a source missing value, and a
 typed-missing Margin value, which can all print as `<NA>`.
-
-On local data, the default `.check_margin_label = TRUE` refuses a label that
-already occurs as a source value, such as a store named `"Total"`; the
-[Database and lazy backends
-guide](https://sayuks.github.io/marginplyr/vignettes/database_backends.html)
-explains how lazy inputs and Arrow differ. A label is only a display value;
-retain `grouping_bit()` or `grouping_id()` whenever source values can equal
-the label.
-
-Naming rules, ordered-factor preservation, level positioning, and the complete
-eight-case `NA_character_`/`NULL` factor contract live in *Display labels and
-grouping identity* in the [`margin_verbs`
-reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html).
 
 ## Compare a summary with its rollup parent
 
@@ -585,8 +573,7 @@ A row of the Grand total set has a Parent share of one. Missing numerators or
 denominators and zero denominators produce a missing double value. The helper
 requires a rollup and finds each row's parent from the dimensions its
 grouping set removed, so displayed Margin labels and source missing keys do
-not determine it. For multiple measures, complete source rules, and the supported `across()` form, see the
-[`share_of_parent()` reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html).
+not determine it.
 
 For several measures, use two ordered `across()` expressions: the first
 creates ordinary summaries and the second selects those summaries for Parent
@@ -606,6 +593,10 @@ retail_sales |>
     .sort = "last"
   )
 ```
+
+The [`share_of_parent()`
+reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html) gives
+the complete rules for which summaries can be a source.
 
 Scale, round, format, or otherwise derive from a Parent share after the Margin
 summary:
@@ -698,18 +689,13 @@ through that choice.
 
 ## Complete absent keys before summarizing
 
-Grouping specifications choose reporting grains; they do not create
-unobserved dimension values. marginplyr therefore has no `.complete`, `.fill`,
-`.empty`, or `complete_with_margins()` interface. Complete input facts with
-ordinary tidyr, dplyr, or dbplyr operations when synthetic facts should
-participate in totals, or replace values after the summary when the change is
-display-only.
-
-The [Complete absent keys before margins
+A store with no sales in a month gets no row for that month, not a row of
+zeros, at any level: grouping sets choose which grains to report and never
+create a key the data does not contain. When such rows belong in the report,
+complete the input before summarizing, locally or on a database, as the
+[Complete absent keys before margins
 guide](https://sayuks.github.io/marginplyr/vignettes/completing_keys.html)
-shows local `tidyr::complete()` with `nesting()`, explicit key scaffolds,
-fact markers for counts and means, same-connection dimension tables,
-`dbplyr::copy_inline()`, and explicit `dplyr::copy_to()`.
+shows.
 
 ## Use the same plan with remote data
 
@@ -774,6 +760,8 @@ through that case.
 
 ### Nest locally or with dtplyr
 
+The two nesting verbs return a list column, which SQL and Arrow tables cannot
+hold, so they accept local data frames and dtplyr steps only.
 `nest_with_margins()` keeps one detail table for each visible group:
 
 ```{r}
@@ -790,8 +778,9 @@ nested_sections$data[[1]]
 ```
 
 Use `.keep = TRUE` when the grouping keys are also needed inside each detail
-table. The nested copies preserve their original values even when the
-corresponding outer key is a Margin label:
+table. The nested copies hold the original pre-margin values, so inside the
+company total the rows keep their region and store names while the outer key shows the
+Margin label:
 
 ```{r}
 nested_with_keys <- january_sales |>
@@ -807,8 +796,8 @@ company_total$data[[1]] |>
   distinct(region, store)
 ```
 
-A dtplyr input performs the expansion and nesting lazily until `collect()`.
-The result is still a dtplyr query; `collect()` runs it:
+A dtplyr input performs the expansion and nesting lazily: the result is still a
+dtplyr query, which `show_query()` can display and `collect()` runs:
 
 ```{r}
 #| eval: !expr has_dtplyr
@@ -842,7 +831,9 @@ nested_by |>
 nested_by$data[[1]]
 ```
 
-The row-wise result is local even when the input is a dtplyr step:
+A row-wise data frame is a local object, so `nest_by_with_margins()` collects
+a dtplyr input before making it row-wise; inspect the query with the
+`nest_with_margins()` form above instead:
 
 ```{r}
 #| eval: !expr has_dtplyr
@@ -862,51 +853,18 @@ nested_by_dt |>
 nested_by_dt$data[[1]]
 ```
 
-Because `nest_by_with_margins()` collects before making the result row-wise,
-its return value no longer has a lazy query to display. Use the
-`nest_with_margins()` form immediately above with `show_query()` to inspect the
-same dtplyr expansion and nesting expression before collection.
-
-List columns are why the two nesting verbs support local data frames and
-dtplyr steps rather than SQL database tables.
-
 #### Relationship to tidyr and dplyr
 
-The margin-aware verbs deliberately share the main result shapes of
-`tidyr::nest()` and `dplyr::nest_by()`, but they are not drop-in replacements.
-Both select their keys with `.by` plus `.grouping` rather than data-masking
-`...`, and both take a logical `.keep`. `nest_with_margins()` always nests
-every non-key column and does not implement `...`, multiple list columns, or
-`.names_sep`. `nest_by_with_margins()` collects a dtplyr result before making
-it row-wise, because a row-wise data frame is a local object.
-
-Sharing a result shape is not upstream compatibility; the differences are part
-of the margin-aware API. The first section of the
+The nesting verbs share the result shapes of `tidyr::nest()` and
+`dplyr::nest_by()` but are not drop-in replacements; the first section of the
 [`nest_with_margins()`
 reference](https://sayuks.github.io/marginplyr/man/nest_with_margins.html) and
 of the [`nest_by_with_margins()`
 reference](https://sayuks.github.io/marginplyr/man/nest_by_with_margins.html)
 lists each verb's differences.
 
-For grouped input, existing grouping columns become fixed keys as though they
-had been supplied through `.by`. Unlike `tidyr::nest()`, `nest_with_margins()`
-does not preserve that grouping metadata on its output. Row order is
-unspecified; call `arrange()` when the outer keys need a presentation order.
-
-Both functions support `.keep`. With `.keep = TRUE`, nested tables retain the
-original pre-margin key values. For example, the outer key of an
-`East / Total` subtotal displays `"Total"`, while the rows inside contain
-their original store names. For `nest_by_with_margins()`, this preserves the
-meaning of dplyr's “keep the grouping columns” rule after a dimension has been
-rolled up. For `nest_with_margins()`, it corresponds to explicitly selecting
-grouping keys with `tidyr::nest(data = everything(), .by = ...)`. marginplyr
-uses a logical argument instead of the full `...` interface because its
-Margin dimensions must remain visible outside to distinguish detail,
-subtotal, and total rows.
-
-Nesting accepts `.duplicates = "error"` or `"drop"`, but rejects `"keep"`,
-with or without `.id`. The value is refused where it is written rather than
-where a duplicate first appears:
+Nesting rejects `.duplicates = "keep"`, with or without `.id`, where the value
+is written rather than where a duplicate first appears:
 
 ```{r}
 #| label: nesting-duplicates-keep
@@ -919,15 +877,6 @@ january_sales |>
     .duplicates = "keep"
   )
 ```
-
-Internal set identifiers and `.keep` copies use collision-free temporary
-names, so no input column name is reserved.
-
-The list column is a regular list of data frames; a
-`vctrs::list_of` subclass is not promised. On an empty ungrouped input,
-`nest_with_margins()` follows `tidyr::nest()` and returns zero outer rows.
-`nest_by_with_margins()` follows `dplyr::nest_by()` and returns one row
-containing the empty data frame when there are no keys.
 
 ## Optional Quarto tabsets with quartabs
 
@@ -982,8 +931,10 @@ defines which source rows belong to that total.
 
 ### Persistent groups as fixed keys
 
-Existing `dplyr::group_by()` columns provide fixed keys when `.by` is not
-supplied:
+Existing `dplyr::group_by()` columns act as fixed keys when `.by` is not
+supplied, so this call computes the earlier `.by = c(year, month)` report and,
+like every Margin verb except the row-wise `nest_by_with_margins()`, returns
+ungrouped output:
 
 ```{r}
 grouped_monthly_report <- retail_sales |>
@@ -1000,7 +951,6 @@ grouped_monthly_report |>
 group_vars(grouped_monthly_report)
 ```
 
-The calculation is equivalent to the earlier `.by = c(year, month)` call.
 Grouped input and `.by` name the fixed keys twice over, so supplying both is
 refused rather than resolved in one direction:
 
@@ -1018,10 +968,8 @@ retail_sales |>
   )
 ```
 
-A fixed grouping column also cannot appear in `.grouping`; call `ungroup()`
-first if that column should be rolled up instead. A row-wise input is refused
-rather than quietly treated as ungrouped. To keep its row-wise identifiers as
-fixed keys, call `ungroup()` and name them in `.by`:
+A row-wise input is refused too; to keep its row-wise identifiers as fixed
+keys, call `ungroup()` and name them in `.by`:
 
 ```{r}
 rowwise_report <- retail_sales |>
@@ -1036,12 +984,8 @@ rowwise_report <- retail_sales |>
 rowwise_report
 ```
 
-Whether empty keys belong in a report is a semantic choice. Remove the
-existing grouping when they do not; when they do, complete the input before the
-Margin operation so those keys take part in the calculation. [Complete absent
-keys before margins](https://sayuks.github.io/marginplyr/vignettes/completing_keys.html)
-shows how. A grouping that keeps empty groups with `.drop = FALSE` is refused
-rather than completed for you:
+A grouping that keeps empty groups with `.drop = FALSE` is refused rather than
+completed for you:
 
 ```{r}
 #| label: drop-false-groups
@@ -1057,34 +1001,47 @@ retail_sales |>
   )
 ```
 
-Input groups affect the calculation but, except for the explicitly row-wise
-nesting verb, do not persist on the result. `summarize_with_margins()`,
-`expand_with_margins()`, and `nest_with_margins()` all return ungrouped
-output, because a result spanning several grains has no single grouping
-hierarchy to keep. `nest_by_with_margins()` is row-wise by every visible key,
-grouping-set dimensions included.
-
-This invariant is shared by local data frames and supported lazy backends.
-The nesting functions support local data frames and dtplyr because SQL and
-Arrow tables cannot contain their list-column result.
-
-*Grouped and row-wise inputs* in the [`margin_verbs`
-reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html)
-states the rule for all four verbs.
+When those empty keys belong in the report, complete the input before the
+Margin operation, as [Complete absent keys before
+margins](https://sayuks.github.io/marginplyr/vignettes/completing_keys.html)
+shows. *Grouped and row-wise inputs* in the [`margin_verbs`
+reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html) states
+the rule for all four verbs.
 
 ### Intentional differences from `dplyr::summarize()`
 
-Summary expressions use dplyr data masking, but marginplyr narrows the parts
-of the official API where arbitrary grouping sets have no portable
-interpretation. A summary may not overwrite a fixed key or Margin dimension,
-even where the local dplyr backend would allow it, because that would destroy
-grouping-set identity. `across()` and `pick()` exclude every column in the
-complete Grouping plan, not only the ones active in one branch. The
-`cur_group*()` family is rejected outright: a branch-local identifier, row
-position, or column set has no global meaning once several grouping sets are
-combined, so use `grouping_bit()` or `grouping_id()` to identify levels
-instead. The refusal is a marginplyr error naming the replacement, not a
-silently different answer:
+Summary expressions use dplyr data masking, but `across()` and `pick()`
+exclude every column of the Grouping plan, so `everything()` below selects
+neither the fixed key `year` nor the Margin dimensions `region` and `store`:
+
+```{r}
+retail_sales |>
+  summarize_with_margins(
+    total = sum(revenue),
+    selected = toString(names(pick(everything()))),
+    .by = year,
+    .grouping = rollup(region, store)
+  ) |>
+  distinct(selected)
+```
+
+On a local data frame, a later `across()` or `pick()` sees summaries already
+computed in the same call, as `total` above and here; on a lazy input the
+backend decides, and marginplyr does not collect the data to provide the local
+behavior:
+
+```{r}
+data.frame(region = c("East", "West"), value = c(1, 2)) |>
+  summarize_with_margins(
+    total = sum(value),
+    across(total, ~ .x * 2, .names = "double_{.col}"),
+    .grouping = rollup(region)
+  )
+```
+
+The `cur_group*()` family has no meaning once several grouping sets are
+combined, so it is refused with a marginplyr error naming `grouping_bit()` and
+`grouping_id()` as the replacement:
 
 ```{r}
 #| label: cur-group-id-rejected
@@ -1098,55 +1055,9 @@ retail_sales |>
   )
 ```
 
-The helpers marginplyr rewrites — `grouping_bit()`, `pick()`, the
-`cur_group*()` family and the rest — are recognized by name, so a function of
-the same name in your own environment never changes what they do. Every other
-name, `n()` included, is looked up as usual.
-
-Row order is unspecified unless `.sort` asks for one, as described in [Put
-subtotals next to their rows](#put-subtotals-next-to-their-rows). As in dplyr, `summarise_with_margins()` and
-`summarize_with_margins()` are synonyms.
-
 *Relationship to dplyr summaries* in the [`summarize_with_margins()`
 reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html)
-states each of these rules in full.
-
-For example, `everything()` below selects every column except the fixed key
-`year` and the Margin dimensions `region` and `store`, and on a local data
-frame it includes the summary `total` computed before it:
-
-```{r}
-retail_sales |>
-  summarize_with_margins(
-    total = sum(revenue),
-    selected = toString(names(pick(everything()))),
-    .by = year,
-    .grouping = rollup(region, store)
-  ) |>
-  distinct(selected)
-```
-
-A summary may return a one-row data frame as in dplyr, but none of its output
-columns may be named `year`, `region`, or `store` in this example. Use a new
-summary name or rename the input key first.
-
-On a local data frame, a later ordinary `across()` or `pick()` selection sees
-summaries already computed in the same call. The selection uses the current
-types after an ordinary output overwrites an input column. For example:
-
-```{r}
-data.frame(region = c("East", "West"), value = c(1, 2)) |>
-  summarize_with_margins(
-    total = sum(value),
-    across(total, ~ .x * 2, .names = "double_{.col}"),
-    .grouping = rollup(region)
-  )
-```
-
-The two detail rows and the grand total have `double_total` values 2, 4, and
-6. On a lazy input, whether one summary can refer to an earlier one is decided
-by the backend; marginplyr does not collect the data to provide the local
-behavior.
+states each of these rules in full, with the ones this guide does not show.
 
 ## Next steps
 
