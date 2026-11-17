@@ -17,8 +17,7 @@ validate_grouping_spec_early <- function(grouping_spec) {
   # a name and not the value it was read off (#280).
   kind <- grouping_kind_name(grouping_spec_kind(grouping_spec))
   # A catch of its own, because the two fields are not read together: an object
-  # can refuse one while answering the other, and this is the only reader of
-  # `args` before the guard below has run.
+  # can refuse one while answering the other.
   args <- tryCatch(grouping_spec$args, error = function(cnd) NULL)
   if (is.null(kind) || !is.list(args)) {
     abort_invalid_grouping_spec()
