@@ -397,7 +397,8 @@ check_observed_label_collision <- function(data,
   # A lazy table with no `collect()` method -- `dbplyr::tbl_lazy()` over a
   # `dbplyr::simulate_*()` connection -- cannot be sent the read. Whether one
   # dispatches is asked of the class, which sends no query.
-  if (inherits(data, "tbl_lazy") && !dispatches_collect(data)) {
+  if (inherits(data, "tbl_lazy") &&
+        !dispatches_dplyr_generic(data, "collect")) {
     abort_marginplyr(c(
       paste0(
         "Can't check Margin labels against the grouping columns, because ",
@@ -505,20 +506,6 @@ check_observed_label_collision <- function(data,
     found,
     on_collision = on_collision
   )
-}
-
-# Whether `dplyr::collect()` has a method for `x`, looked up as
-# `assert_margin_input()` looks up `group_vars()`: dplyr registers no default.
-dispatches_collect <- function(x) {
-  any(vapply(
-    class(x),
-    function(cls) {
-      !is.null(utils::getS3method(
-        "collect", cls, optional = TRUE, envir = asNamespace("dplyr")
-      ))
-    },
-    logical(1L)
-  ))
 }
 
 # The columns a collision was found in and the labels that collided with them,

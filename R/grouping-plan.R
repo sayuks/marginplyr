@@ -2297,7 +2297,6 @@ abort_duplicate_witness <- function(witness, duplicates_choices, set = NULL) {
   ))
 }
 
-
 # Offer the calling verb's other duplicate policies. Nest excludes keep (#110).
 duplicate_alternatives <- function(duplicates_choices) {
   alternatives <- setdiff(duplicates_choices, "error")

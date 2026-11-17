@@ -244,6 +244,24 @@ assert_nest_possible <- function(x) {
   }
 }
 
+# Whether dplyr's S3 generic `generic` has a method registered for one of
+# `x`'s classes. dplyr registers no default for the generics this is asked
+# about, so `FALSE` means the generic cannot dispatch on `x`.
+dispatches_dplyr_generic <- function(x, generic) {
+  any(vapply(
+    class(x),
+    function(cls) {
+      # `envir` names the namespace that owns the generic. The default is the
+      # caller's frame, where the generic is not visible from inside this
+      # package, so every class would look unsupported.
+      !is.null(utils::getS3method(
+        generic, cls, optional = TRUE, envir = asNamespace("dplyr")
+      ))
+    },
+    logical(1L)
+  ))
+}
+
 # Admission is duck-typed rather than a class whitelist: marginplyr supports
 # any input the dplyr verbs it calls can handle, and a whitelist would reject
 # a backend that works. `group_vars()` is the first dplyr generic every Margin
@@ -254,28 +272,11 @@ assert_nest_possible <- function(x) {
 # Admissibility is decided by looking for a method rather than by calling the
 # generic and catching whatever comes back. A backend's `group_vars()` can
 # fail for its own reasons, and catching every error would report that failure
-# as the caller having supplied the wrong kind of object. dplyr registers no
-# default method, so an object no registered method matches is exactly the
-# object the generic cannot dispatch on.
+# as the caller having supplied the wrong kind of object.
 assert_margin_input <- function(x) {
   # Read only from the cli template below, which codetools cannot see.
   nm <- deparse(substitute(x)) # nolint: object_usage_linter.
-  dispatches <- any(vapply(
-    class(x),
-    function(cls) {
-      # `envir` names the namespace that owns the generic. The default is the
-      # caller's frame, where `group_vars` is not visible from inside this
-      # package, so every class would look unsupported.
-      !is.null(utils::getS3method(
-        "group_vars",
-        cls,
-        optional = TRUE,
-        envir = asNamespace("dplyr")
-      ))
-    },
-    logical(1L)
-  ))
-  if (dispatches) {
+  if (dispatches_dplyr_generic(x, "group_vars")) {
     return(invisible(NULL))
   }
 
