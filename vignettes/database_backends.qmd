@@ -752,7 +752,9 @@ types only of steps whose output types follow from their input types alone:
 join, and a `transmute()` or a `mutate()` directly on `lazy_dt()` that adds
 constants, column copies, or arithmetic on numeric columns. Any other step is
 refused before processing source rows, including an aggregate such as
-`summarise()` or `count()` and a `mutate()` that calls another function:
+`summarise()` or `count()`, a row-selecting step such as `head()`,
+`distinct()`, or `tidyr::drop_na()`, and a `mutate()` that calls another
+function:
 
 ```{r}
 #| label: dtplyr-unsafe-metadata
