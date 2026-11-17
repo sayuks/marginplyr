@@ -469,9 +469,9 @@ markers <- list(
     # promises, not by the name alone: a name survives a section reduced to a
     # cross-reference.
     "Errors and warnings",
-    "is the only package-specific class marginplyr promises",
+    "match them through the parent",
     "Recording the SQL marginplyr prepares",
-    "switches the record on",
+    "reads back the SQL that call prepared",
     # The Guides list, by its heading and by one entry's href. No entry's text
     # can serve: all five are vignette titles, and the sidebar renders every
     # one of them on all 21 pages, so a marker quoting one passes on a page
@@ -483,6 +483,7 @@ markers <- list(
   # The condition contract `?marginplyr` links to. Each field is quoted by
   # the section stating it, and the boundary by the sentence naming it.
   "docs/man/marginplyr_conditions.html" = c(
+    "is the only package-specific class marginplyr promises",
     "handler boundary.",
     "$replay_error",
     "$cleanup",
@@ -493,7 +494,7 @@ markers <- list(
     "Formats and ordinary tibble behavior",
     "Positron",
     "31 Margin dimensions",
-    "separate from a SQL execution plan"
+    "is not a SQL execution plan"
   ),
   "docs/man/share_of_parent.html" = c(
     "Direct shares",

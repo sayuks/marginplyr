@@ -226,9 +226,12 @@ stopifnot(
 )
 }
 
+\donttest{
 # An interrupt that arrives after an error keeps that error. The grand
 # total fails, then `warning.expression` simulates cancellation while the
-# regional warning is replayed.
+# regional warning is replayed. The simulation needs that warning to reach
+# R's default handling, so a caller that muffles warnings, such as a
+# knitr chunk with `warning = FALSE`, prevents it.
 old <- options(warning.expression = quote(rlang::interrupt()))
 enriched <- tryCatch(
   summarize_with_margins(
@@ -255,6 +258,7 @@ stopifnot(
     "The grand total failed"
   )
 )
+}
 }
 }
 \seealso{
