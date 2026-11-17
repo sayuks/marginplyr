@@ -52,8 +52,10 @@
 #' which the declared hierarchy never produces. A `cube(region, store)` plan
 #' contains every mask, so its identifiers are `0L`, `1L`, `2L`, and `3L`.
 #'
-#' Neither value records physical row order. Call [dplyr::arrange()] whenever
-#' presentation order matters.
+#' Neither value records physical row order. Pass `.sort` to a Margin verb for
+#' margins next to the rows they summarize; see *[Margin order][margin_verbs]*
+#' in [margin_verbs]. Call [dplyr::arrange()] for any order `.sort` does not
+#' express.
 #'
 #' Displayed Margin labels are not identity. A source value can equal its
 #' Margin label, and a source missing value can print exactly like a

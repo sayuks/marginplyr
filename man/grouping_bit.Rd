@@ -78,8 +78,10 @@ and \code{3L}: identifier \code{2} would mean \code{region} absent while \code{s
 which the declared hierarchy never produces. A \code{cube(region, store)} plan
 contains every mask, so its identifiers are \code{0L}, \code{1L}, \code{2L}, and \code{3L}.
 
-Neither value records physical row order. Call \code{\link[dplyr:arrange]{dplyr::arrange()}} whenever
-presentation order matters.
+Neither value records physical row order. Pass \code{.sort} to a Margin verb for
+margins next to the rows they summarize; see \emph{\link[=margin_verbs]{Margin order}}
+in \link{margin_verbs}. Call \code{\link[dplyr:arrange]{dplyr::arrange()}} for any order \code{.sort} does not
+express.
 
 Displayed Margin labels are not identity. A source value can equal its
 Margin label, and a source missing value can print exactly like a

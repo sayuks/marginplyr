@@ -104,13 +104,21 @@ whether its value is missing:
 }\if{html}{\out{</div>}}
 
 A margin row therefore sits with the rows it summarizes instead of wherever
-its \code{.margin_label} falls among that dimension's values, so the order does
-not depend on the label or the locale. Fixed \code{.by} keys sort first, so each
-partition is one contiguous block, and \code{.id}, when it names a column, breaks
-the remaining ties. \code{"first"} reverses the Grouping bits alone: missing
-values come last wherever they appear, on every backend. Factor dimensions
-sort by their levels. \code{.margin_label_position} positions a synthetic factor
-level and never a row.
+its \code{.margin_label} falls among that dimension's values: the label's text
+never decides where a margin goes, and neither does the locale. Within a
+level, rows sort ascending by value, with a source \code{NA} after the named
+values. Fixed \code{.by} keys sort first, so each partition is one contiguous
+block, and \code{.id}, when it names a column, breaks the remaining ties.
+\code{"first"} reverses the Grouping bits alone: missing values come last
+wherever they appear, on every backend.
+
+Whether there is a label does decide how a non-factor dimension sorts: a
+non-missing \code{.margin_label} makes it character, so a numeric dimension sorts
+as text, \code{"10"} before \code{"9"}. Keep its type with \code{.margin_label = NULL},
+or make it a factor first. Factor dimensions sort by their levels, except on
+Arrow, which sorts a factor by value; see \emph{Arrow inputs}.
+\code{.margin_label_position} positions a synthetic factor level and never a
+row.
 
 A Margin order promises what \code{\link[dplyr:arrange]{dplyr::arrange()}} promises in the C locale,
 which it fixes: \code{options(dplyr.legacy_locale = TRUE)} does not redirect it.
@@ -227,8 +235,10 @@ Arrow objects, such as a \code{Scanner} or an \code{Array},
 are not dplyr inputs; a Scanner materializes with \verb{$ToTable()}.
 
 Arrow does not hold factor levels in the schema marginplyr reads, so a
-non-missing \code{.margin_label} converts a factor dimension to character, its
-levels and ordered status are lost, and a Margin order sorts it by value.
+non-missing \code{.margin_label} converts a factor dimension to character, and its
+levels and ordered status are lost. A Margin order sorts a factor by value on
+Arrow whatever the label, fixed \code{.by} keys included, even where the result
+column keeps its levels.
 For the same reason, a label equal to an unused declared level is allowed,
 and an observed collision is refused only when
 \code{.check_margin_label = TRUE}. \code{NA_character_} and \code{NULL} convert nothing.
