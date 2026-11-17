@@ -394,20 +394,24 @@ check_observed_label_collision <- function(data,
   if (length(read_cols) == 0L) {
     return(invisible(NULL))
   }
-  # A connection that executes nothing cannot be sent the read, and is asked
-  # first as a share's dialect question is, which sends no query.
-  if (inherits(data, "tbl_lazy") &&
-        !share_dialect_can_be_asked(dbplyr::remote_con(data))) {
+  # A lazy table with no `collect()` method -- `dbplyr::tbl_lazy()` over a
+  # `dbplyr::simulate_*()` connection -- cannot be sent the read. Whether one
+  # dispatches is asked of the class, which sends no query.
+  if (inherits(data, "tbl_lazy") && !dispatches_collect(data)) {
     abort_marginplyr(c(
       paste0(
         "Can't check Margin labels against the grouping columns, because ",
-        "this connection executes no query."
+        "this input can't execute a query."
       ),
       i = paste0(
-        "A connection built with a {.code dbplyr::simulate_*()} constructor, ",
-        "or one that is closed, can't be read."
+        "A table built with {.fun dbplyr::tbl_lazy}, such as one on a ",
+        "{.code dbplyr::simulate_*()} connection, has no ",
+        "{.fun dplyr::collect} method."
       ),
-      i = "Set {.code .check_margin_label = FALSE}, or use a live connection."
+      i = paste0(
+        "Set {.code .check_margin_label = FALSE}, or use a table on a live ",
+        "connection."
+      )
     ))
   }
 
@@ -501,6 +505,20 @@ check_observed_label_collision <- function(data,
     found,
     on_collision = on_collision
   )
+}
+
+# Whether `dplyr::collect()` has a method for `x`, looked up as
+# `assert_margin_input()` looks up `group_vars()`: dplyr registers no default.
+dispatches_collect <- function(x) {
+  any(vapply(
+    class(x),
+    function(cls) {
+      !is.null(utils::getS3method(
+        "collect", cls, optional = TRUE, envir = asNamespace("dplyr")
+      ))
+    },
+    logical(1L)
+  ))
 }
 
 # The columns a collision was found in and the labels that collided with them,

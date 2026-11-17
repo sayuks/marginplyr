@@ -2271,13 +2271,17 @@ test_that("an observed-label check on a simulated connection is refused", {
       c(
         paste0(
           "Can't check Margin labels against the grouping columns, because ",
-          "this connection executes no query."
+          "this input can't execute a query."
         ),
         paste0(
-          "i A connection built with a `dbplyr::simulate_*()` constructor, or ",
-          "one that is closed, can't be read."
+          "i A table built with `dbplyr::tbl_lazy()`, such as one on a ",
+          "`dbplyr::simulate_*()` connection, has no `dplyr::collect()` ",
+          "method."
         ),
-        "i Set `.check_margin_label = FALSE`, or use a live connection."
+        paste0(
+          "i Set `.check_margin_label = FALSE`, or use a table on a live ",
+          "connection."
+        )
       ),
       info = verb
     )

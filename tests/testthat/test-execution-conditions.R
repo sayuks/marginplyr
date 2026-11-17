@@ -1554,6 +1554,11 @@ test_that("a refused unnamed result quotes the caller's argument", {
         data, !!!dots, .grouping = rollup(g)
       ))
       native <- expect_error(dplyr::summarise(data, !!!dots, .by = g))
+      # Each case is dplyr's size refusal, which gains one bullet naming what
+      # works in a Margin verb; with it set aside the rest is dplyr's own.
+      hint <- utils::tail(actual$parent$message, 1L)
+      expect_match(hint, "No Margin verb reframes", fixed = TRUE)
+      actual$parent$message <- utils::head(actual$parent$message, -1L)
       expect_identical(conditionMessage(actual), conditionMessage(native))
       expect_identical(
         lapply(condition_chain(actual), class),

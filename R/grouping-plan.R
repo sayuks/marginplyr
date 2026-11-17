@@ -3751,8 +3751,9 @@ selection_proxy_names <- function(data_proxy) {
 computed_selection_leaf <- function(expr, data_vars) {
   expr <- unparenthesized_value(expr)
   if (is_selection_walk_call(expr)) {
-    for (part in static_call_args(expr)) {
-      found <- computed_selection_leaf(part, data_vars)
+    parts <- static_call_args(expr)
+    for (index in seq_along(parts)) {
+      found <- computed_selection_leaf(parts[[index]], data_vars)
       if (!is.null(found)) {
         return(found)
       }
@@ -3766,7 +3767,7 @@ computed_selection_leaf <- function(expr, data_vars) {
   if (!is.null(name) && name %in% c(
     selection_leaf_helpers(), "where", grouping_constructor_names(),
     selection_walk_operators(), selection_refused_operators(),
-    "(", "$", "[["
+    "(", "$", "[[", "~"
   )) {
     return(NULL)
   }
