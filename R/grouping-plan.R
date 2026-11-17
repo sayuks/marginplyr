@@ -36,15 +36,88 @@ validate_grouping_spec_early <- function(grouping_spec) {
 # which is why the handler is a calling one. It runs only after evaluation has
 # failed, so a specification bound to a name that is also a column still
 # reaches the caller's value.
+#
+# A failure, or a value that is not a specification, from a constructor name
+# another package's function answers to is answered with the qualified
+# spelling instead (#1700).
 eval_grouping_argument <- function(grouping_quo, .data) {
-  withCallingHandlers(
+  value <- withCallingHandlers(
     rlang::eval_tidy(grouping_quo),
     error = function(cnd) {
+      check_masked_constructor(grouping_quo, parent = cnd)
       columns <- written_grouping_columns(grouping_quo, .data)
       if (!is.null(columns)) {
         abort_grouping_columns(columns, cnd)
       }
     }
+  )
+  if (!inherits(value, "margin_grouping_spec")) {
+    check_masked_constructor(grouping_quo)
+  }
+  value
+}
+
+# The package whose function a constructor-spelled call names, by the ordinary
+# lookup R gives a call head from `env` (ADR 0019): `"marginplyr"` for a
+# qualified spelling or marginplyr's own function, the namespace's name for a
+# function a package namespace encloses, and `NULL` for anything else -- a call
+# that is not a constructor spelling, a caller's own function, or a name
+# nothing binds to a function.
+grouping_constructor_owner <- function(expr, env) {
+  name <- static_spelling_name(expr, "grouping_constructor")
+  if (is.null(name)) {
+    return(NULL)
+  }
+  if (!is.null(static_call_ns(expr))) {
+    return("marginplyr")
+  }
+  fn <- get0(name, envir = env, mode = "function")
+  if (identical(fn, get(name, envir = asNamespace("marginplyr")))) {
+    return("marginplyr")
+  }
+  if (!is.function(fn) || is.primitive(fn)) {
+    return(NULL)
+  }
+  owner <- topenv(environment(fn))
+  if (!isNamespace(owner)) {
+    return(NULL)
+  }
+  # Read by name, because testthat evaluates a test in a clone of this
+  # namespace, and any other function enclosed there is a caller's.
+  package <- unname(getNamespaceName(owner))
+  if (identical(package, "marginplyr")) {
+    return(NULL)
+  }
+  package
+}
+
+# Refuses a constructor-spelled call another package's function answers to.
+# `quo` is the caller's quosure, read through any quosure it wraps, so the name
+# is looked up where it is evaluated; the caller holds a failure or a value
+# that is not a specification, and passes the failure as `parent`.
+check_masked_constructor <- function(quo, parent = NULL) {
+  expr <- quo
+  while (rlang::is_quosure(expr)) {
+    env <- rlang::quo_get_env(expr)
+    expr <- rlang::quo_get_expr(expr)
+  }
+  owner <- grouping_constructor_owner(expr, env)
+  if (is.null(owner) || identical(owner, "marginplyr")) {
+    return(invisible(NULL))
+  }
+  # Read only from the cli template below, which codetools cannot see.
+  name <- static_call_name(expr)
+  masked <- paste0(owner, "::", name, "()") # nolint: object_usage_linter.
+  qualified <- paste0("marginplyr::", name, "()") # nolint: object_usage_linter.
+  abort_marginplyr(
+    c(
+      paste0(
+        "{.fun {name}} in {.arg .grouping} resolves to {.code {masked}}, ",
+        "not to marginplyr's constructor."
+      ),
+      i = "Write {.code {qualified}} to build a Grouping specification."
+    ),
+    parent = parent
   )
 }
 
@@ -2926,6 +2999,9 @@ read_grouping_arg <- function(arg, data_vars, wrappers, data_proxy,
       # dbplyr's generic proxy invents logical columns from names. It cannot
       # answer an unknown caller's type reads faithfully (ADR 0008).
       if (inherits(data_proxy, "tbl_lazy")) {
+        # A masked constructor never runs here, so its remedy is the one that
+        # applies rather than collecting the input.
+        check_masked_constructor(rlang::new_quosure(expr, env))
         abort_marginplyr(c(
           "Can't provide a faithful typed selection context for this call.",
           i = "This SQL backend supplies column names without their R types.",
@@ -2949,11 +3025,17 @@ read_grouping_arg <- function(arg, data_vars, wrappers, data_proxy,
       rlang::new_quosure(rlang::call2(capture, evaluation), env), proxy
     )
     if (!is.null(outcome$error)) {
+      check_masked_constructor(
+        rlang::new_quosure(expr, env), parent = outcome$error
+      )
       stop(outcome$error)
     }
     outcome$value
   } else {
     evaluate()
+  }
+  if (is_constructor_call && !inherits(value, "margin_grouping_spec")) {
+    check_masked_constructor(rlang::new_quosure(expr, env))
   }
   selection$evaluated <- TRUE
   if (inherits(value, "margin_grouping_spec")) {
