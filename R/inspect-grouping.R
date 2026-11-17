@@ -115,15 +115,18 @@
 #' for generated SQL and backend-native tools for an optimizer plan.
 #'
 #' *Inspect a Grouping plan as data* in [Grouping identity][guide] walks through
-#' inspecting a plan and reading it back off a Margin result. [Recipes for
-#' common reporting tasks][recipes] uses a plan to choose which grouping set to
-#' keep, and joins one against a Margin result's [`.id`][summarize_with_margins]
-#' column to name the set behind every row. Because the plan is local, that join
-#' needs a `copy` argument when the Margin result is lazy, and it does not
-#' preserve a Margin order.
+#' inspecting a plan and reading it back off a Margin result. *Show only the
+#' subtotals, only the detail, or one level* in [Recipes for common reporting
+#' tasks][recipes] uses a plan to choose which grouping set to keep, and
+#' *Add a level column* in [Recipes for common reporting tasks][level] joins one
+#' against a Margin result's [`.id`][summarize_with_margins] column to name the
+#' set behind every row. Because the plan is local, that join needs a `copy`
+#' argument when the Margin result is lazy, and it does not preserve a Margin
+#' order.
 #'
 #' [guide]: https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html#inspect-a-grouping-plan-as-data
-#' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
+#' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html#show-only-the-subtotals-only-the-detail-or-one-level
+#' [level]: https://sayuks.github.io/marginplyr/vignettes/recipes.html#add-a-level-column-detail-subtotal-or-total
 #'
 #' @family grouping plans and grouping identity
 #' @seealso [summarize_with_margins()] to run a Margin operation on the

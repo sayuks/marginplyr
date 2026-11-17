@@ -406,7 +406,8 @@ inspect_grouping(
 
 Grouping specifications accept tidy-select expressions such as `all_of()`.
 They select existing columns; they do not evaluate R expressions, so
-`rollup(toupper(region))` fails with `object 'region' not found`.
+`rollup(toupper(region))` is refused with a message saying to create the
+column with `mutate()` first.
 
 ### Computed grouping columns
 
@@ -744,7 +745,7 @@ The same verb stays lazy for database tables, where it always uses the
 portable `UNION ALL` SQL: one branch per grouping set.
 [Portable fallback
 SQL](https://sayuks.github.io/marginplyr/vignettes/database_backends.html#portable-fallback-sql)
-in the database guide shows that query and explains its branches.
+in *Database and lazy backends* shows that query and explains its branches.
 
 Expanded rows are also the way to compute something one aggregation pass
 cannot express, which is a real limit on a database rather than a local one.
