@@ -229,8 +229,8 @@ stopifnot(
 # An interrupt that arrives after an error keeps that error. The grand
 # total fails, then `warning.expression` simulates cancellation while the
 # regional warning is replayed. The simulation needs that warning to reach
-# R's default handling, which a knitr chunk with `warning = FALSE`
-# prevents by muffling it, so it runs outside one.
+# R's default handling, which knitr prevents by handling every warning
+# itself, so it runs outside a knitr document.
 if (!isTRUE(getOption("knitr.in.progress"))) {
   old <- options(warning.expression = quote(rlang::interrupt()))
   enriched <- tryCatch(
