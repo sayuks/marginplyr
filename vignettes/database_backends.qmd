@@ -103,8 +103,9 @@ which is stated in one place: *Database backend coverage* in the
 
 ### Converted dimension text
 
-With a character `.margin_label`, the default, a Margin dimension that is
-not a factor becomes character so that it can hold the label. On a lazy input
+With a character `.margin_label`, the default, a Margin dimension — a
+column `.grouping` selects, which a grouping set can omit to form a margin —
+that is not a factor becomes character so that it can hold the label. On a lazy input
 that text is the backend's own cast, so it is not always the text a local
 result holds:
 

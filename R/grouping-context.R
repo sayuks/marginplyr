@@ -154,8 +154,8 @@
 #' dplyr::filter(by_store, store_is_total == 0L)
 #'
 #' # Keeping typed missing values makes the Grouping bits essential: a source
-#' # missing store and a generated store margin both print as NA even though
-#' # their structural identities differ.
+#' # missing store and a generated store margin both print as NA, and only the
+#' # margin's Grouping bit is 1.
 #' summarize_with_margins(
 #'   .data = dplyr::filter(retail_sales, year == 2026L, month == "Jan"),
 #'   revenue = sum(revenue),

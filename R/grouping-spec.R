@@ -73,8 +73,9 @@
 #'
 #' A column that belongs in every grouping set, such as a reporting month, is
 #' best passed as the Margin verb's `.by`. Written inside [grouping_spec()]
-#' it is a Margin dimension instead, so the plan has no Grand total set and
-#' [share_of_total()] and [share_of_parent()] are refused.
+#' it is a Margin dimension instead, as every column `.grouping` selects is, so
+#' the plan has no Grand total set and [share_of_total()] and
+#' [share_of_parent()] are refused.
 #'
 #' A resolved Grouping plan can be read back in four ways: `.id`,
 #' [inspect_grouping()]`$set_id`, [grouping_bit()], and [grouping_id()].

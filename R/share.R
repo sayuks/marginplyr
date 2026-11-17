@@ -60,9 +60,9 @@
 #' zero denominator gives `NA_real_`; local `NaN` is missing. Other finite
 #' ratios are unclamped doubles, so negative values and values above one are
 #' retained. Denominator matching uses internal grouping set metadata rather
-#' than `.id` or displayed Margin labels, and missing fixed or variable keys
-#' are matched with missing-safe identity rather than ordinary SQL
-#' `NULL = NULL`.
+#' than `.id` or displayed Margin labels, and missing values of fixed keys and
+#' Margin dimensions are matched with missing-safe identity rather than
+#' ordinary SQL `NULL = NULL`.
 #'
 #' The portable guarantee covers finite numbers, missing values, and zero
 #' denominators. Infinite values and backend-specific `NaN` representations are
@@ -277,7 +277,7 @@
 #' ```
 #'
 #' `.names` is required. Generated names must be non-empty and unique and must
-#' not collide with fixed or variable grouping keys, ordinary summaries,
+#' not collide with fixed keys, Margin dimensions, ordinary summaries,
 #' source columns that remain in the result, `.id`, or another share of either
 #' kind. Change the template or rename the conflicting output:
 #'

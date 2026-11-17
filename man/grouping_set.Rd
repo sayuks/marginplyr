@@ -112,8 +112,9 @@ instead.
 
 A column that belongs in every grouping set, such as a reporting month, is
 best passed as the Margin verb's \code{.by}. Written inside \code{\link[=grouping_spec]{grouping_spec()}}
-it is a Margin dimension instead, so the plan has no Grand total set and
-\code{\link[=share_of_total]{share_of_total()}} and \code{\link[=share_of_parent]{share_of_parent()}} are refused.
+it is a Margin dimension instead, as every column \code{.grouping} selects is, so
+the plan has no Grand total set and \code{\link[=share_of_total]{share_of_total()}} and
+\code{\link[=share_of_parent]{share_of_parent()}} are refused.
 
 A resolved Grouping plan can be read back in four ways: \code{.id},
 \code{\link[=inspect_grouping]{inspect_grouping()}}\verb{$set_id}, \code{\link[=grouping_bit]{grouping_bit()}}, and \code{\link[=grouping_id]{grouping_id()}}.
