@@ -266,8 +266,10 @@ markers <- list(
     "pkg_install",
     "SQL-style grouping sets",
     "A total is not the same thing as",
-    "Compare each summary with the whole",
     "Choose the tool for the job",
+    # The same section as its anchor, which Get started links in place of a
+    # comparison table of its own.
+    "id=\"choose-the-tool-for-the-job\"",
     "grouping_identity.html",
     "completing_keys.html",
     "database_backends.html"
@@ -277,7 +279,6 @@ markers <- list(
     "Optional Quarto tabsets with quartabs",
     "Union versus Cartesian product",
     "The manual version",
-    "When marginplyr fits",
     "Intentional differences from",
     "grouping_bit",
     "expand_with_margins",
@@ -353,6 +354,10 @@ markers <- list(
     "Parent lookup is structural"
   ),
   "docs/vignettes/completing_keys.html" = c(
+    # The section `?margin_verbs` names for a rejected `.drop = FALSE` input,
+    # by its heading and by the diagnostic its rejected-call chunk renders.
+    "Keep unused factor levels",
+    "Grouped input created with",
     "Why completion is a separate operation",
     "tidyr::complete",
     "fact_id",

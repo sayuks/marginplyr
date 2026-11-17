@@ -23,6 +23,24 @@
 #' A [grouping_set()] nested directly inside [rollup()] or [cube()] is a
 #' composite dimension. Its columns are added or removed together.
 #'
+#' What each constructor accepts as an argument besides column selections,
+#' and what it means with no arguments:
+#'
+#' | Constructor | Nested specifications | Zero arguments |
+#' |---|---|---|
+#' | `grouping_set()` | none | the empty set |
+#' | `grouping_sets()` | any | error |
+#' | `rollup()` / `cube()` | only a non-empty `grouping_set()` | error |
+#' | `grouping_spec()` | any | the empty set |
+#'
+#' [rollup()] and [cube()] also refuse arguments that together select no
+#' column.
+#'
+#' Constructors select existing columns; they do not compute one, so
+#' `rollup(format(day, "%Y"))` fails even when `day` exists. Create a derived
+#' dimension with [dplyr::mutate()] first, as *Computed grouping columns* in
+#' the [Get started guide][start] shows.
+#'
 #' Each form expands to these grouping sets. A [rollup()] of n dimensions
 #' gives n + 1 sets, a [cube()] gives 2^n, and a [grouping_spec()] the
 #' product of its arguments' counts:
@@ -30,15 +48,26 @@
 #' | Form | Expands to |
 #' |---|---|
 #' | `rollup(a, b)` | (a, b), (a), () |
+#' | `rollup(c(a, b))` | (a, b), (a), (): two dimensions |
 #' | `cube(a, b)` | (a, b), (a), (b), () |
 #' | `grouping_sets(a, b)` | (a), (b): each argument is one set |
 #' | `grouping_sets(c(a, b))` | (a, b) |
 #' | `grouping_spec(rollup(a), b)` | (a, b), (b) |
 #' | `cube(grouping_set(a, b), c)` | (a, b, c), (a, b), (c), () |
 #'
-#' [inspect_grouping()] lists the sets any specification expands to, and
-#' *Choose the grouping operation* in the [Get started guide][start] works
-#' through each form.
+#' A [cube()] lists its sets from the most dimensions to the fewest.
+#' [inspect_grouping()] lists the sets any specification expands to, in the
+#' order `.id` numbers them, and *Choose the grouping operation* in the
+#' [Get started guide][start] works through each form.
+#'
+#' Combining forms can produce the same grouping set more than once. Every
+#' [rollup()] and [cube()] contains the empty set, so
+#' `grouping_sets(rollup(a), rollup(b))` contains `()` twice; `rollup(a, a)`
+#' gives (a) twice. Column order within a set does not distinguish it, so
+#' `grouping_sets(c(a, b), c(b, a))` also repeats one set, while a column
+#' written twice within one set counts once: `grouping_set(a, a)` is the
+#' single set (a). Margin verbs and [inspect_grouping()] refuse a repeated set
+#' unless `.duplicates` says to drop or keep it.
 #'
 #' A column that belongs in every grouping set, such as a reporting month, is
 #' best passed as the Margin verb's `.by`. Written inside [grouping_spec()]
@@ -54,22 +83,18 @@
 #' [start]: https://sayuks.github.io/marginplyr/vignettes/get_started.html
 #'
 #' @param ... <[`tidy-select`][dplyr::dplyr_tidy_select]> Column selections
-#'   and, where supported, nested Grouping specifications. In
-#'   [grouping_set()], the selections form one grouping set; nested Grouping
-#'   specifications are not allowed, and no arguments form the empty grouping
-#'   set. In [rollup()] and [cube()], each selected column is one dimension;
-#'   wrap multiple columns in a non-empty [grouping_set()] to make a composite
-#'   dimension. These constructors accept no other nested Grouping
-#'   specifications and require at least one resolved dimension.
-#'   [grouping_sets()] forms the union of its arguments, accepts any valid
-#'   nested Grouping specification, and requires at least one argument.
-#'   [grouping_spec()] combines its arguments by Cartesian product, accepts any
-#'   valid nested Grouping specification, and with no arguments represents the
-#'   identity product (the empty grouping set). Which of the two readings an
-#'   argument gets, and what is refused rather than read either way, is *How an
-#'   argument is read*.
+#'   and, where the constructor accepts them, nested Grouping specifications.
+#'   The constructor table in Details gives which nested specifications each
+#'   constructor accepts and what no arguments mean. Which of the two readings
+#'   an argument gets, and what is refused rather than read either way, is
+#'   *How an argument is read*.
 #'
-#' @return A Grouping specification for use in `.grouping`.
+#' @return A Grouping specification for use in `.grouping`. Its arguments are
+#'   stored unevaluated and read when a Margin verb or [inspect_grouping()]
+#'   receives data, so one specification can be reused across inputs, and a
+#'   misspelled column is reported by that call rather than by the
+#'   constructor. [inspect_grouping()] shows the grouping sets it expands to
+#'   for an input.
 #'
 #' @section How an argument is read:
 #' A nested Grouping specification is recognized by how it is written: a

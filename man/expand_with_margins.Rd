@@ -121,8 +121,11 @@ grouping set, with the dimensions that set omits replaced by
 \code{.margin_label}. It is what you would get by applying \code{\link[dplyr:mutate]{dplyr::mutate()}} to
 set each omitted dimension to the label, once per grouping set, and
 combining the copies with \code{\link[dplyr:union_all]{dplyr::union_all()}}. Use it when a later step
-needs the rows behind each margin rather than one summary row per group,
-such as a window function over every copy.
+needs the rows behind each margin rather than one summary row per group:
+a window function over every copy, or long data whose grouping columns
+carry a \code{"Total"} category, for a plot or for a function that takes a
+grouping column. \code{\link[=nest_with_margins]{nest_with_margins()}} holds the same rows as one nested
+data frame per group.
 }
 \section{Differences from mutate() and union_all()}{
 
@@ -147,7 +150,8 @@ hands the expression the whole group; against a database the same
 expression has to compile to SQL aggregates, and a nested aggregate is
 rejected. Expanding first gives ordinary window functions over the copies
 and stays lazy, at the cost of one copy of the input per grouping set. The
-\href{https://sayuks.github.io/marginplyr/vignettes/recipes.html}{recipes guide} works the case through.
+\href{https://sayuks.github.io/marginplyr/vignettes/recipes.html}{recipes guide} works the case through. On a local data frame,
+the reason to expand is the shape of the rows instead; see Description.
 }
 
 \section{Behavior shared with the other Margin verbs}{
@@ -175,10 +179,31 @@ january_sales <- dplyr::filter(
   year == 2026L,
   month == "Jan"
 )
-expand_with_margins(
+expanded <- expand_with_margins(
   .data = january_sales,
-  .grouping = rollup(region, store)
+  .grouping = rollup(region, store),
+  .id = "set"
 )
+expanded
+
+# A window function over every copy: each source row's share of its
+# store's, its region's, and the company's revenue. Grouping by `set` keeps
+# each grouping set's copies apart.
+expanded |>
+  dplyr::mutate(
+    share = revenue / sum(revenue),
+    .by = c(set, region, store)
+  ) |>
+  dplyr::select(set, region, store, product, revenue, share)
+
+# Long data with an "All regions" category, ready for a plot or a function
+# that takes a grouping column.
+january_sales |>
+  expand_with_margins(
+    .grouping = rollup(region),
+    .margin_label = "All regions"
+  ) |>
+  dplyr::count(region, channel, wt = revenue, name = "revenue")
 
 # Persistent groups become fixed keys for this operation, then the expanded
 # result is returned ungrouped.
