@@ -48,7 +48,7 @@ eval_grouping_argument <- function(grouping_quo, .data) {
   value <- withCallingHandlers(
     rlang::eval_tidy(grouping_quo),
     error = function(cnd) {
-      check_masked_constructor(grouping_quo, parent = cnd)
+      check_masked_constructor(grouping_quo)
       columns <- written_grouping_columns(grouping_quo, .data)
       if (!is.null(columns)) {
         abort_grouping_columns(columns)
@@ -98,8 +98,9 @@ grouping_constructor_owner <- function(expr, env) {
 # Refuses a constructor-spelled call another package's function answers to.
 # `quo` is the caller's quosure, read through any quosure it wraps, so the name
 # is looked up where it is evaluated; the caller holds a failure or a value
-# that is not a specification, and passes the failure as `parent`.
-check_masked_constructor <- function(quo, parent = NULL) {
+# that is not a specification. The refusal carries no cause, because the
+# masking function's failure explains nothing the qualified spelling does not.
+check_masked_constructor <- function(quo) {
   expr <- quo
   while (rlang::is_quosure(expr)) {
     env <- rlang::quo_get_env(expr)
@@ -120,8 +121,7 @@ check_masked_constructor <- function(quo, parent = NULL) {
         "not to marginplyr's constructor."
       ),
       i = "Write {.code {qualified}} to build a Grouping specification."
-    ),
-    parent = parent
+    )
   )
 }
 
@@ -3128,9 +3128,7 @@ read_grouping_arg <- function(arg, data_vars, wrappers, data_proxy,
       rlang::new_quosure(rlang::call2(capture, evaluation), env), proxy
     )
     if (!is.null(outcome$error)) {
-      check_masked_constructor(
-        rlang::new_quosure(expr, env), parent = outcome$error
-      )
+      check_masked_constructor(rlang::new_quosure(expr, env))
       stop(outcome$error)
     }
     outcome$value

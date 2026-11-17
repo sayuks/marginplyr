@@ -26,6 +26,8 @@ expect_masked_refusal <- function(call, name, package) {
     fixed = TRUE
   )
   expect_match(message, paste0("`marginplyr::", name, "()`"), fixed = TRUE)
+  # The masking function's own failure explains nothing the remedy does not.
+  expect_null(error$parent)
   invisible(error)
 }
 
@@ -163,7 +165,7 @@ test_that("data.table's rollup() and cube() are refused with the remedy", {
   )
 })
 
-test_that("the masked-constructor refusal names the call and its cause", {
+test_that("the masked-constructor refusal names the call and its remedy", {
   data <- masked_constructor_data()
   rollup <- masking_constructor()
   expect_snapshot(error = TRUE, {
