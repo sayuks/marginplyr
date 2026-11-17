@@ -47,8 +47,8 @@
 #' column cannot be both a fixed key and a dimension that can be rolled up.
 #' Grouped local data created with `.drop = FALSE` is rejected because empty
 #' groups cannot be preserved on every backend. To retain empty keys, complete
-#' the input before the Margin operation, as the [Complete absent keys before
-#' margins][keys] guide shows.
+#' the input before the Margin operation, as *Keep unused factor levels* in the
+#' [Complete absent keys before margins][keys] guide shows.
 #'
 #' Row-wise input is rejected; to keep row-wise identifiers as fixed keys,
 #' ungroup first and select them with `.by`. Each verb's page states the

@@ -54,7 +54,8 @@ groups. A grouping column also cannot appear in \code{.grouping}, because one
 column cannot be both a fixed key and a dimension that can be rolled up.
 Grouped local data created with \code{.drop = FALSE} is rejected because empty
 groups cannot be preserved on every backend. To retain empty keys, complete
-the input before the Margin operation, as the \href{https://sayuks.github.io/marginplyr/vignettes/completing_keys.html}{Complete absent keys before margins} guide shows.
+the input before the Margin operation, as \emph{Keep unused factor levels} in the
+\href{https://sayuks.github.io/marginplyr/vignettes/completing_keys.html}{Complete absent keys before margins} guide shows.
 
 Row-wise input is rejected; to keep row-wise identifiers as fixed keys,
 ungroup first and select them with \code{.by}. Each verb's page states the
