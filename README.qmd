@@ -254,6 +254,12 @@ These approaches solve related problems with different interfaces:
 | [`rollup`](https://cran.r-project.org/package=rollup) | Its dplyr-oriented grouped-data-frame-list workflow fits the analysis | Grouping sets are represented as a list before their summaries are combined |
 | marginplyr | The same Grouping plan should work locally and on a lazy source | One data frame or lazy query, with native SQL or a portable fallback |
 
+data.table's `rollup()` and `cube()` share marginplyr's names. With
+data.table attached after marginplyr, a `.grouping` that reaches them is
+refused with an error naming `data.table::rollup()` or `data.table::cube()`;
+write `marginplyr::rollup()` and `marginplyr::cube()`, or attach marginplyr
+last.
+
 marginplyr is most useful when a report needs several grouping sets, when the
 data should stay in a database until `collect()`, or when subtotal identity
 and the records behind each total matter. For one simple local subtotal,
