@@ -631,15 +631,14 @@ stateful or nondeterministic source summary. A dialect without window support,
 such as Access, reports an unsupported operation when rendering or executing
 the query; explicitly collect its input first to request local shares.
 
-A share source must be a plain integer or double. On a database it is the
-dialect that applies that rule: *Lazy execution boundaries* in the
-[`share_of_parent()` reference][share-boundaries] states which dialects refuse
-an ineligible source, which convert one and are refused, and what
-`.check_share_source = FALSE` changes. marginplyr reads no row of your data to
-learn which a dialect does: it asks, with at most two queries referencing none
-of your tables. DuckDB refuses one itself, so on a live
-DuckDB table the diagnostic is DuckDB's own, and the column it names carries
-the name of the summary to rewrite. The remedy is an explicit conversion to a
+*Lazy execution boundaries* in the
+[`share_of_parent()` reference][share-boundaries] states how each dialect
+treats a share source of the wrong type and what `.check_share_source = FALSE`
+changes. marginplyr reads no row of your data to learn which a dialect does:
+it asks, with at most two queries referencing none of your tables. DuckDB
+refuses an ineligible source itself, so on a live DuckDB table the diagnostic
+is DuckDB's own, and the column it names carries the name of the summary to
+rewrite. The remedy is an explicit conversion to a
 number in that ordinary summary:
 
 [share-boundaries]: https://sayuks.github.io/marginplyr/man/share_of_parent.html#lazy-execution-boundaries
@@ -690,14 +689,12 @@ transaction control statements preserve earlier work, leave commit or
 rollback to you, read none of your tables, and are recorded by
 `last_sent_queries()` as `share_dialect_transaction` rows.
 
-Cardinality is not established this way at all: a SQL aggregate returns one
-value per grouping row by construction, so there is nothing for a dialect to
-convert. A non-scalar summary, and any other runtime-only incompatibility,
-therefore still surfaces from the database when the staged query executes. On
-DuckDB and PostgreSQL the result query also checks a bare, single-argument
-`UNNEST()` at the top level of a direct `dbplyr::sql()` share source, such as
-`SUM(amount) + UNNEST(ARRAY[10])`: an array of zero or more than one element
-causes a database error on execution. The check recognizes SQL expressions
+A dialect is asked about type alone; *[Lazy execution
+boundaries][share-boundaries]* says where a summary that is not one value per
+grouping row surfaces. On DuckDB and PostgreSQL the result query checks a
+bare, single-argument `UNNEST()` at the top level of a direct `dbplyr::sql()`
+share source, such as `SUM(amount) + UNNEST(ARRAY[10])`: an array of zero or
+more than one element causes a database error on execution. The check recognizes SQL expressions
 with standard quotes and without comments.
 
 With `.check_share_source = FALSE` on live SQLite, a direct `collect()` keeps
