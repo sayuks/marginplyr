@@ -425,3 +425,23 @@ test_that(".SD columns do not admit unsafe derived metadata", {
                  class = "marginplyr_error")
   }
 })
+
+# *Other lazy backends* in the database guide names these steps as refused.
+test_that("head, distinct, and drop_na steps are refused before reading rows", {
+  skip_if_suggest_absent("dtplyr")
+  root <- dtplyr::lazy_dt(data.frame(g = c("a", "b", NA), value = 1:3))
+  steps <- list(
+    head = utils::head(root, 2L),
+    distinct = dplyr::distinct(root),
+    drop_na = tidyr::drop_na(root)
+  )
+  for (name in names(steps)) {
+    expect_error(
+      summarize_with_margins(
+        steps[[name]], value = sum(value), .grouping = rollup(g)
+      ),
+      "Can't safely determine column metadata", class = "marginplyr_error",
+      info = name
+    )
+  }
+})

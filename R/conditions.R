@@ -262,7 +262,8 @@ restate_branch_error <- function(cnd, conditions, restatements) {
 # renders with no call as it renders dplyr's; a caller's own condition is
 # otherwise left as it arrived. The label is restated only where the span
 # equals one the branch handed dplyr. A restated line is rendered plain, as
-# ADR 0022 decides for the bullet.
+# ADR 0022 decides for the bullet. A size refusal also gains a bullet naming
+# what works in place of the `reframe()` dplyr offers.
 restate_result_refusal <- function(cnd, restatements, keys) {
   # dplyr's combine refusal blames its calling handler, a call whose head is
   # the inlined function, which rlang renders as no call.
@@ -287,6 +288,15 @@ restate_result_refusal <- function(cnd, restatements, keys) {
   }
   if (is.character(cnd$body)) {
     cnd$body <- restate_margin_keys(cnd$body, keys)
+  }
+  # dplyr's size refusal ends by offering `reframe()`, which has no Margin
+  # counterpart, so what works here follows it.
+  if (startsWith(found[[6L]], "be size ")) {
+    cnd$message <- c(cnd$message, i = cli::format_inline(
+      "No Margin verb reframes: wrap the summary in {.fun list} to return a ",
+      "list column, or call {.fun expand_with_margins} and then ",
+      "{.fun dplyr::reframe}."
+    ))
   }
   span <- if (nzchar(found[[3L]])) found[[3L]] else found[[4L]]
   restored <- unname(restatements[span])

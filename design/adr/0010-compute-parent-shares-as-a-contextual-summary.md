@@ -537,8 +537,8 @@ What the placement costs is the rows above the ancestor: `region` becomes a
 fixed key, so no set of the plan pools regions and the result loses its
 all-regions row. A share against an ancestor level together with the rows
 above it is therefore the residue, and it is a documented join rather than an
-API. *Compare a row with an ancestor level* in the recipes guide owns what
-that join has to get right.
+API. *Show each row as a percent of a level further up* in the recipes guide
+owns what that join has to get right.
 
 Naming the ancestor would also have to be an argument, and this decision
 refuses additional arguments to the helper in `across()`, so the form would be

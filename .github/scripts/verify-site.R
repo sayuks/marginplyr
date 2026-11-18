@@ -19,6 +19,10 @@
 # succeeds while executing nothing. A page absent from `markers` still gets
 # everything above. A `markers` key naming no derived page is an error, so
 # renaming a vignette cannot quietly drop its markers instead of moving them.
+#
+# Every link into the site that names a fragment must also land on an element
+# carrying that id. The links are read from the rendered pages, so a fragment
+# added to any source is covered without an edit here either.
 
 source(".github/scripts/ci-helpers.R")
 
@@ -266,7 +270,6 @@ markers <- list(
     "pkg_install",
     "SQL-style grouping sets",
     "A total is not the same thing as",
-    "Compare each summary with the whole",
     "Choose the tool for the job",
     "grouping_identity.html",
     "completing_keys.html",
@@ -277,7 +280,6 @@ markers <- list(
     "Optional Quarto tabsets with quartabs",
     "Union versus Cartesian product",
     "The manual version",
-    "When marginplyr fits",
     "Intentional differences from",
     "grouping_bit",
     "expand_with_margins",
@@ -316,15 +318,25 @@ markers <- list(
     "must be one of"
   ),
   "docs/vignettes/recipes.html" = c(
+    "Task index",
     "Put each subtotal with the rows it summarizes",
-    "Write the sort key yourself",
-    "Compare each row with the right total",
-    "Keep only one grouping set",
-    "Name the grouping set on every row",
+    "Put the totals above the rows they summarize",
+    "Sort the newest year first",
+    "Sort regions and stores by revenue",
+    "Show the top stores in each region with full totals",
+    "Report by year, quarter and month",
+    "Show each row as a percent of the total",
+    "Show each row as a percent of a level further up",
+    "Show only the subtotals, only the detail, or one level",
+    "Add a level column: detail, subtotal or total",
     "The same join against a lazy table",
-    "Compute what the summary pass cannot express",
-    "Lay the report out wide",
-    "Recipes elsewhere",
+    "Style the total rows in a printed table",
+    "Report a mean, a median or a distinct count",
+    "Report a weighted mean",
+    "Fix a nested-aggregate error on a database",
+    "Call a Margin verb from your own function",
+    "Make a crosstab (pivot table) with totals on both edges",
+    "Show each crosstab cell as a percent of its row or column",
     "share_of_total",
     "expand_with_margins",
     # The guide's rejected-call chunks, by the diagnostics they render. Prose
@@ -344,6 +356,10 @@ markers <- list(
     "Parent lookup is structural"
   ),
   "docs/vignettes/completing_keys.html" = c(
+    # The section `?margin_verbs` names for a rejected `.drop = FALSE` input,
+    # by its heading and by the diagnostic its rejected-call chunk renders.
+    "Keep unused factor levels",
+    "Grouped input created with",
     "Why completion is a separate operation",
     "tidyr::complete",
     "fact_id",
@@ -353,7 +369,7 @@ markers <- list(
     "never copies, collects, uploads, downloads"
   ),
   "docs/vignettes/database_backends.html" = c(
-    "is already present in grouping column:",
+    "is already a factor level in grouping column:",
     "One report, two execution locations",
     "GROUP BY GROUPING SETS",
     "Execute in DuckDB",
@@ -362,25 +378,32 @@ markers <- list(
     "show_query",
     "collect",
     "Parent shares use a staged lazy query",
+    # The SQL cardinality boundary the share reference links here for.
+    "causes a database error on execution",
     "share_of_total",
     "Completion stays in the lazy input pipeline",
     "Record the SQL marginplyr prepares",
-    # The dialect question's row and its handled condition, from the record
-    # chunk's printed tibbles. Both appear only when that chunk is the page's
-    # first DuckDB share request, since a cached answer records neither, so a
-    # chunk moved after another share request fails here rather than rendering
-    # an empty record.
-    "share_dialect         errored",
-    "1 invocation handled",
-    # The verification section, which states no scope of its own: the
-    # `summarize_with_margins()` reference owns that, so a marker naming a
-    # backend here would pin a restatement this section does not carry.
+    # The dialect question's control row, from the record chunk's printed
+    # tibble. It appears only when that chunk is the page's first DuckDB share
+    # request, since a cached answer records neither question, so a chunk moved
+    # after another share request fails here rather than rendering an empty
+    # record.
+    "4 share_dialect_control",
+    # The backend support matrix and the converted-dimension table, by their
+    # anchors and by one cell each. The verification paragraph beside them
+    # states no scope of its own: the `margin_verbs` reference owns that, so a
+    # marker naming a backend there would pin a restatement the paragraph does
+    # not carry.
+    "id=\"backend-support-matrix\"",
+    "A catalog query and a zero-row read",
+    "id=\"converted-dimension-text\"",
+    "19723.0",
     "SQL simulation is useful evidence about rendering",
     "treat a simulator-only backend as SQL-generation support",
     "Which claim rests on which is stated in one place",
     # The dtplyr rejected-call chunk is guarded by `has_dtplyr`; this prose
     # carries the refusal even when that optional backend is absent.
-    "faithful metadata from isolated zero-row sources",
+    "refused before processing source rows, including an aggregate",
     # The unconditional half of the mutable-step refusal (ADR 0029). Its
     # rejected-call chunk is behind `has_dtplyr`, so the prose introducing it is
     # what a marker can reach, and this run of it holds no apostrophe and no
@@ -414,33 +437,31 @@ markers <- list(
   "docs/man/summarize_with_margins.html" = c(
     "summarise_with_margins",
     "Relationship to dplyr summaries",
-    "Display labels and grouping identity",
-    # The same section again, as the anchor rather than as its heading text.
-    # `grouping_identity.qmd` is the one vignette that links a man page with a
-    # fragment, and a heading whose words survive a change to how quarto
-    # derives its `id` would leave that link landing at the top of this page
-    # with nothing failing. The heading marker above cannot stand for it: it
-    # matches the words wherever they are written.
-    "id=\"display-labels-and-grouping-identity\"",
     "Contextual shares",
-    # The section holding the two summaries a lazy backend refuses, and one
-    # claim from each half of it. The heading alone would pass a section folded
-    # back into `@details`, where it stands ahead of the usage a first reader
-    # needs (#461). Neither claim survives a section reduced to a
-    # cross-reference, and the Arrow half is the one `R/share.R` points here
-    # for.
+    # The section holding the summaries a lazy backend cannot carry back, and
+    # the claim it owns. The heading alone would pass a section folded back
+    # into `@details`, where it stands ahead of the usage a first reader needs
+    # (#461), and the claim does not survive a section reduced to a
+    # cross-reference.
     "Summaries a lazy backend cannot carry",
     "cannot carry back a summary with no columns in it",
-    "before a row is read, and names the two rewrites that compute it",
-    "Database backend coverage",
-    "Microsoft SQL Server",
-    # The single home of the SQLite `compute()` contract, by its anchor: the
-    # database guide links it with this fragment, so a heading change that
-    # moved the id would leave that link landing at the top of the page.
-    "id=\"sqlite-materialization\"",
-    "NA is already a factor level",
     "cannot select any column named in the complete Grouping plan",
     "cur_group_id"
+  ),
+  # The one home of what the Margin verbs share, which every verb page links.
+  "docs/man/margin_verbs.html" = c(
+    "Display labels and grouping identity",
+    "NA is already a factor level",
+    # The Arrow fallback refusal, which `R/share.R` and the summary page link
+    # here for. The claim does not survive a section reduced to a
+    # cross-reference.
+    "before a row is read, and names the two rewrites that compute it",
+    "Database backend coverage",
+    # What a share request sends instead of reading the caller's data (ADR
+    # 0020), which this section is the reference for. The count is the part a
+    # later edit is most likely to drift back to "one".
+    "At most two queries per share request",
+    "Microsoft SQL Server"
   ),
   # `@keywords internal` on the `"_PACKAGE"` topic takes it out of
   # `reference_sources` above, which requires no page and so fails nothing --
@@ -452,9 +473,9 @@ markers <- list(
     # promises, not by the name alone: a name survives a section reduced to a
     # cross-reference.
     "Errors and warnings",
-    "is the only package-specific class marginplyr promises",
+    "match them through the parent",
     "Recording the SQL marginplyr prepares",
-    "switches the record on",
+    "reads back the SQL that call prepared",
     # The Guides list, by its heading and by one entry's href. No entry's text
     # can serve: all five are vignette titles, and the sidebar renders every
     # one of them on all 21 pages, so a marker quoting one passes on a page
@@ -466,6 +487,7 @@ markers <- list(
   # The condition contract `?marginplyr` links to. Each field is quoted by
   # the section stating it, and the boundary by the sentence naming it.
   "docs/man/marginplyr_conditions.html" = c(
+    "is the only package-specific class marginplyr promises",
     "handler boundary.",
     "$replay_error",
     "$cleanup",
@@ -475,8 +497,8 @@ markers <- list(
   "docs/man/inspect_grouping.html" = c(
     "Formats and ordinary tibble behavior",
     "Positron",
-    "31 variable dimensions",
-    "separate from a SQL execution plan"
+    "31 Margin dimensions",
+    "is not a SQL execution plan"
   ),
   "docs/man/share_of_parent.html" = c(
     "Direct shares",
@@ -494,14 +516,7 @@ markers <- list(
     "revenue_quantile",
     "Missing fixed and included keys",
     "where(is.numeric)",
-    ".unpack = TRUE",
-    # The SQL cardinality boundary in Lazy execution boundaries.
-    "causes a database error on execution",
-    # What a general dbplyr backend does instead of reading the caller's data
-    # (ADR 0020). This page is the canonical reference for both helpers'
-    # source contract, so it is the page that has to carry the count, and the
-    # count is the part a later edit is most likely to drift back to "one".
-    "at most two queries"
+    ".unpack = TRUE"
   ),
   "docs/man/nest_with_margins.html" = c(
     "Differences from nest()",
@@ -537,8 +552,78 @@ for (page in pages) {
   }
 }
 
-# The one assertion about a page's structure rather than its text: the first
-# tabset must open on the Total tab, which no marker can express.
+# A renamed heading fails here instead of sending the reader to the top of the
+# page. A link is into the site when it is relative or starts with the
+# site root DESCRIPTION's `URL` names, which is how a README link and a
+# roxygen `\href` reach a page.
+site_root <- grep(
+  "github\\.io",
+  trimws(strsplit(read.dcf("DESCRIPTION", "URL")[[1L]], ",")[[1L]]),
+  value = TRUE
+)
+if (length(site_root) != 1L) {
+  stop(call. = FALSE, "DESCRIPTION's `URL` must name exactly one site root.")
+}
+site_root <- sub("/?$", "/", site_root)
+
+# The site file a link names, with `.` and `..` segments resolved against the
+# directory of the page holding it. `NA` for a link that leaves the site.
+link_target <- function(href, page) {
+  if (startsWith(href, site_root)) {
+    path <- file.path("docs", substring(href, nchar(site_root) + 1L))
+  } else if (grepl("^[A-Za-z][A-Za-z0-9+.-]*:|^//", href)) {
+    return(NA_character_)
+  } else if (href == "") {
+    return(page)
+  } else {
+    path <- file.path(dirname(page), href)
+  }
+  if (path == "docs/" || endsWith(path, "/")) {
+    path <- paste0(path, "index.html")
+  }
+  parts <- strsplit(path, "/", fixed = TRUE)[[1L]]
+  kept <- character()
+  for (part in parts[nzchar(parts) & parts != "."]) {
+    kept <- if (part == "..") utils::head(kept, -1L) else c(kept, part)
+  }
+  paste(kept, collapse = "/")
+}
+
+dangling <- character()
+for (page in pages) {
+  hrefs <- regmatches(
+    texts[[page]],
+    gregexpr('href="[^"#]*#[^"]+"', texts[[page]])
+  )[[1L]]
+  hrefs <- unique(gsub("&amp;", "&", substr(hrefs, 7L, nchar(hrefs) - 1L)))
+  for (href in hrefs) {
+    target <- link_target(sub("#.*", "", href), page)
+    if (is.na(target)) {
+      next
+    }
+    fragment <- utils::URLdecode(sub("^[^#]*#", "", href))
+    text <- if (target %in% names(texts)) {
+      texts[[target]]
+    } else if (file.exists(target)) {
+      read_page(target)
+    }
+    if (
+      is.null(text) ||
+        !grepl(paste0('id="', fragment, '"'), text, fixed = TRUE)
+    ) {
+      dangling <- c(dangling, sprintf("%s: %s", page, href))
+    }
+  }
+}
+if (length(dangling) > 0L) {
+  stop(
+    call. = FALSE,
+    "Links whose fragment names no id on the target page:\n",
+    paste0("- ", dangling, collapse = "\n")
+  )
+}
+
+# The first tabset must open on the Total tab, which no marker can express.
 article <- texts[["docs/vignettes/get_started.html"]]
 first_tabset <- strsplit(
   article,

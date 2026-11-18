@@ -48,12 +48,15 @@ cannot rename it: \code{c(area = region)} is an error rather than a fixed key
 named \code{area}. Rename the result afterwards with \code{\link[dplyr:rename]{dplyr::rename()}}.}
 
 \item{.grouping}{A Grouping specification made with \code{\link[=grouping_set]{grouping_set()}},
-\code{\link[=grouping_sets]{grouping_sets()}}, \code{\link[=rollup]{rollup()}}, \code{\link[=cube]{cube()}}, or \code{\link[=grouping_spec]{grouping_spec()}}. \code{NULL}
-represents one empty grouping set. Any expression returning a
-specification can be written here, while a specification nested inside
-another must be a constructor call or a name bound to one, and a nested
-name the input also has a column for is refused rather than read either
-way; see \code{\link[=grouping_set]{grouping_set()}}.}
+\code{\link[=grouping_sets]{grouping_sets()}}, \code{\link[=rollup]{rollup()}}, \code{\link[=cube]{cube()}}, or \code{\link[=grouping_spec]{grouping_spec()}}. A bare
+column or a \code{c()} of columns is refused; wrap it in a constructor, as in
+\code{.grouping = rollup(region)}. \code{NULL} is one grouping set with no Margin
+dimension, so only the fixed \code{.by} keys group the result. The
+specification expands to the call's Grouping plan, which
+\code{\link[=inspect_grouping]{inspect_grouping()}} returns, and the columns it selects are the call's
+Margin dimensions; see
+\emph{\link[=margin_verbs]{Fixed columns and Margin dimensions}} in \link{margin_verbs}.
+See \code{\link[=grouping_set]{grouping_set()}} for how one specification nests inside another.}
 
 \item{.margin_label}{A display label for dimensions omitted from a grouping
 set. An unnamed character scalar applies to every resolved Margin
@@ -62,49 +65,48 @@ resolved Margin dimension exactly once; order is irrelevant, and fixed
 \code{.by} columns must not be named. \code{NA_character_} and \code{NULL} use typed
 missing values instead of a display label; only the list can give one
 dimension a \code{NULL} while another takes a label, because \code{c()} drops a
-\code{NULL} element. See \emph{Display labels and grouping identity}.}
+\code{NULL} element. See
+\emph{\link[=margin_verbs]{Display labels and grouping identity}} in \link{margin_verbs}.}
 
 \item{.margin_label_position}{Either \code{"last"} (the default) or \code{"first"},
-and nothing else; see \emph{Option arguments}.
+and nothing else; see \emph{\link[=margin_verbs]{Option arguments}} in
+\link{margin_verbs}.
 This controls the position of a non-missing synthetic label in factor and
 ordered-factor levels. It does not sort result rows and has no effect for
 \code{NA_character_} or \code{NULL}.}
 
-\item{.check_margin_label}{A logical scalar controlling the half of the
-Margin label collision check that reads the data: whether any \emph{value} of a
-Margin dimension is equal to that dimension's display label. Each
-dimension is checked independently, and a typed-missing label opts its
-own dimension out -- \code{NULL} or \code{NA_character_}, chosen per dimension in a
-named-list \code{.margin_label}.
-Every Margin verb uses the same default: \code{TRUE} for local data frames and
-\code{FALSE} for lazy inputs, which are read only when the caller asks. A label
-check after collecting a lazy input therefore defaults to \code{TRUE} instead
-of \code{FALSE}; set \code{.check_margin_label} explicitly when following a
-collect-first remediation.
-A label equal to a declared factor \emph{level} is rejected wherever
-marginplyr holds the levels, whatever this argument says, because finding
-it sends no query. Left unchecked, a colliding value gives the result a
-margin row and a source row that no grouping column tells apart; keeping
-\code{.id} in the result distinguishes them at no added cost. See \emph{Display
-labels and grouping identity} for the factor missing-value contract.}
+\item{.check_margin_label}{Whether to check that no value of a Margin
+dimension equals that dimension's display label. The default is \code{TRUE}
+for a local data frame and \code{FALSE} for a lazy input the verb accepts --
+a \code{dtplyr} step, and for a summary or expansion also a database table or
+an Arrow object -- because there the check runs a query that reads your
+data; see \emph{\link[=margin_verbs]{When marginplyr queries your data}} in
+\link{margin_verbs}, and \emph{\link[=nest_by_with_margins]{dtplyr inputs}} in
+\code{\link[=nest_by_with_margins]{nest_by_with_margins()}} for the one exception. A collected input is a
+local data frame, so collecting turns the check on; set this explicitly
+when re-running a call on collected data.
 
-\item{.check_share_source}{A logical scalar, \code{TRUE} by default on every
-backend, including lazy ones: establishing that a share's source summary
-is an eligible type reads none of your data. \code{FALSE} calculates a
-requested \code{\link[=share_of_parent]{share_of_parent()}} or \code{\link[=share_of_total]{share_of_total()}} from a source whose
-eligibility marginplyr could not establish, which is a SQL dialect that
-converts a value of another type to a number rather than refusing it, and
-a backend that could not be asked which of those it does. It changes
-nothing where the rule can be applied — a local data frame, a \code{dtplyr}
-step, and a database that refuses an ineligible summary itself all apply
-it whatever this argument says. It is scoped to the call it is written in:
-there is no session default and no connection default that records the
-answer once. See \emph{Contextual shares}.}
+A label equal to a declared factor level is refused wherever marginplyr
+holds the levels, whatever this argument says, because finding it reads
+no rows. A typed-missing label, \code{NULL} or \code{NA_character_}, takes its
+dimension out of the check. Left unchecked, a colliding value gives the
+result a margin row and a source row that no key column tells apart;
+keeping \code{.id} in the result distinguishes them.}
+
+\item{.check_share_source}{Whether to refuse a \code{\link[=share_of_parent]{share_of_parent()}} or
+\code{\link[=share_of_total]{share_of_total()}} whose source summary marginplyr cannot establish is
+an integer or double. It matters only on a backend that cannot refuse a
+non-numeric source itself, such as SQLite and a \verb{dbplyr::simulate_*()}
+connection: there the default \code{TRUE} refuses the share, and \code{FALSE}
+computes it anyway. Elsewhere it changes nothing. It applies only to the
+call it is written in. See
+\emph{\link[=share_of_parent]{Lazy execution boundaries}} in \code{\link[=share_of_parent]{share_of_parent()}}.}
 
 \item{.duplicates}{One of \code{"error"}, \code{"drop"}, or \code{"keep"}, and nothing
-else; see \emph{Option arguments}. A duplicate is a grouping set whose columns
-are the same as an earlier set's once the Grouping specification is
-expanded, as in \code{grouping_sets(region, store, region)}. \code{"error"} (the
+else; see \emph{\link[=margin_verbs]{Option arguments}} in \link{margin_verbs}. A
+duplicate is a grouping set whose columns are the same as an earlier
+set's once the Grouping specification is expanded, as in
+\code{grouping_sets(region, store, region)}. \code{"error"} (the
 default) refuses the call and names the positions. \code{"drop"} keeps the
 first occurrence of each set and removes the rest. \code{"keep"} returns the
 rows of every occurrence, so a duplicated set's rows appear once per
@@ -114,27 +116,39 @@ occurrence; \code{.id} tells the copies apart.}
 integer output column of one-based Grouping set identifiers. Each value
 identifies one occurrence in the resolved Grouping plan. The name must not
 collide with source columns, grouping keys, or other output columns. See
-\emph{Grouping set identifiers}.}
+\emph{\link[=margin_verbs]{Grouping set identifiers}} in \link{margin_verbs}.}
 
 \item{.sort}{One of \code{"none"} (the default), \code{"last"}, or \code{"first"}, and
-nothing else; see \emph{Option arguments}. \code{"none"} leaves row order
-unspecified. \code{"last"} places each margin row after the rows it
-summarizes and \code{"first"} before them, within each fixed \code{.by} key, with
-missing values last. See \emph{Margin order}.}
+nothing else; see \emph{\link[=margin_verbs]{Option arguments}} in \link{margin_verbs}.
+\code{"none"} leaves row order unspecified. \code{"last"} places each margin row
+after the rows it summarizes and \code{"first"} before them, within each fixed
+\code{.by} key, with missing values last. Under a non-missing
+\code{.margin_label} a numeric dimension sorts as text; \code{.margin_label = NULL}
+or a factor keeps numeric order. See \emph{\link[=margin_verbs]{Margin order}} in
+\link{margin_verbs}.}
 }
 \value{
 An ungrouped data frame, or a lazy table when \code{.data} is lazy,
 with one row per group per grouping set. Its columns are the fixed \code{.by}
-keys, then the grouping dimensions, then \code{.id} when supplied, then the
-summaries in the order written. Its class follows \code{\link[dplyr:summarize]{dplyr::summarize()}};
-see \emph{Result metadata}.
+keys, then the Margin dimensions, then \code{.id} when supplied, then the
+summaries in the order written. Its class follows \code{\link[dplyr:summarize]{dplyr::summarize()}},
+except for the leading class described in \emph{SQLite materialization}; see
+\emph{\link[=margin_verbs]{Result metadata}} in \link{margin_verbs}. On zero-row input,
+the Grand total set still gives one row when there is no fixed \code{.by} key,
+as \code{\link[dplyr:summarize]{dplyr::summarize()}} does without groups; every other grouping set,
+and every set once a fixed key is given, gives none.
 
-With a character \code{.margin_label}, the default, a grouping dimension that
+With a character \code{.margin_label}, the default, a Margin dimension that
 is not a factor becomes character so that it can hold the label:
 \code{.grouping = rollup(year)} over an integer \code{year} returns \code{year} as
-character, with \code{"Total"} on the margin row. A factor dimension instead
-gains the label as a new level. \code{.margin_label = NULL} or \code{NA_character_}
-keeps every dimension's type and marks margin rows with a missing value.
+character, with \code{"Total"} on the margin row. On a lazy input the text is
+the backend's own cast, so a double \code{10} reads \code{"10.0"} on DuckDB and
+SQLite and a logical \code{TRUE} reads \code{"true"} or \code{"1"}; \emph{Converted
+dimension text} in \href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html#converted-dimension-text}{Database and lazy backends} tabulates them. When
+the text matters, give the column the type you want with \code{\link[dplyr:mutate]{dplyr::mutate()}}
+first. A factor dimension instead gains the label as a new level.
+\code{.margin_label = NULL} or \code{NA_character_} keeps every dimension's type and
+marks margin rows with a missing value.
 }
 \description{
 \code{\link[=summarize_with_margins]{summarize_with_margins()}} extends \code{\link[dplyr:summarize]{dplyr::summarize()}} with grouping sets,
@@ -144,7 +158,8 @@ data frames and lazy tables.
 \details{
 Use it when one report needs several levels of detail—for example, stores,
 region subtotals, and a company total—or when that report should use the
-same code locally and through \code{\link[dbplyr:tbl_lazy]{dbplyr::tbl_lazy()}}. The \href{https://sayuks.github.io/marginplyr/vignettes/get_started.html}{Get started guide} builds that report from a hand-written version, and is the
+same code locally and on a database table opened with \code{\link[dplyr:tbl]{dplyr::tbl()}}. The
+\href{https://sayuks.github.io/marginplyr/vignettes/get_started.html}{Get started guide} builds that report from a hand-written version, and is the
 page to read before this one.
 
 \code{\link[=grouping_sets]{grouping_sets()}} forms a union of grouping families. \code{\link[=grouping_spec]{grouping_spec()}}
@@ -161,212 +176,28 @@ following \code{\link[dplyr:summarize]{dplyr::summarize()}} and \code{\link[dply
 \section{Differences from summarize()}{
 
 \itemize{
-\item The result is always ungrouped, whatever groups the input had; see
-\emph{Grouped and row-wise inputs}.
+\item The result is always ungrouped, whatever groups the input had, because
+a result combining several grouping sets has no single grouping to
+retain. There is no \code{.groups} argument; passing one is an error.
 \item Row order is unspecified. Use \code{.sort} for margins next to the rows they
 summarize, or \code{\link[dplyr:arrange]{dplyr::arrange()}} for any other order.
-\item A character \code{.margin_label} changes a non-factor grouping dimension to
-character; see Value. Use \code{.margin_label = NULL} or \code{NA_character_} to
-keep its type.
-\item A summary cannot overwrite a fixed key or grouping dimension. Give it a
-new name.
-\item \code{\link[dplyr:cur_group]{dplyr::cur_group()}}, \code{\link[dplyr:cur_group_id]{dplyr::cur_group_id()}}, and
-\code{\link[dplyr:cur_group_rows]{dplyr::cur_group_rows()}} are refused, because a result combining several
-grouping sets has no single group for them to describe. Use
-\code{\link[=grouping_bit]{grouping_bit()}} or \code{\link[=grouping_id]{grouping_id()}} to identify margin rows.
+\item A Margin dimension can change type to hold the Margin label; see
+Value.
+\item Each summary must return one value per group, and there is no
+\code{\link[dplyr:reframe]{dplyr::reframe()}} counterpart. Return a list column, as in
+\code{list(range(revenue))}, or call \code{\link[=expand_with_margins]{expand_with_margins()}} and then
+\code{\link[dplyr:reframe]{dplyr::reframe()}} by \code{.id} and the key columns.
+\item A summary cannot overwrite a fixed key or Margin dimension, including
+through an unnamed data-frame-valued summary. Local dplyr allows it but
+other backends may not, so marginplyr refuses it everywhere. Give the
+summary a new name, or rename the key column before this call.
+\item \code{\link[dplyr:cur_group]{dplyr::cur_group()}}, \code{\link[dplyr:cur_group_id]{dplyr::cur_group_id()}},
+\code{\link[dplyr:cur_group_rows]{dplyr::cur_group_rows()}}, and the deprecated \verb{cur_data*()} helpers are
+refused by name, even when you have bound one to a function of your own,
+because a result combining several grouping sets has no single group or
+data mask for them to describe. Use \code{\link[=grouping_bit]{grouping_bit()}} or \code{\link[=grouping_id]{grouping_id()}}
+to identify margin rows.
 }
-}
-
-\section{Fixed columns and grouping dimensions}{
-
-\code{.by} marks columns that are present in every grouping set, while
-\code{.grouping} describes dimensions that can be omitted to form margins.
-Columns in \code{.by} retain their input types and never receive
-\code{.margin_label}.
-
-\code{.by = year} with \code{.grouping = rollup(region, store)} produces the same
-grouping sets as
-\code{.grouping = grouping_spec(grouping_set(year), rollup(region, store))}, but
-the two are not interchangeable: a column supplied through \code{.grouping} is a
-Margin dimension even when every grouping set contains it, so it takes part
-in \code{.margin_label} type conversion and collision checks. Use \code{.by} for
-columns that must always remain fixed.
-
-Both accept selection predicates through \code{\link[tidyselect:where]{tidyselect::where()}}. On a lazy
-input, a predicate receives columns derived from the schema or a zero-row
-proxy rather than the source values, so use one that depends only on the
-column type, such as \code{where(is.character)}. A value-dependent predicate
-such as \code{where(~ any(.x == "x"))} can silently select different columns on
-a lazy input than on a local one; marginplyr does not detect it. To select
-on values, call \code{\link[dplyr:collect]{dplyr::collect()}} first, and set \code{.check_margin_label}
-explicitly, since its default changes to \code{TRUE} for the collected data.
-Where a lazy backend cannot supply typed metadata without reading data, a
-predicate is refused; select the columns by name, or collect first.
-}
-
-\section{Grouped and row-wise inputs}{
-
-When \code{.data} has been grouped with \code{\link[dplyr:group_by]{dplyr::group_by()}} and \code{.by} is \code{NULL},
-its grouping columns become implicit fixed keys: \code{group_by(year)} followed
-by \code{.grouping = rollup(region)} computes what \code{.by = year} does on the
-ungrouped data.
-
-As with \code{\link[dplyr:summarize]{dplyr::summarize()}} and \code{\link[tidyr:nest]{tidyr::nest()}}, a grouped input cannot
-also supply \code{.by}; call \code{\link[dplyr:ungroup]{dplyr::ungroup()}} first when replacing the existing
-groups. A grouping column also cannot appear in \code{.grouping}, because one
-column cannot be both a fixed key and a dimension that can be rolled up.
-Grouped local data created with \code{.drop = FALSE} is rejected because empty
-groups cannot be preserved on every backend. To retain empty keys, complete
-the input before the Margin operation, as the \href{https://sayuks.github.io/marginplyr/vignettes/completing_keys.html}{Complete absent keys before margins} guide shows.
-
-\code{\link[=summarize_with_margins]{summarize_with_margins()}}, \code{\link[=expand_with_margins]{expand_with_margins()}}, and
-\code{\link[=nest_with_margins]{nest_with_margins()}} always return ungrouped results, because a result
-combining several grouping sets has no single grouping to retain.
-\code{\link[=nest_by_with_margins]{nest_by_with_margins()}} instead returns a row-wise data frame. Row-wise
-input is rejected; to keep row-wise identifiers as fixed keys, ungroup
-first and select them with \code{.by}.
-}
-
-\section{Option arguments}{
-
-An argument documented as taking one of a listed set of strings —
-\code{.duplicates}, \code{.margin_label_position}, and \code{.sort} on the Margin verbs,
-and \code{.format} on \code{\link[=inspect_grouping]{inspect_grouping()}} — takes one of those strings, spelled
-in full. An abbreviation is not shorthand for the value it begins, and
-\code{NULL} is not shorthand for the default: both are errors naming the values
-the argument accepts.
-
-To ask for the default, leave the argument out, or pass the whole
-vocabulary exactly as the signature spells it. The second form lets a
-function of your own repeat the signature and hand the argument on:
-
-\if{html}{\out{<div class="sourceCode r">}}\preformatted{my_report <- function(data, .sort = c("none", "last", "first")) \{
-  summarize_with_margins(
-    data, revenue = sum(revenue),
-    .grouping = rollup(region), .sort = .sort
-  )
-\}
-}\if{html}{\out{</div>}}
-
-Any other vector of more than one value is an error, a reordering of the
-vocabulary included. A wrapper that would rather not track the signature
-resolves the value itself and passes one string.
-}
-
-\section{Result metadata}{
-
-The result's class, its dataset-wide attributes, and the attributes of
-each column follow the native dplyr or tidyr operation the verb
-corresponds to on the same backend, applied per grouping set and combined
-in Grouping-plan order. marginplyr adds the following:
-\itemize{
-\item A source column's variable label (\code{attr(x, "label")}) is kept wherever
-that column appears in the result, including on zero rows. Calculated
-summaries and generated columns such as \code{.id} gain no label.
-\item Factor and ordered-factor dimensions keep their levels and ordered
-status; see \emph{Display labels and grouping identity}. Classed columns such
-as \link{Date} and \link{POSIXct}, including its \code{tzone}, are carried unchanged.
-\item A dimension's margin rows hold the label, or a typed missing value,
-without element names; its other rows keep the names the native
-operation keeps.
-}
-
-These guarantees cover the returned result and direct \code{\link[dplyr:collect]{dplyr::collect()}}.
-Later verbs and \code{\link[dplyr:compute]{dplyr::compute()}} follow native backend rules. A lazy
-result uses the input schema captured when it was built, so rebuild it
-after changing column types, factor definitions, or labels.
-}
-
-\section{Grouping set identifiers}{
-
-When \code{.id} names an output column, each result row receives the one-based
-position of its grouping set occurrence after applying \code{.duplicates}.
-\code{"drop"} renumbers the occurrences it keeps. One grouping set has
-identifier \code{1L}, and a zero-row result retains an integer \code{.id} column.
-
-\code{.id} records plan occurrence, not physical result order, and is not a
-durable business key: reordering or deduplicating the Grouping
-specification changes it. \code{\link[=grouping_bit]{grouping_bit()}} documents how \code{.id} compares
-with \code{\link[=inspect_grouping]{inspect_grouping()}}\verb{$set_id}, \code{\link[=grouping_bit]{grouping_bit()}}, and \code{\link[=grouping_id]{grouping_id()}}.
-}
-
-\section{Margin order}{
-
-\code{.sort} orders a result by the structure of its Grouping plan rather than by
-displayed values. The key is the result's own leading grouping columns, left
-to right, with each grouping dimension preceded by its Grouping bit and by
-whether its value is missing:
-
-\if{html}{\out{<div class="sourceCode">}}\preformatted{is.na(by1), by1, ..., bit(d1), is.na(d1), d1, bit(d2), is.na(d2), d2, ...
-}\if{html}{\out{</div>}}
-
-A margin row therefore sits with the rows it summarizes instead of wherever
-its \code{.margin_label} falls among that dimension's values, so the order does
-not depend on the label or the locale. Fixed \code{.by} keys sort first, so each
-partition is one contiguous block, and \code{.id}, when it names a column, breaks
-the remaining ties. \code{"first"} reverses the Grouping bits alone: missing
-values come last wherever they appear, on every backend. Factor dimensions
-sort by their levels. \code{.margin_label_position} positions a synthetic factor
-level and never a row.
-
-A Margin order promises what \code{\link[dplyr:arrange]{dplyr::arrange()}} promises in the C locale,
-which it fixes: \code{options(dplyr.legacy_locale = TRUE)} does not redirect it.
-It is a property of the object the verb returns: the row order of a local
-data frame, or the ordering of a lazy result that \code{\link[dplyr:collect]{dplyr::collect()}}
-observes. Later verbs can change it. It composes with every \code{.duplicates}
-policy the verb accepts.
-
-The \href{https://sayuks.github.io/marginplyr/vignettes/recipes.html}{recipes guide} shows a Margin order before and after, and
-shows the key written as an \code{arrange()} you control.
-}
-
-\section{Display labels and grouping identity}{
-
-\code{.margin_label} is a display value, not the identity of a grouping set. An
-unnamed scalar labels every resolved Margin dimension. A named vector
-provides column-specific labels and must cover the resolved dimensions
-exactly once; missing, unknown, duplicate, and empty names are rejected, as
-are names from \code{.by}.
-
-Non-missing labels convert ordinary grouping dimensions to character. A
-factor or ordered factor is rebuilt instead, preserving ordered status and
-placing a new synthetic level last by default or first when
-\code{.margin_label_position = "first"}. A label equal to any declared level,
-used or unused, is rejected before any grouping set is built, whatever
-\code{.check_margin_label} says. Rebuilding preserves the distinction between an
-observation that uses a factor NA level and an actually missing factor
-code.
-
-\code{NA_character_} and \code{NULL} both create a typed missing Margin value and do
-not create a synthetic factor level, so \code{.margin_label_position} has no
-effect for either, and neither takes part in the observed half of collision
-validation. What separates them is a factor NA level: it conflicts with
-\code{NA_character_} even when \code{.check_margin_label = FALSE}, while \code{NULL}
-preserves it.
-
-A local packed data-frame, matrix, or array grouping dimension accepts only
-\code{NULL} or \code{NA_character_} as its Margin label, because no scalar string can
-represent such a key; split it into separate columns if it needs display
-text.
-
-Factor columns follow this contract:\tabular{lrrl}{
-   Margin label \tab NA level \tab Missing value \tab Result \cr
-   \code{NA_character_} \tab yes \tab yes \tab Error: NA is already a factor level \cr
-   \code{NA_character_} \tab yes \tab no \tab Error: NA is already a factor level \cr
-   \code{NA_character_} \tab no \tab yes \tab Allowed; source missing values and margins require structural identity \cr
-   \code{NA_character_} \tab no \tab no \tab Allowed; use typed missing \cr
-   \code{NULL} \tab yes \tab yes \tab Allowed; source missing values and margins require structural identity \cr
-   \code{NULL} \tab yes \tab no \tab Allowed; preserve the NA level and use typed missing \cr
-   \code{NULL} \tab no \tab yes \tab Allowed; source missing values and margins require structural identity \cr
-   \code{NULL} \tab no \tab no \tab Allowed; use typed missing \cr
-}
-
-
-A factor observation that uses an NA level can print as \verb{<NA>} while
-\code{is.na()} is false. A missing factor code has \code{is.na()} equal to true.
-Source missing values and typed-missing Margin values may display
-identically, so keep \code{.id} in the result when the difference matters.
-Every row above is decided whatever \code{.check_margin_label} says.
 }
 
 \section{Relationship to dplyr summaries}{
@@ -385,6 +216,11 @@ of your own to one of those names does not change what this verb does.
 \code{mypkg::across()} is an ordinary call. Every other name follows ordinary
 lookup, \code{\link[dplyr:n]{dplyr::n()}} included.
 
+Those spellings are rewritten only where the summary writes them:
+\code{eval(quote(grouping_bit(region)))} is rewritten, while a capture made
+outside the call, or text parsed at run time as by \code{\link[base:str2lang]{base::str2lang()}}, is
+not, so a \code{grouping_bit()} reached that way is refused.
+
 \code{\link[dplyr:across]{dplyr::across()}}, \code{\link[dplyr:pick]{dplyr::pick()}}, and \code{\link[dplyr:c_across]{dplyr::c_across()}} cannot select
 any column named in the complete Grouping plan. This extends dplyr's
 grouping-column rule across every branch: a dimension remains excluded even
@@ -400,26 +236,6 @@ on a local input, and a named one is packed into one column, as
 \code{\link[dplyr:summarize]{dplyr::summarize()}} does. A lazy input gives whatever shape its backend
 gives.
 
-Summary results may not overwrite a fixed key or grouping dimension,
-including through an unnamed data-frame-valued summary. Local dplyr allows
-it but other backends may not, so marginplyr refuses it everywhere. Use a
-new summary name, or rename the grouping column before this call.
-
-\code{\link[dplyr:cur_group]{dplyr::cur_group()}}, \code{\link[dplyr:cur_group_id]{dplyr::cur_group_id()}},
-\code{\link[dplyr:cur_group_rows]{dplyr::cur_group_rows()}}, and the deprecated \verb{cur_data*()} helpers are
-rejected: each describes one branch's group or data mask, which has no
-meaning across the grouping sets the result combines. They are rejected by
-name, even when you have bound one to a function of your own.
-
-An expression captured as language -- the argument of \code{\link[base:quote]{base::quote()}},
-\code{\link[base:substitute]{base::substitute()}}, \code{\link[base:expression]{base::expression()}}, \code{base::bquote()},
-\code{rlang::expr()}, or \code{rlang::quo()} -- is a value the summary carries, and
-marginplyr does not analyze or rewrite what is inside it. Evaluating it
-with \code{\link[base:eval]{base::eval()}} or \code{\link[rlang:eval_tidy]{rlang::eval_tidy()}} runs it in the data mask, where
-a visibly written capture is analyzed as the code it becomes. Text parsed
-at run time, as by \code{\link[base:str2lang]{base::str2lang()}}, is searched but not rewritten, so a
-parsed \code{grouping_bit()} reaches the helper's own context guard.
-
 A misspelled option such as \code{.margin_lable} reaches this verb through
 \code{...}, where it would become a summary column. A dot-prefixed summary name
 that is an option name, or one insertion, deletion, or substitution from
@@ -428,151 +244,47 @@ and \code{.y = mean(v)} are refused, although \code{\link[dplyr:summarise]{dplyr
 them as columns. A name further away, such as \code{.margin_lable} or
 \code{.sotr = "last"}, is not caught and becomes a summary column; check option
 names when a result has an unexpected column.
+
+A Grouping specification written in \code{...} rather than in \code{.grouping} --
+\code{rollup(region)} passed unnamed, or as \code{grouping = rollup(region)} -- is
+refused with the \code{.grouping = rollup(region)} spelling to use, on a local
+and a lazy input alike. A constructor name is looked up as R looks it up, so
+a function of your own named \code{rollup()} still runs as a summary.
 }
 
 \section{Summaries a lazy backend cannot carry}{
 
 Two lazy inputs cannot carry back a summary with no columns in it: asked
-for no summaries and given no fixed key or grouping dimension, the answer
+for no summaries and given no fixed key or Margin dimension, the answer
 is one row holding nothing, whatever the input held. A \code{data.table} reads
 its row count from its first column, so a \code{dtplyr} input collects to zero
 rows where a local data frame returns one, and a SQL table of no columns
 cannot be written at all, so a database input raises the error dbplyr
 renders one with. Each is what \code{\link[dplyr:summarize]{dplyr::summarize()}} itself answers for that
 lazy input; an Arrow input answers as a local one does. Anything that puts
-a column in the result -- one summary, one fixed key, one grouping
+a column in the result -- one summary, one fixed key, one Margin
 dimension, or \code{.id} -- ends the difference.
 
-One summary an Arrow table or record batch cannot carry -- or a query built
-on either -- is one Arrow's own engine cannot evaluate. Arrow answers such an
-expression by reading the whole input -- every column of it, not only the
-ones the summary names -- and computing it in R. marginplyr refuses it
-instead, before a row is read, and names the two rewrites that compute it:
-collect the input first, and select the columns the summary needs before
-collecting, which is the narrowing Arrow's own route cannot do for you.
-
-Which expressions those are is Arrow's to decide and moves with its version,
-so they are not listed here. Among the shapes refused are a group collapsed
-into a single value, such as pasting one, a subset written inside an
-aggregate, and a statistic over two columns at once; ordinary numeric
-summaries, and arithmetic over them, are evaluated by Arrow and stay lazy.
-An Arrow dataset, and a query built on one, raise Arrow's own refusal for
-the same expressions instead, because a dataset never reads itself into R;
-they are otherwise unaffected.
+A summary Arrow's own engine cannot evaluate is refused on an Arrow table
+or record batch before a row is read; see \emph{\link[=margin_verbs]{Arrow inputs}}
+in \link{margin_verbs}.
 }
 
 \section{Contextual shares}{
 
-\code{\link[=share_of_parent]{share_of_parent()}} and \code{\link[=share_of_total]{share_of_total()}} calculate a preceding named
-numeric scalar summary's ratio to the same summary on another row of the
-result, for local data and supported lazy dbplyr and dtplyr inputs. Both
-support direct named expressions and a constrained \code{\link[dplyr:across]{dplyr::across()}} form
-for multiple preceding summaries, and both partition the calculation by the
-fixed \code{.by} keys.
-
-They differ only in the denominator. \code{\link[=share_of_parent]{share_of_parent()}} divides by the
-immediate less detailed \code{\link[=rollup]{rollup()}} level, so it requires one pure
-\code{\link[=rollup]{rollup()}}; composite dimensions move together, and duplicate occurrences
-skip identical sets when choosing the parent. \code{\link[=share_of_total]{share_of_total()}} divides by
-the Grand total set, so it accepts any Grouping specification whose plan
-contains one, including \code{\link[=cube]{cube()}}.
-
-Arrow inputs reject both before a summary query is built; collect the
-input first when local share execution is appropriate, and set
-\code{.check_margin_label} explicitly on the re-run.
-
-A row that is its own denominator receives \code{1.0}. Missing numerators or
-denominators and zero denominators receive \code{NA_real_}; other finite ratios
-are not clamped. Matching is structural, so \code{.id}, missing grouping values,
-and displayed Margin labels do not determine the denominator.
-
-The source must be a unique, preceding, self-contained integer or double
-scalar summary. Local data frames reject an ineligible source before any
-share is calculated, and \code{dtplyr} steps when executed. A dbplyr backend is
-asked, without reading your data, whether its SQL dialect converts a value
-of another type to a number rather than refusing it; where it converts, or
-cannot be asked, the share is refused unless \code{.check_share_source = FALSE}.
-Asking takes at most two queries that reference none of your tables, sent
-once per dialect that answers and again on the next share request where it
-could not answer. A connection built with a \verb{dbplyr::simulate_*()}
-constructor executes nothing and so cannot be asked. Within a transaction
-begun through DBI with RPostgres, up to four savepoint statements isolate
-these questions, leaving commit or rollback to you.
-
-\code{\link[=share_of_parent]{share_of_parent()}} is the canonical reference for the complete
-direct-expression, source, ordering, value, empty-input, and \code{across()}
-contracts of both helpers.
-}
-
-\section{Arrow inputs}{
-
-Arrow's tabular dplyr inputs are a \code{Table}, \code{RecordBatch}, \code{Dataset},
-\code{RecordBatchReader}, or an \code{arrow_dplyr_query} built from them. marginplyr's
-contract depends on both the verb and the query's sources:\tabular{llll}{
-   Input \tab Summary or expansion \tab Inspection \tab Nesting \cr
-   \code{Table}, \code{RecordBatch}, or \code{Dataset} \tab Accepted \tab Accepted \tab Refused; collect first \cr
-   Query with no reader source \tab Accepted \tab Accepted \tab Refused; collect first \cr
-   \code{RecordBatchReader} \tab Refused; materialize first \tab Accepted \tab Refused; collect first \cr
-   Query with any reader source \tab Refused; materialize first \tab Accepted \tab Refused; collect first \cr
-   Non-tabular Arrow object \tab General input refusal \tab General input refusal \tab General input refusal \cr
-}
-
-
-A translatable summary or expansion stays an Arrow query. For a summary or
-generated Margin label transformation Arrow cannot translate, a \code{Table} and
-\code{RecordBatch} (and queries built on them) would fall back to R, so marginplyr
-refuses it before a row is read. Collect the input first to perform that
-operation locally, selecting the columns you need before collecting. A
-\code{Dataset} and a query built on one instead keep Arrow's own
-unsupported-expression error.
-
-A \code{RecordBatchReader} is one-pass, while a Margin operation may build one
-branch per grouping set, so a reader and any query whose source graph
-contains one are refused. \code{\link[arrow:as_arrow_table]{arrow::as_arrow_table()}} consumes every batch
-once and materializes the reusable \code{Table} those branches require.
-\code{\link[=inspect_grouping]{inspect_grouping()}} executes no branch, so it accepts both without
-consuming either. Other Arrow objects, such as a \code{Scanner} or an \code{Array},
-are not dplyr inputs; a Scanner materializes with \verb{$ToTable()}.
-
-Arrow does not hold factor levels in the schema marginplyr reads, so a
-non-missing \code{.margin_label} converts a factor dimension to character, its
-levels and ordered status are lost, and a Margin order sorts it by value.
-For the same reason, a label equal to an unused declared level is allowed,
-and an observed collision is refused only when
-\code{.check_margin_label = TRUE}. \code{NA_character_} and \code{NULL} convert nothing.
-}
-
-\section{Database backend coverage}{
-
-Summaries on DuckDB and PostgreSQL use one native \verb{GROUP BY GROUPING SETS}
-query. Other database backends, and every expansion, use a portable
-\verb{UNION ALL} query with one branch per grouping set and the same result.
-Asking for a Margin order never changes which of the two runs.
-
-Results are executed and compared with local ones on DuckDB, SQLite, and
-Microsoft SQL Server. SQL generation, not execution, is verified for
-PostgreSQL, Access, SAP HANA, Hive, Impala, MariaDB, MySQL, Oracle, Amazon
-Redshift, Snowflake, Spark SQL, and Teradata, and for generic DBI and ODBC
-connections. Arrow and \code{dtplyr} are also supported lazy backends.
-
-On SQLite and DuckDB, identifiers differing only in ASCII letter case name
-the same column, so a result refuses two public columns that would collide
-under that rule and names both spellings.
-
-DuckDB stores a factor as an \code{ENUM}, which marginplyr rebuilds with its
-levels; an \code{ENUM} carries no ordered flag, so an ordered factor returns
-unordered. Other SQL backends store a factor as text before marginplyr
-reads it.
-
-A lazy result's Margin order is the outermost query's \verb{ORDER BY}, which
-\code{\link[dplyr:collect]{dplyr::collect()}} and \code{\link[dplyr:compute]{dplyr::compute()}} observe. Whether it survives
-later verbs depends on dbplyr's query flattening and is not promised. It is
-not a window ordering, so a window function over a sorted result still
-needs \code{\link[dbplyr:window_order]{dbplyr::window_order()}}. For direct \code{\link[dplyr:compute]{dplyr::compute()}} on SQLite,
-see \emph{\link[=summarize_with_margins]{SQLite materialization}}.
+\code{\link[=share_of_parent]{share_of_parent()}} divides a preceding summary by the same summary on its
+immediate \code{\link[=rollup]{rollup()}} parent, and \code{\link[=share_of_total]{share_of_total()}} by the Grand total set,
+within each fixed \code{.by} partition. Neither judges whether the ratio means
+anything: the share of a non-additive summary, such as a mean, is a ratio
+of two means and returns values near one without a warning. Share a sum or
+a count. \code{\link[=share_of_parent]{share_of_parent()}} is the reference for both helpers.
 }
 
 \section{SQLite materialization}{
+
+A result on a live SQLite connection can carry the leading class
+\code{marginplyr_sqlite_typed_result}. It is direct until another dplyr verb
+is applied to it; the verb keeps the class but not the behavior below.
 
 On a live SQLite connection, direct \code{\link[dplyr:compute]{dplyr::compute()}} of a result
 returned by \code{\link[=summarize_with_margins]{summarize_with_margins()}} or \code{\link[=expand_with_margins]{expand_with_margins()}} writes a
@@ -602,50 +314,21 @@ abort the whole transaction, nor for invalid connections, process
 termination, fatal signals, or a timeout that does not unwind through R.
 }
 
-\section{When marginplyr queries your data}{
+\section{Behavior shared with the other Margin verbs}{
 
-A Margin verb applied to a lazy input builds a query and returns it
-unexecuted. \code{\link[dplyr:show_query]{dplyr::show_query()}} runs nothing, and no row is read until
-you execute the query yourself.
-
-Building it can still send internal queries that read no source values:
+These rules are stated once, in \link{margin_verbs}, for every Margin verb:
 \itemize{
-\item \strong{A zero-row read of the input}, sent only to a backend whose factor
-columns marginplyr must decompose and later restore -- currently
-\code{dtplyr} and DuckDB -- to recover their levels and column prototypes. It
-references your table but reads none of it, as the zero-row read
-\code{\link[dplyr:tbl]{dplyr::tbl()}} already sends does. A derived \code{dtplyr} step whose types
-cannot be found that way is refused; call \code{\link[dplyr:collect]{dplyr::collect()}} on it
-explicitly and pass the data frame.
-\item \strong{One DuckDB catalog query per operation at most}, reading table and
-view names, stored view definitions, macro names, and the search path, to
-check that the input hides no source work behind a view or macro before
-its types are read. It binds no table of yours. Table macros, macros you
-define, \code{query()}, \code{query_table()}, and views without stored SQL are
-refused, except a data frame registered with \code{duckdb::duckdb_register()}.
-Other table functions, such as \code{read_parquet()} or \code{range()}, are
-admitted inside a view as they are when written directly.
-A macro you define is refused however the query reaches it: written in
-SQL, or called from a dplyr verb such as \code{mutate(y = my_macro(x))},
-including a function dbplyr translates to that macro's name. Call
-\code{\link[dplyr:compute]{dplyr::compute()}} or \code{\link[dplyr:collect]{dplyr::collect()}} first to use one.
-DuckDB's own scalar macros, such as \code{nullif()}, are admitted only while
-the database holds no macro you defined, since one could replace a name
-inside their bodies.
-\item \strong{At most two queries per share request until the SQL dialect answers},
-referencing none of your tables; see
-\emph{\link[=summarize_with_margins]{Contextual shares}}.
+\item \link[=margin_verbs]{Fixed columns and Margin dimensions}
+\item \link[=margin_verbs]{Grouped and row-wise inputs}
+\item \link[=margin_verbs]{Display labels and grouping identity}
+\item \link[=margin_verbs]{Margin order}
+\item \link[=margin_verbs]{Grouping set identifiers}
+\item \link[=margin_verbs]{Option arguments}
+\item \link[=margin_verbs]{Result metadata}
+\item \link[=margin_verbs]{Arrow inputs}
+\item \link[=margin_verbs]{Database backend coverage}
+\item \link[=margin_verbs]{When marginplyr queries your data}
 }
-
-A query is not safe merely because it returns no rows: some services bill
-by the bytes a query scans, and \verb{LIMIT 0} is not exempt. marginplyr cannot
-tell a billed connection from a free one, so \code{.check_margin_label} defaults
-to \code{is.data.frame(.data)} and a lazy input is checked only when asked. The
-observed check scans every input row of the checked columns and retrieves
-one row of collision counts.
-
-With recording enabled before the call, \code{\link[=last_sent_queries]{last_sent_queries()}} lists the
-SQL prepared for these internal queries in the order sent.
 }
 
 \examples{
@@ -682,7 +365,7 @@ grouped_report <- retail_sales |>
 dplyr::group_vars(grouped_report)
 
 # Moving year and month into the rollup extends the hierarchy from store
-# detail through monthly, annual, and all-period totals.
+# detail through monthly, per-year, and all-period totals.
 summarize_with_margins(
   .data = retail_sales,
   revenue = sum(revenue),
@@ -690,7 +373,8 @@ summarize_with_margins(
   .grouping = rollup(year, month, region, store)
 )
 
-# Grouping expressions are created with mutate() before summarizing.
+# A Margin dimension computed from other columns is created with mutate()
+# before summarizing.
 summarize_with_margins(
   .data = dplyr::mutate(
     retail_sales,
@@ -766,56 +450,28 @@ summarize_with_margins(
   .margin_label = list(region = "All regions", status = NULL)
 )
 
-# A direct Parent share, multiple measures through two ordered across()
-# expressions, and a post-summary calculation.
-direct_parent <- summarize_with_margins(
+# A cube() crosses every combination of its dimensions, so the result has
+# a total per region, a total per year, and a company total.
+summarize_with_margins(
   .data = retail_sales,
   revenue = sum(revenue),
-  revenue_share = share_of_parent(revenue),
-  .grouping = rollup(region, store)
-)
-multiple_parents <- summarize_with_margins(
-  .data = retail_sales,
-  dplyr::across(c(units, revenue), sum),
-  dplyr::across(
-    c(units, revenue),
-    share_of_parent,
-    .names = "{.col}_share"
-  ),
-  .grouping = rollup(region, store)
-)
-dplyr::mutate(
-  .data = direct_parent,
-  revenue_percent = 100 * revenue_share
+  .grouping = cube(region, year),
+  .sort = "last"
 )
 
-# Empty input without `.by` still has one Grand total row, whose share is
-# one; with `.by` it has no rows. Both keep a double share column.
-empty_sales <- retail_sales[0, ]
-empty_grand_total <- summarize_with_margins(
-  .data = empty_sales,
+# grouping_sets() lists the grouping sets to compute. Region appears twice;
+# `.duplicates = "keep"` returns both copies, and `.id` tells them apart.
+summarize_with_margins(
+  .data = retail_sales,
   revenue = sum(revenue),
-  revenue_share = share_of_parent(revenue),
-  .grouping = rollup(region)
-)
-c(
-  rows = nrow(empty_grand_total),
-  type = typeof(empty_grand_total$revenue_share)
-)
-empty_partitions <- summarize_with_margins(
-  .data = empty_sales,
-  revenue = sum(revenue),
-  revenue_share = share_of_parent(revenue),
-  .by = year,
-  .grouping = rollup(region)
-)
-c(
-  rows = nrow(empty_partitions),
-  type = typeof(empty_partitions$revenue_share)
+  .grouping = grouping_sets(region, year, region),
+  .duplicates = "keep",
+  .id = "set"
 )
 
 # across() and pick() treat every fixed key and Margin dimension as a
-# grouping column, including dimensions omitted from a subtotal branch.
+# grouping column, including dimensions omitted from a subtotal branch, so
+# pick(everything()) names neither year nor region.
 summarize_with_margins(
   .data = retail_sales,
   dplyr::across(
@@ -823,8 +479,8 @@ summarize_with_margins(
     sum,
     .names = "total_{.col}"
   ),
-  measures = paste(
-    names(dplyr::pick(c(units, revenue))),
+  picked = paste(
+    names(dplyr::pick(everything())),
     collapse = ", "
   ),
   .by = year,
@@ -868,6 +524,7 @@ if (
 \seealso{
 Other summarize and expand data with margins:
 \code{\link[=expand_with_margins]{expand_with_margins()}},
+\code{\link{margin_verbs}},
 \code{\link[=nest_by_with_margins]{nest_by_with_margins()}},
 \code{\link[=nest_with_margins]{nest_with_margins()}}
 }

@@ -57,7 +57,8 @@ january_sales |>
 #> 8  Total         Total   23300
 ```
 
-`rollup(region, store)` asks for three reporting levels:
+`rollup(region, store)` asks for three *grouping sets*, the SQL name for
+the columns one level of a report is grouped by:
 
 ``` text
 (region, store)  store detail
@@ -66,7 +67,10 @@ january_sales |>
 ```
 
 The result is one regular data frame—not three reports that you have to
-build and combine yourself.
+build and combine yourself. Its subtotal and total rows are the report’s
+*margins*: in each, a column the grouping set removed shows the Margin
+label, `"Total"` by default. The `<NA>` store is real data, as *A total
+is not the same thing as `NA`* below explains.
 
 Row order is unspecified: the same call on the same data in a different
 order can arrange the result differently. `.sort` asks for a Margin
@@ -76,7 +80,8 @@ the rows it
 summarizes](https://sayuks.github.io/marginplyr/vignettes/recipes.html#put-each-subtotal-with-the-rows-it-summarizes)
 shows `.sort` at work and what it does not promise.
 
-- Works with local data frames and lazy `dbplyr` tables.
+- Works with local data frames, including a plain `data.table`, and with
+  lazy `dbplyr` tables, `dtplyr` steps, and Arrow tables and datasets.
 
 - Runs most summaries on DuckDB and PostgreSQL as native
   `GROUP BY GROUPING SETS`.
@@ -98,32 +103,39 @@ shows `.sort` at work and what it does not promise.
   local and `dtplyr` inputs.
 
 New to the idea? Start with [Get
-started](https://sayuks.github.io/marginplyr/vignettes/get_started.html).
-Know the task and want the call? See [Recipes for common reporting
+started](https://sayuks.github.io/marginplyr/vignettes/get_started.html),
+which walks through the rest of the package on the same data. Know the
+task and want the call? See [Recipes for common reporting
 tasks](https://sayuks.github.io/marginplyr/vignettes/recipes.html). Need
-to compare `.id`, Grouping bits, and Grouping identifiers? See [Grouping
+to tell a margin from a source row, or one grouping set from another?
+See [Grouping
 identity](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html).
-Need absent dimension keys? See [Complete absent keys before
+Need report rows for keys the data does not contain? See [Complete
+absent keys before
 margins](https://sayuks.github.io/marginplyr/vignettes/completing_keys.html).
 Already working with remote data? See [Database and lazy
 backends](https://sayuks.github.io/marginplyr/vignettes/database_backends.html).
 
+The function reference contains executable examples for composite
+dimensions, tidy-select expressions, duplicate grouping sets, Cartesian
+products, computed grouping columns, simulated SQL dialects, DuckDB, and
+dtplyr.
+
 ## Grouping sets in plain language
 
-A normal grouped summary has one grain: for example, one row per store.
-A management report often needs several grains together: stores,
-regions, and the whole company. SQL calls that collection of grains
-*grouping sets*.
-
-marginplyr provides three ways to describe them:
+A normal grouped summary has one grouping set: for example, one row per
+store. A management report often needs several together: stores,
+regions, and the whole company. marginplyr provides four ways to
+describe them:
 
 | Helper | Use it when | For `region` and `store` |
 |----|----|----|
 | `rollup()` | The dimensions form a hierarchy | store detail, region subtotal, company total |
-| `grouping_sets()` | You need an exact list of unrelated views | only the combinations you request |
+| `grouping_sets()` | You need an exact list of unrelated grouping sets | only the combinations you request |
 | `cube()` | You need every combination | detail, both one-dimensional subtotals, grand total |
+| `grouping_spec()` | You need every grouping set of one specification crossed with every grouping set of another | with `rollup(year, month)`, its three grouping sets crossed with these three, nine in all |
 
-Columns in `.by` stay fixed in every result level. For example, this
+Columns in `.by` stay fixed in every grouping set. For example, this
 creates a separate store-to-company report for each year and month:
 
 ``` r
@@ -149,57 +161,8 @@ monthly_report |>
 ```
 
 Use `.by` for report partitions that must never become totals, and
-`.grouping` for dimensions that may be aggregated away.
-
-## Ask for the exact views you need
-
-`grouping_sets()` combines an explicit list of grouping levels. An empty
-`grouping_set()` requests the grand total:
-
-``` r
-retail_sales |>
-  summarize_with_margins(
-    revenue = sum(revenue),
-    .grouping = grouping_sets(
-      grouping_set(year, month),
-      grouping_set(region, product),
-      grouping_set()
-    )
-  )
-#>     year month region    product revenue
-#> 1   2025   Jan  Total      Total   15200
-#> 2   2025   Feb  Total      Total   18700
-#> 3   2026   Jan  Total      Total   23300
-#> 4   2026   Feb  Total      Total   30200
-#> 5  Total Total   East     Laptop   22800
-#> 6  Total Total   East    Monitor   11100
-#> 7  Total Total   East Headphones    8000
-#> 8  Total Total   West     Laptop   27600
-#> 9  Total Total   West    Monitor   12000
-#> 10 Total Total   West Headphones    5900
-#> 11 Total Total  Total      Total   87400
-```
-
-`cube()` creates every subset of its dimensions:
-
-``` r
-january_sales |>
-  summarize_with_margins(
-    revenue = sum(revenue),
-    .grouping = cube(product, channel)
-  )
-#>       product channel revenue
-#> 1      Laptop   Store   13200
-#> 2     Monitor  Online    6300
-#> 3  Headphones  Online    2200
-#> 4  Headphones   Store    1600
-#> 5      Laptop   Total   13200
-#> 6     Monitor   Total    6300
-#> 7  Headphones   Total    3800
-#> 8       Total   Store   14800
-#> 9       Total  Online    8500
-#> 10      Total   Total   23300
-```
+`.grouping` for dimensions that may be aggregated away. Get started runs
+each helper on `retail_sales`.
 
 ## A total is not the same thing as `NA`
 
@@ -227,24 +190,24 @@ january_sales |>
 `grouping_bit(store)` is `0` for the source `NA` row and `1` when the
 rollup removed `store`. This is the role of the SQL `GROUPING()`
 function; replacing every missing value with `"Total"` cannot preserve
-that distinction.
+that distinction. `grouping_id(region, store)` packs the same flags into
+one number, with `store` as the lowest bit: `0` for store detail, `1`
+for a region subtotal, and `3` for the company total.
 
-## Compare each summary with its rollup parent
+## Compare each summary with its parent or the whole
 
 `share_of_parent()` divides a preceding named summary by the same
-summary one rollup level up. Name the source summary first, then take
-its share:
+summary in the next less detailed grouping set of a rollup. Name the
+source summary first, then take its share:
 
 ``` r
-parent_report <- january_sales |>
+january_sales |>
   summarize_with_margins(
     revenue = sum(revenue),
     revenue_share = share_of_parent(revenue),
     .grouping = rollup(region, store),
     .sort = "last"
   )
-
-parent_report
 #>   region         store revenue revenue_share
 #> 1   East        Boston    6000     0.5357143
 #> 2   East      New York    3000     0.2678571
@@ -256,117 +219,25 @@ parent_report
 #> 8  Total         Total   23300     1.0000000
 ```
 
-For several measures, use two ordered `across()` expressions. The second
-one selects the summaries the first one created:
-
-``` r
-january_sales |>
-  summarize_with_margins(
-    dplyr::across(c(units, revenue), sum),
-    dplyr::across(
-      c(units, revenue),
-      share_of_parent,
-      .names = "{.col}_share"
-    ),
-    .grouping = rollup(region, store),
-    .sort = "last"
-  )
-#>   region         store units revenue units_share revenue_share
-#> 1   East        Boston     5    6000   0.1351351     0.5357143
-#> 2   East      New York    10    3000   0.2702703     0.2678571
-#> 3   East          <NA>    22    2200   0.5945946     0.1964286
-#> 4   East         Total    37   11200   0.5285714     0.4806867
-#> 5   West San Francisco     6    7200   0.1818182     0.5950413
-#> 6   West       Seattle    27    4900   0.8181818     0.4049587
-#> 7   West         Total    33   12100   0.4714286     0.5193133
-#> 8  Total         Total    70   23300   1.0000000     1.0000000
-```
-
-Percentages, rounding, and other derived columns belong in a `mutate()`
-after the summary:
-
-``` r
-parent_report |>
-  dplyr::mutate(revenue_percent = 100 * revenue_share)
-#>   region         store revenue revenue_share revenue_percent
-#> 1   East        Boston    6000     0.5357143        53.57143
-#> 2   East      New York    3000     0.2678571        26.78571
-#> 3   East          <NA>    2200     0.1964286        19.64286
-#> 4   East         Total   11200     0.4806867        48.06867
-#> 5   West San Francisco    7200     0.5950413        59.50413
-#> 6   West       Seattle    4900     0.4049587        40.49587
-#> 7   West         Total   12100     0.5193133        51.93133
-#> 8  Total         Total   23300     1.0000000       100.00000
-```
-
-A row of the Grand total set has a Parent share of one, and a missing or
-zero denominator gives `NA`. Parent matching is structural, so display
-labels never choose the parent.
-
-## Compare each summary with the whole
-
-`share_of_total()` is its sibling with a different denominator: the
-grand total of the same report, within each fixed `.by` group. There is
-never a question of *which* row that is, so it accepts any Grouping
-specification that produces one — including the `cube()` that
-`share_of_parent()` rejects:
-
-``` r
-january_sales |>
-  summarize_with_margins(
-    revenue = sum(revenue),
-    revenue_of_total = share_of_total(revenue),
-    .grouping = cube(region, store),
-    .sort = "last"
-  )
-#>    region         store revenue revenue_of_total
-#> 1    East        Boston    6000        0.2575107
-#> 2    East      New York    3000        0.1287554
-#> 3    East          <NA>    2200        0.0944206
-#> 4    East         Total   11200        0.4806867
-#> 5    West San Francisco    7200        0.3090129
-#> 6    West       Seattle    4900        0.2103004
-#> 7    West         Total   12100        0.5193133
-#> 8   Total        Boston    6000        0.2575107
-#> 9   Total      New York    3000        0.1287554
-#> 10  Total San Francisco    7200        0.3090129
-#> 11  Total       Seattle    4900        0.2103004
-#> 12  Total          <NA>    2200        0.0944206
-#> 13  Total         Total   23300        1.0000000
-```
-
-Both helpers can appear in one summary, and everything except the
-denominator is shared:
-
-``` r
-january_sales |>
-  summarize_with_margins(
-    revenue = sum(revenue),
-    revenue_share = share_of_parent(revenue),
-    revenue_of_total = share_of_total(revenue),
-    .grouping = rollup(region, store),
-    .sort = "last"
-  )
-#>   region         store revenue revenue_share revenue_of_total
-#> 1   East        Boston    6000     0.5357143        0.2575107
-#> 2   East      New York    3000     0.2678571        0.1287554
-#> 3   East          <NA>    2200     0.1964286        0.0944206
-#> 4   East         Total   11200     0.4806867        0.4806867
-#> 5   West San Francisco    7200     0.5950413        0.3090129
-#> 6   West       Seattle    4900     0.4049587        0.2103004
-#> 7   West         Total   12100     0.5193133        0.5193133
-#> 8  Total         Total   23300     1.0000000        1.0000000
-```
-
-The [`share_of_parent()`
+`share_of_total()` divides by the grand total instead, within each fixed
+`.by` group. `share_of_parent()` needs `.grouping` to be one `rollup()`,
+and some lazy inputs refuse both helpers — Arrow always, and a SQL
+connection whose dialect converts a non-numeric source to a number, or
+one that cannot be asked, such as the simulated one below — as the
+[`share_of_parent()`
 reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html)
-documents both helpers in full: the eligible sources, value rules,
-`across()` grammar, and backend boundaries.
+states in full.
 
 ## Use the same report with a database
 
-The Grouping plan becomes part of the lazy query. `show_query()`
-inspects the SQL without collecting the result:
+The Grouping plan — the ordered list of grouping sets that the Grouping
+specification written in `.grouping` expands to, such as the three of
+`rollup(region, store)` — becomes part of the lazy query. `show_query()`
+inspects the SQL without collecting the result. The call writes
+`na.rm = TRUE`, and a local call needs it too for the results to match:
+locally a missing measure makes every subtotal and total that includes
+it `NA`, while a SQL aggregate always drops missing values, and dbplyr
+warns when `na.rm = TRUE` is absent:
 
 ``` r
 postgres_sales <- dbplyr::tbl_lazy(
@@ -398,57 +269,22 @@ postgres_sales |>
 ```
 
 Simulation verifies generated SQL but does not claim live execution
-against every database server. The [database
-guide](https://sayuks.github.io/marginplyr/vignettes/database_backends.html)
+against every database server. [Database and lazy
+backends](https://sayuks.github.io/marginplyr/vignettes/database_backends.html)
 shows native SQL, which queries take the fallback, live DuckDB
 execution, and `collect()`.
 
 ## Keep the rows behind each total
 
-SQL-style aggregation is only the start. `nest_with_margins()` keeps the
-source records for every detail group, subtotal, and total in a list
-column:
-
-``` r
-nested_sections <- january_sales |>
-  nest_with_margins(
-    .grouping = rollup(region, store)
-  )
-
-nested_sections |>
-  head()
-#> # A tibble: 6 × 3
-#>   region store         data            
-#>   <chr>  <chr>         <list>          
-#> 1 East   Boston        <tibble [1 × 6]>
-#> 2 East   New York      <tibble [1 × 6]>
-#> 3 East   <NA>          <tibble [1 × 6]>
-#> 4 West   San Francisco <tibble [1 × 6]>
-#> 5 West   Seattle       <tibble [2 × 6]>
-#> 6 East   Total         <tibble [3 × 6]>
-
-nested_sections$data[[1]]
-#> # A tibble: 1 × 6
-#>    year month product channel units revenue
-#>   <int> <chr> <chr>   <chr>   <int>   <dbl>
-#> 1  2026 Jan   Laptop  Store       5    6000
-```
-
-Use `.keep = TRUE` to retain the original grouping columns inside each
-nested table. Use `nest_by_with_margins()` when the next calculation
-should run row-wise against each nested report section, or
-`expand_with_margins()` when downstream work needs expanded rows rather
-than an immediate summary.
-
-These are margin-aware counterparts, not drop-in replacements for
-`tidyr::nest()` and `dplyr::nest_by()`. Their precise grouping, `.keep`,
-empty-input, and lazy-backend contracts are documented in the
+`expand_with_margins()` returns the source rows behind every grouping
+set, and `nest_with_margins()` and `nest_by_with_margins()` keep them in
+a list column, one row per detail group, subtotal, and total. They are
+margin-aware counterparts, not drop-in replacements, for `tidyr::nest()`
+and `dplyr::nest_by()`; Get started shows each one, and the
 [`nest_with_margins()`](https://sayuks.github.io/marginplyr/man/nest_with_margins.html)
 and
 [`nest_by_with_margins()`](https://sayuks.github.io/marginplyr/man/nest_by_with_margins.html)
-references and the [Get
-started](https://sayuks.github.io/marginplyr/vignettes/get_started.html)
-guide.
+references state their contracts.
 
 ## Choose the tool for the job
 
@@ -456,30 +292,34 @@ These approaches solve related problems with different interfaces:
 
 | Approach | Best fit | Result and execution model |
 |----|----|----|
-| Repeated `dplyr::summarize()` plus row binding | A small, one-off set of totals where explicit branches are clearest | You author and combine each grouping level |
+| Repeated `dplyr::summarize()` plus row binding | A small, one-off set of totals where explicit branches are clearest | You author and combine each grouping set |
 | [`data.table`](https://rdatatable.gitlab.io/data.table/reference/groupingsets.html) grouping sets | A local data.table workflow | `rollup()`, `cube()`, and `groupingsets()` return one data.table |
-| [`rollup`](https://cran.r-project.org/package=rollup) | Its dplyr-oriented grouped-data-frame-list workflow fits the analysis | Grouping levels are represented as a list before their summaries are combined |
+| [`rollup`](https://cran.r-project.org/package=rollup) | Its dplyr-oriented grouped-data-frame-list workflow fits the analysis | Grouping sets are represented as a list before their summaries are combined |
 | marginplyr | The same Grouping plan should work locally and on a lazy source | One data frame or lazy query, with native SQL or a portable fallback |
 
-marginplyr is most useful when a report has multiple grains, when the
-data should stay in a database until `collect()`, or when subtotal
-identity and the records behind each total matter. For one simple local
-subtotal, explicit dplyr code may be easier.
+data.table’s `rollup()` and `cube()` share marginplyr’s names. With
+data.table attached after marginplyr, a `.grouping` that reaches them is
+refused with an error naming `data.table::rollup()` or
+`data.table::cube()`; write `marginplyr::rollup()` and
+`marginplyr::cube()`, or attach marginplyr last.
+
+marginplyr is most useful when a report needs several grouping sets,
+when the data should stay in a database until `collect()`, or when
+subtotal identity and the records behind each total matter. For one
+simple local subtotal, explicit dplyr code may be easier.
 
 ## Backend verification
 
+Which backends marginplyr supports, and what each does, is the *Backend
+support matrix* in [Database and lazy
+backends](https://sayuks.github.io/marginplyr/vignettes/database_backends.html#backend-support-matrix).
 What is verified on each backend, and how, is stated in one place:
-*Database backend coverage* in the [`summarize_with_margins()`
-reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html).
-
-The function reference contains executable examples for composite
-dimensions, tidy-select expressions, duplicate grouping sets, Cartesian
-products, computed grouping columns, simulated SQL dialects, DuckDB, and
-dtplyr.
+*Database backend coverage* in the [`margin_verbs`
+reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html#database-backend-coverage).
 
 ## Code of Conduct
 
 Please note that the marginplyr project is released with a [Contributor
 Code of
-Conduct](https://contributor-covenant.org/version/2/1/CODE_OF_CONDUCT.html).
+Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct/).
 By contributing to this project, you agree to abide by its terms.

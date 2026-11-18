@@ -33,9 +33,9 @@ summarize_with_margins(
 \itemize{
 \item \href{https://sayuks.github.io/marginplyr/vignettes/get_started.html}{Get started}
 \item \href{https://sayuks.github.io/marginplyr/vignettes/recipes.html}{Recipes for common reporting tasks}
-\item \href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html}{Database and lazy backends}
 \item \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{Grouping identity}
 \item \href{https://sayuks.github.io/marginplyr/vignettes/completing_keys.html}{Complete absent keys before margins}
+\item \href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html}{Database and lazy backends}
 }
 }
 
@@ -60,9 +60,29 @@ grand total.
 \section{Errors and warnings}{
 
 Every error marginplyr raises for a call you can correct inherits the
-\code{"marginplyr_error"} class, so one handler catches them all:
+\code{"marginplyr_error"} class, and a Margin verb raises it directly, so a
+\code{tryCatch()} handler for that class catches it. A marginplyr helper such as
+\code{\link[=grouping_bit]{grouping_bit()}} used inside an ordinary dplyr verb, and an error your own
+summary expression raises, instead arrive as the \verb{$parent} of the error
+dplyr raises, so match them through the parent with \code{\link[rlang:try_fetch]{rlang::try_fetch()}},
+as the examples below do.
 
-\if{html}{\out{<div class="sourceCode r">}}\preformatted{tryCatch(
+\link{marginplyr_conditions} states the rest of the contract.
+}
+
+\section{Recording the SQL marginplyr prepares}{
+
+With \code{options(marginplyr.audit_sql = TRUE)} set before a Margin verb call,
+\code{\link[=last_sent_queries]{last_sent_queries()}} reads back the SQL that call prepared. Its internal
+rows are what marginplyr sent while building the call, and its \code{"result"}
+row is what your own \code{\link[dplyr:collect]{dplyr::collect()}} will send.
+
+\code{\link[=last_sent_queries]{last_sent_queries()}} states what the record holds and promises.
+}
+
+\examples{
+# A Margin verb raises the class directly, so `tryCatch()` catches it.
+tryCatch(
   summarize_with_margins(
     retail_sales,
     revenue = sum(revenue),
@@ -71,66 +91,12 @@ Every error marginplyr raises for a call you can correct inherits the
   ),
   marginplyr_error = function(cnd) conditionMessage(cnd)
 )
-}\if{html}{\out{</div>}}
 
-\code{"marginplyr_error"} is the only package-specific class marginplyr promises.
-Narrower subclasses and the wording of any message are implementation details
-that can change without a deprecation cycle, so match on the class rather
-than on message text.
-
-Other errors deliberately fall outside the class. Errors raised by
-your own summary expressions, by tidyselect, by dplyr, or by a database
-backend propagate with their original class, diagnostic, and cause intact.
-So do marginplyr's internal invariant checks, which report a defect no
-change to your call can avoid; please report those at
-\url{https://github.com/sayuks/marginplyr/issues}.
-
-marginplyr itself raises no warning: it states what it will not do by
-refusing. How a Margin operation reports the conditions your expressions
-raise, and what an interrupt, a warning handler, or a failed SQLite cleanup
-leaves you to catch, are stated in \link{marginplyr_conditions}.
-}
-
-\section{Recording the SQL marginplyr prepares}{
-
-marginplyr records prepared SQL representations only when you ask for them.
-\code{options(marginplyr.audit_sql = TRUE)} switches the record on, and
-\code{\link[=last_sent_queries]{last_sent_queries()}} reads the most recent call's record in recording order:
-
-\if{html}{\out{<div class="sourceCode r">}}\preformatted{# `sales_db` is a lazy table on a SQL connection.
-old <- options(marginplyr.audit_sql = TRUE)
-
-summarize_with_margins(
-  sales_db,
-  revenue = sum(revenue),
-  .grouping = rollup(region, store)
-)
-
-internal <- last_sent_queries(include_result = FALSE)
-last_sent_queries()
-options(old)
-}\if{html}{\out{</div>}}
-
-The default view includes the prepared, unexecuted result SQL;
-\code{include_result = FALSE} selects internal work. Add \code{details = TRUE} for
-observed internal outcomes and condition summaries, captured during every
-audited call. Recording renders queries
-locally or records literal SQL controls, adding no backend operation.
-A missing SQL value means diagnostic rendering failed, and a recorded
-representation does not prove database receipt or completion.
-\emph{\link[=summarize_with_margins]{When marginplyr queries your data}} states which
-internal operations can run. Copy or export the record before the next call
-replaces it; a failed call leaves its own partial record readable.
-
-What the record holds, which calls keep one, and what an empty or incomplete
-read means are stated in \code{\link[=last_sent_queries]{last_sent_queries()}}'s own reference.
-}
-
-\examples{
-summarize_with_margins(
-  .data = retail_sales,
-  revenue = sum(revenue),
-  .grouping = rollup(region, store)
+# A helper inside an ordinary dplyr verb arrives as the parent of dplyr's
+# error, which `rlang::try_fetch()` searches.
+rlang::try_fetch(
+  dplyr::mutate(retail_sales, bit = grouping_bit(region)),
+  marginplyr_error = function(cnd) conditionMessage(cnd)
 )
 }
 \seealso{

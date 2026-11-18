@@ -1,7 +1,10 @@
 #' Inspect a backend-independent Grouping plan
 #'
 #' `inspect_grouping()` returns the Grouping plan resolved from `.data`,
-#' `.by`, and `.grouping` without executing a Margin operation. The result is
+#' `.by`, and `.grouping` without executing a Margin operation. A Grouping plan
+#' is the ordered list of grouping sets that the Grouping specification written
+#' in `.grouping` expands to, and this function returns one row per
+#' grouping-set occurrence in it. The result is
 #' always a local, ungrouped, ordinary tibble, including for lazy inputs.
 #'
 #' @param .data A data frame or lazy table.
@@ -17,33 +20,46 @@
 #'   specification can be written here, while a specification nested inside
 #'   another must be a constructor call or a name bound to one, and a nested
 #'   name the input also has a column for is refused rather than read either
-#'   way; see [grouping_set()].
+#'   way; see [grouping_set()]. The columns it selects are the plan's Margin
+#'   dimensions, which a grouping set can omit; `.by` columns are fixed keys.
 #' @param .duplicates One of `"error"`, `"drop"`, or `"keep"`, and nothing
-#'   else, controlling duplicate grouping-set occurrences; see *Option
-#'   arguments*.
+#'   else; see *[Option arguments][margin_verbs]* in [margin_verbs]. A
+#'   duplicate is a grouping set whose columns are the same as an earlier
+#'   set's. `"error"` (the default) refuses the call and names the
+#'   positions. `"drop"` keeps the first occurrence of each set and numbers
+#'   `set_id` over the rows that remain. `"keep"` lists every occurrence,
+#'   each with its own `set_id`.
 #' @param .format `"text"` for compact display values or `"list"` for exact
-#'   character and integer vectors, and nothing else; see *Option arguments*.
+#'   character and integer vectors, and nothing else; see
+#'   *[Option arguments][margin_verbs]* in [margin_verbs].
 #'   Text values are display-only; use `"list"` when column names contain
 #'   separators or other non-syntactic characters.
 #'
-#' @return A local, ungrouped tibble with columns `set_id`, `fixed`,
-#'   `included`, `omitted`, `grouping_bits`, and `grouping_id`.
+#' @return A local, ungrouped tibble with one row per grouping-set occurrence
+#'   that remains after `.duplicates`, in Grouping-plan order;
+#'   `.grouping = NULL` gives one row. Its columns are:
+#'   - `set_id`: the one-based Grouping set identifier, an integer.
+#'   - `fixed`: the fixed keys, from `.by` or the input's groups, the same in
+#'     every row.
+#'   - `included`: the Margin dimensions the set keeps.
+#'   - `omitted`: the Margin dimensions the set leaves out, which hold the
+#'     Margin label in a Margin verb's rows for it.
+#'   - `grouping_bits`: `0L` for each included and `1L` for each omitted
+#'     Margin dimension.
+#'   - `grouping_id`: those bits encoded as an integer bit mask.
 #'
-#' @section Option arguments:
-#' `.duplicates` and `.format` each take one of their listed strings, spelled
-#' in full. An abbreviation is not shorthand for the value it begins, and
-#' `NULL` is not shorthand for the default: both are errors naming the values
-#' the argument accepts. For the default, leave the argument out or pass the
-#' whole vocabulary as the signature spells it, such as
-#' `.format = c("text", "list")`; any other vector of more than one value is
-#' an error.
+#'   With `.format = "text"`, `fixed`, `included`, `omitted`, and
+#'   `grouping_bits` are character. With `.format = "list"`, the first three
+#'   are lists of character vectors and `grouping_bits` is a list of named
+#'   integer vectors.
 #'
 #' @section Grouping identity:
-#' `set_id` is the one-based Grouping set identifier exposed by `.id` for the
-#' same resolved plan. `grouping_bits` instead describes whether each variable
-#' dimension is included (`0L`) or omitted (`1L`), and `grouping_id` encodes
+#' `set_id` is the one-based Grouping set identifier a Margin verb's
+#' [`.id`][summarize_with_margins] column holds for the same resolved plan.
+#' `grouping_bits` instead describes whether each Margin dimension is
+#' included (`0L`) or omitted (`1L`), and `grouping_id` encodes
 #' that absence pattern as a bit mask. `grouping_id` is `NA_integer_` beyond
-#' 31 variable dimensions, while `grouping_bits` remains complete.
+#' 31 Margin dimensions, while `grouping_bits` remains complete.
 #'
 #' [grouping_bit()] is the canonical reference for how these four values
 #' relate and which of them distinguish duplicate grouping-set occurrences.
@@ -66,56 +82,59 @@
 #' operation.
 #'
 #' @section Lazy inputs:
-#' A lazy `.data` still returns a local tibble without reading source rows:
-#' inspection uses captured column metadata and the backend-independent
-#' Grouping plan. Predicates in `.by` and `.grouping` use that metadata, not
-#' source values; collect explicitly before inspecting a plan whose selections
-#' depend on values. See
-#' *[Fixed columns and grouping dimensions][summarize_with_margins]* for
-#' type-based and value-dependent examples.
-#' A derived dtplyr step whose typed metadata cannot be
-#' established without processing source rows is refused when inspection needs
-#' those types. Name-only inspection on dtplyr and DuckDB uses the input's
-#' captured column names. To inspect a derived dtplyr step with typed
-#' selections, call [dplyr::collect()] on it explicitly and
-#' pass the resulting data frame. DuckDB CSV readers that use auto-detection
-#' are also refused before typed metadata is requested: binding even a
-#' zero-row query can sample CSV values. This includes filename replacement
-#' scans such as `FROM 'path.csv'`. Supply an explicit CSV schema with
-#' `auto_detect = false`, or collect explicitly before typed inspection.
-#' The Grouping plan is deliberately separate
-#' from a SQL execution plan. Use [dplyr::show_query()] for generated SQL and
-#' backend-native tools for an optimizer plan. With recording enabled before
-#' inspection, [`last_sent_queries(include_result = FALSE)`][last_sent_queries]
-#' shows its prepared internal SQL, such as DuckDB's system-catalog check and
-#' zero-row metadata read, in recording order. It performs no query on access;
-#' missing SQL denotes a failed diagnostic render, not proof of database
-#' receipt or completion. Add
-#' `details = TRUE` for each internal operation's outcome and conditions.
+#' Inspecting a lazy `.data` reads none of its rows and returns a local
+#' tibble. Selecting columns by name sends no query. A type predicate such as
+#' `where(is.character)` needs column types: on DuckDB, inspection sends
+#' metadata queries that read no rows, a system-catalog check and a zero-row
+#' read; Arrow and dtplyr inputs answer from their schema; other SQL
+#' connections refuse the predicate.
+#' *[Fixed columns and Margin dimensions][margin_verbs]* in [margin_verbs]
+#' covers predicates by backend and those that depend on values, and
+#' [last_sent_queries()] reads back the queries an inspection sent.
 #'
-#' Because inspection builds no grouping-set branch, it also accepts a dtplyr
-#' step with an input rooted at `dtplyr::lazy_dt(immutable = FALSE)` and leaves
-#' every caller `data.table` unchanged. Margin verbs refuse the same Mutable
-#' step before building a branch; rebuild it with `immutable = TRUE` before
-#' passing it to one of them.
+#' Where column types cannot be established without reading rows, an
+#' inspection that needs them is refused before they are requested:
+#' - A derived dtplyr step whose types depend on processing source rows. Call
+#'   [dplyr::collect()] on it explicitly and pass the resulting data frame.
+#' - A DuckDB CSV reader that uses auto-detection, including filename
+#'   replacement scans such as `FROM 'path.csv'`, because binding even a
+#'   zero-row query can sample CSV values. Supply an explicit CSV schema
+#'   with `auto_detect = false`, or collect explicitly first.
 #'
-#' The [grouping identity guide][guide] walks through inspecting a plan and
-#' reading it back off a Margin result. The [recipes guide][recipes] uses a
-#' plan to choose which grouping set to keep, and joins one against `.id` to
-#' name the set behind every row. Because the plan is local, that join needs a
-#' `copy` argument when the Margin result is lazy, and it does not preserve a
-#' Margin order.
+#' Inspection also accepts:
+#' - every tabular Arrow input, including a `RecordBatchReader`, which
+#'   inspection does not consume. Non-tabular Arrow objects are refused.
+#' - a dtplyr step with an input rooted at
+#'   `dtplyr::lazy_dt(immutable = FALSE)`. Because inspection builds no
+#'   grouping-set branch, it leaves every caller `data.table` unchanged.
+#'   Margin verbs refuse such a step before building a branch, because
+#'   data.table may write to the caller's table by reference in any branch;
+#'   rebuild it with `immutable = TRUE` before passing it to one of them.
 #'
-#' [guide]: https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html
-#' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
+#' The Grouping plan is not a SQL execution plan. Use [dplyr::show_query()]
+#' for generated SQL and backend-native tools for an optimizer plan.
 #'
-#' @inheritSection summarize_with_margins Arrow inputs
+#' *Inspect a Grouping plan as data* in [Grouping identity][guide] walks through
+#' inspecting a plan and reading it back off a Margin result. *Show only the
+#' subtotals, only the detail, or one level* in [Recipes for common reporting
+#' tasks][recipes] uses a plan to choose which grouping set to keep, and *Add a
+#' level column: detail, subtotal or total* in [Recipes for common reporting
+#' tasks][level] joins one
+#' against a Margin result's [`.id`][summarize_with_margins] column to name the
+#' set behind every row. Because the plan is local, that join needs a `copy`
+#' argument when the Margin result is lazy, and it does not preserve a Margin
+#' order.
+#'
+#' [guide]: https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html#inspect-a-grouping-plan-as-data
+#' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html#show-only-the-subtotals-only-the-detail-or-one-level
+#' [level]: https://sayuks.github.io/marginplyr/vignettes/recipes.html#add-a-level-column-detail-subtotal-or-total
 #'
 #' @family grouping plans and grouping identity
 #' @seealso [summarize_with_margins()] to run a Margin operation on the
 #'   inspected plan.
 #' @export
 #' @examples
+#' # The data comes first; the specification goes in `.grouping`.
 #' inspect_grouping(
 #'   .data = retail_sales,
 #'   .by = c(year, month),

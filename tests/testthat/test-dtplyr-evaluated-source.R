@@ -101,7 +101,12 @@ test_that("dtplyr row-wise Nest shares eligible rows across cells", {
   source <- dtplyr::lazy_dt(data.frame(g = c("a", "a"), row_id = 1:2)) |>
     dplyr::filter(pick_row(row_id))
 
-  result <- nest_by_with_margins(source, .grouping = rollup(g), .id = "sid")
+  # The default observed label check is a read of its own; this counts the
+  # nesting's.
+  result <- nest_by_with_margins(
+    source,
+    .grouping = rollup(g), .id = "sid", .check_margin_label = FALSE
+  )
   expect_s3_class(result, "rowwise_df")
   expect_identical(calls, 1L)
   expect_identical(sort(result$sid), 1:2)

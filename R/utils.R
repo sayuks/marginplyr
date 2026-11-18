@@ -244,6 +244,36 @@ assert_nest_possible <- function(x) {
   }
 }
 
+# Whether dplyr's S3 generic `generic` has a method for one of `x`'s classes,
+# either registered or defined where dispatch from dplyr's namespace finds it.
+# dplyr registers no default for the generics this is asked about, so `FALSE`
+# means the generic cannot dispatch on `x`.
+dispatches_dplyr_generic <- function(x, generic) {
+  # `getS3method()` finds the registration table through the generic's
+  # environment, so a generic rebound in dplyr's namespace, as
+  # `testthat::local_mocked_bindings()` does, hides every registered method.
+  # dplyr's own table holds the registrations either way.
+  registered <- get(".__S3MethodsTable__.", envir = asNamespace("dplyr"))
+  any(vapply(
+    class(x),
+    function(cls) {
+      if (exists(paste(generic, cls, sep = "."), envir = registered,
+                 inherits = FALSE)) {
+        return(TRUE)
+      }
+      # A method defined but never registered, such as one in the global
+      # environment, is in no table. `envir` names the namespace that owns the
+      # generic. The default is the caller's frame, where the generic is not
+      # visible from inside this package, so every class would look
+      # unsupported.
+      !is.null(utils::getS3method(
+        generic, cls, optional = TRUE, envir = asNamespace("dplyr")
+      ))
+    },
+    logical(1L)
+  ))
+}
+
 # Admission is duck-typed rather than a class whitelist: marginplyr supports
 # any input the dplyr verbs it calls can handle, and a whitelist would reject
 # a backend that works. `group_vars()` is the first dplyr generic every Margin
@@ -254,39 +284,22 @@ assert_nest_possible <- function(x) {
 # Admissibility is decided by looking for a method rather than by calling the
 # generic and catching whatever comes back. A backend's `group_vars()` can
 # fail for its own reasons, and catching every error would report that failure
-# as the caller having supplied the wrong kind of object. dplyr registers no
-# default method, so an object no registered method matches is exactly the
-# object the generic cannot dispatch on.
+# as the caller having supplied the wrong kind of object.
 assert_margin_input <- function(x) {
   # Read only from the cli template below, which codetools cannot see.
   nm <- deparse(substitute(x)) # nolint: object_usage_linter.
-  dispatches <- any(vapply(
-    class(x),
-    function(cls) {
-      # `envir` names the namespace that owns the generic. The default is the
-      # caller's frame, where `group_vars` is not visible from inside this
-      # package, so every class would look unsupported.
-      !is.null(utils::getS3method(
-        "group_vars",
-        cls,
-        optional = TRUE,
-        envir = asNamespace("dplyr")
-      ))
-    },
-    logical(1L)
-  ))
-  if (dispatches) {
+  if (dispatches_dplyr_generic(x, "group_vars")) {
     return(invisible(NULL))
   }
 
-  # Two calls rather than the one clause an `if` used to choose between and
+  # Separate calls rather than one clause an `if` chooses between and
   # splice, because the structural gate reads `abort_marginplyr()`'s own
   # argument and refuses a computed template. What the branch picks is a whole
   # element, which is what ADR 0023's third amendment admits; the cost is the
   # refusal and the remedy, written out in each arm.
   #
-  # `NULL` is a spelling the caller typed, so it is `{.code}`; the other arm
-  # names the class the object supplied actually has, which is `{.cls}` --
+  # `NULL` is a spelling the caller typed, so it is `{.code}`; the other arms
+  # name the class the object supplied actually has, which is `{.cls}` --
   # rendering the `<matrix>` this refusal has always shown, and the reason the
   # style table has that row at all (ADR 0023's fourth amendment).
   if (is.null(x)) {
@@ -299,6 +312,21 @@ assert_margin_input <- function(x) {
       i = paste0(
         "Convert it to a data frame or a lazy table that supports dplyr ",
         "verbs first."
+      )
+    ))
+  }
+  # A specification here is the arguments written in the wrong order, which
+  # no conversion answers.
+  if (inherits(x, "margin_grouping_spec")) {
+    abort_marginplyr(c(
+      paste0(
+        "{.arg {nm}} must be a data frame or a lazy table that supports ",
+        "dplyr verbs."
+      ),
+      i = "A {.cls {class(x)[[1L]]}} was supplied.",
+      i = paste0(
+        "Pass the data first and the Grouping specification as ",
+        "{.arg .grouping}."
       )
     ))
   }
@@ -977,7 +1005,7 @@ map_bquote_substitutions <- function(expr, visit, splice = FALSE) {
   head <- expr[[1L]]
   if (rlang::is_symbol(head, "..") && !identical(splice, FALSE)) {
     abort_marginplyr(c(
-      "Cannot analyze splicing inside a {.fn bquote} capture.",
+      "Cannot analyze splicing inside a {.fun bquote} capture.",
       "i" = "Use {.code .()} or build the language outside the Margin verb."
     ))
   }

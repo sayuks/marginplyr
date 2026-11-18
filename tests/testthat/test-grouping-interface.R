@@ -448,9 +448,6 @@ test_that("Margin verbs skip label checks for lazy inputs by default", {
     nest_with_margins(source, .grouping = rollup(group)) |>
       dplyr::collect()
   )
-  expect_no_error(
-    nest_by_with_margins(source, .grouping = rollup(group))
-  )
 })
 
 test_that("Margin label checks handle missing and non-syntactic columns", {
@@ -1185,7 +1182,7 @@ test_that("Margin verb formals expose only the supported common options", {
   expect_false(".groups" %in% names(formals(summarize_with_margins)))
   expect_false(".groups" %in% names(formals(summarise_with_margins)))
   expect_true(all(vapply(
-    verbs,
+    verbs[-4L],
     function(verb) {
       identical(
         formals(verb)$.check_margin_label,
@@ -1194,6 +1191,11 @@ test_that("Margin verb formals expose only the supported common options", {
     },
     logical(1)
   )))
+  # The row-wise verb reads a dtplyr step's rows when called.
+  expect_identical(
+    formals(nest_by_with_margins)$.check_margin_label,
+    quote(is.data.frame(.data) || inherits(.data, "dtplyr_step"))
+  )
   expect_true(all(vapply(
     verbs,
     function(verb) {
@@ -1987,7 +1989,10 @@ test_that("a printed Grouping specification names the constructor called", {
     expect_identical(spec$type, kind, info = kind)
     expect_identical(
       utils::capture.output(print(spec)),
-      paste0("<marginplyr Grouping specification: ", constructor, ">"),
+      c(
+        paste0("<marginplyr Grouping specification: ", constructor, ">"),
+        paste0(constructor, "(a)")
+      ),
       info = kind
     )
   }
@@ -1997,6 +2002,66 @@ test_that("a printed Grouping specification names the constructor called", {
   expect_identical(
     utils::capture.output(print(new_grouping_spec("nonesuch", list()))),
     "<marginplyr Grouping specification: nonesuch>"
+  )
+})
+
+# A stored specification reads back without data: its arguments print as the
+# constructor call they were written in, nested constructors included (#1703).
+test_that("a printed Grouping specification shows its arguments", {
+  col <- "store"
+  inner <- rollup(store)
+  cases <- list(
+    list(
+      spec = rollup(region, store),
+      call = "rollup(region, store)"
+    ),
+    list(
+      spec = grouping_sets(region, cube(store, product), grouping_set()),
+      call = "grouping_sets(region, cube(store, product), grouping_set())"
+    ),
+    list(
+      spec = grouping_spec(c(a, b), all_of(col), inner),
+      call = "grouping_spec(c(a, b), all_of(col), inner)"
+    ),
+    list(
+      spec = rollup(!!rlang::quo(region), .data$store),
+      call = "rollup(region, .data$store)"
+    )
+  )
+  for (case in cases) {
+    expect_identical(
+      utils::capture.output(print(case$spec))[-1L],
+      case$call,
+      info = case$call
+    )
+  }
+
+  # The header says all an argument list that is empty would.
+  expect_identical(
+    utils::capture.output(print(grouping_set())),
+    "<marginplyr Grouping specification: grouping_set>"
+  )
+  # A specification no rule names, or whose arguments cannot be read, prints
+  # its header alone, as it did.
+  expect_identical(
+    utils::capture.output(print(new_grouping_spec("nonesuch", list(quote(a))))),
+    "<marginplyr Grouping specification: nonesuch>"
+  )
+  # `grouping_set()` stores the kind `"set"`, so this kind is one no rule
+  # names even though it prints under a constructor's name.
+  expect_identical(
+    utils::capture.output(
+      print(new_grouping_spec("grouping_set", list(rlang::quo(a))))
+    ),
+    "<marginplyr Grouping specification: grouping_set>"
+  )
+  unreadable <- rlang::new_environment(list(type = "rollup"))
+  makeActiveBinding("args", function() stop("no arguments"), unreadable)
+  expect_identical(
+    utils::capture.output(
+      print(structure(unreadable, class = "margin_grouping_spec"))
+    ),
+    "<marginplyr Grouping specification: rollup>"
   )
 })
 

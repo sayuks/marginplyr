@@ -122,6 +122,7 @@ pluralizing_coverage <- function() {
       "a name on a constructor's own argument is refused"
     ),
     abort_observed_label_collision = rep("this file, the collision block", 2L),
+    abort_summary_label_collision = rep("this file, the collision block", 2L),
     check_eager_summary_fields = pluralizing_test_location(
       "test-assigned-summary-collisions.R",
       "plain frames diagnose a summary absent from some grouping sets"
@@ -598,6 +599,40 @@ test_that("the Margin label collision pluralizes its grouping column noun", {
       "i Set `.check_margin_label = FALSE` only if you retain `.id`, ",
       "`grouping_bit()`, or `grouping_id()` to distinguish source and ",
       "Margin rows."
+    )
+  )
+
+  # A verb with no summaries hands in the refusal that names `.id` alone.
+  expand <- function(grouping, label) {
+    expand_with_margins(
+      observed,
+      .grouping = grouping,
+      .margin_label = label,
+      .check_margin_label = TRUE
+    )
+  }
+
+  expanded_plural <- expect_error(expand(rollup(a, b), "All"))
+  expect_identical(
+    conditionMessage(expanded_plural),
+    paste0(
+      "\"All\" is already present in grouping columns:\n",
+      "i `a` and `b`.\n",
+      "i Choose another `.margin_label`.\n",
+      "i Set `.check_margin_label = FALSE` only if you retain `.id` to ",
+      "distinguish source and Margin rows."
+    )
+  )
+
+  expanded_mixed <- expect_error(expand(rollup(a, b), mixed))
+  expect_identical(
+    conditionMessage(expanded_mixed),
+    paste0(
+      "Margin labels are already present in grouping columns:\n",
+      "i `a` and `b`.\n",
+      "i Choose another `.margin_label`.\n",
+      "i Set `.check_margin_label = FALSE` only if you retain `.id` to ",
+      "distinguish source and Margin rows."
     )
   )
 })

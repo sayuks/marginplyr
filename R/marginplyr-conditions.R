@@ -2,22 +2,34 @@
 #'
 #' A Margin operation can summarize your expression once per grouping set,
 #' buffers the warnings that raises, and on SQLite may roll back a write it
-#' started. This topic states what reaches your handlers when that work
-#' raises conditions: how an error or warning from your expressions is
-#' reported, what an interrupt carries when it competes with an earlier
-#' error, how buffered warnings are replayed, where R's own handler boundary
-#' limits those guarantees and how to keep your own warning callback's failure
-#' apart from them, and what a failed SQLite cleanup reports. It applies to
+#' started. This topic states what the `"marginplyr_error"` class promises and
+#' what reaches your handlers when that work raises conditions: how an error
+#' or warning from your expressions is reported, what an interrupt carries
+#' when it competes with an earlier error, how buffered warnings are replayed,
+#' where R's own handler boundary limits those guarantees and how to keep your
+#' own warning callback's failure apart from them, and what a failed SQLite
+#' cleanup reports. It applies to
 #' local and lazy inputs alike.
 #'
-#' Which errors are marginplyr's own, and the one class to match them on, is
-#' *[Errors and warnings][marginplyr-package]* in [marginplyr-package].
+#' @section The marginplyr_error class:
+#' `"marginplyr_error"` is the only package-specific class marginplyr promises.
+#' Narrower subclasses and the wording of any message are implementation details
+#' that can change without a deprecation cycle, so match on the class rather
+#' than on message text. No field of the condition names the argument it
+#' refuses; only the message does.
+#'
+#' Errors raised by tidyselect, by dplyr, or by a database backend fall outside
+#' the class and propagate with their original class, diagnostic, and cause
+#' intact. So do marginplyr's internal invariant checks, which report a defect
+#' no change to your call can avoid; please report those at
+#' <https://github.com/sayuks/marginplyr/issues>. marginplyr itself raises no
+#' warning: it states what it will not do by refusing.
 #'
 #' @section How your conditions are reported:
-#' The wording is marginplyr's to change; the columns, values, and arguments a
-#' message quotes are yours, and a marginplyr error spells them as you spelled
-#' them. Two spellings it cannot keep: a line break and a no-break space inside
-#' a name are both shown as an ordinary space. This says nothing about the
+#' The columns, values, and arguments a marginplyr error quotes are yours, and
+#' it spells them as you spelled them. Two spellings it cannot keep: a line
+#' break and a no-break space inside a name are both shown as an ordinary
+#' space. This says nothing about the
 #' errors marginplyr does not write.
 #'
 #' What a Margin verb does adjust, for an error and a warning alike, is the
@@ -44,8 +56,7 @@
 #' interrupt inherits `"interrupt"` and `"condition"`, not `"error"` or
 #' `"marginplyr_error"`. Its `$interrupt` holds the original interrupt and its
 #' `$parent` holds the earlier execution error, including that error's own
-#' cause chain. A lone interrupt needs no wrapper. Absent information may be
-#' `NULL` or absent.
+#' cause chain. A lone interrupt needs no wrapper.
 #'
 #' With no exiting interrupt handler, interruption retains native R recovery
 #' and interruption hooks. A returning calling handler first receives the
@@ -100,9 +111,8 @@
 #' [summarize_with_margins()] for the materialization boundary and recovery
 #' limits.
 #'
-#' @seealso [marginplyr-package] for the `"marginplyr_error"` class, and
-#'   [summarize_with_margins()] for the SQLite materialization these cleanup
-#'   fields describe.
+#' @seealso [summarize_with_margins()] for the SQLite materialization these
+#'   cleanup fields describe.
 #' @examples
 #' # Caller code, not a marginplyr function: keeps a failure of `handler`
 #' # apart from the value or condition `expr` ends with.
@@ -200,6 +210,41 @@
 #'   is.data.frame(completed$operation$value),
 #'   identical(completed$callback_failure, logger_failure)
 #' )
+#' }
+#'
+#' # An interrupt that arrives after an error keeps that error. The grand
+#' # total fails, then `warning.expression` simulates cancellation while the
+#' # regional warning is replayed. The simulation needs that warning to reach
+#' # R's default handling, which knitr prevents by handling every warning
+#' # itself, so it runs outside a knitr document.
+#' if (!isTRUE(getOption("knitr.in.progress"))) {
+#'   old <- options(warning.expression = quote(rlang::interrupt()))
+#'   enriched <- tryCatch(
+#'     summarize_with_margins(
+#'       retail_sales,
+#'       revenue = {
+#'         if (grouping_bit(region) == 1L) stop("The grand total failed")
+#'         warning("Check regional revenue")
+#'         sum(revenue)
+#'       },
+#'       .grouping = rollup(region)
+#'     ),
+#'     interrupt = function(cnd) {
+#'       list(interrupt = cnd$interrupt, earlier_error = cnd$parent)
+#'     }
+#'   )
+#'   options(old)
+#'
+#'   print(conditionMessage(enriched$earlier_error))
+#'   \dontshow{
+#'   stopifnot(
+#'     inherits(enriched$interrupt, "interrupt"),
+#'     identical(
+#'       conditionMessage(enriched$earlier_error$parent),
+#'       "The grand total failed"
+#'     )
+#'   )
+#'   }
 #' }
 #' @name marginplyr_conditions
 NULL

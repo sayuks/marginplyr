@@ -643,7 +643,7 @@ test_that("`NULL` is rejected by every option rather than taken as a default", {
   # `match.arg(NULL, choices)` returns `choices[1]`, so every Option argument
   # used to read a `NULL` as a request for its own default. #110 stopped that
   # along with the abbreviations above, and #144 settled it as a decision: the
-  # *Option arguments* section on `?summarize_with_margins` states that a
+  # *Option arguments* section on `?margin_verbs` states that a
   # `NULL` is an error rather than a request for the default. The untouched
   # formal is what selects a default, and it arrives as the whole vocabulary
   # rather than as a `NULL`.
@@ -786,6 +786,37 @@ test_that("every entry point admits input the same way", {
     admission_message,
     class = "marginplyr_error"
   )
+})
+
+# A specification in the data's position is an argument order slip, which no
+# conversion answers (#1703).
+test_that("a Grouping specification as `.data` is sent to `.grouping`", {
+  spec <- rollup(g)
+  calls <- list(
+    summarize_with_margins = function() {
+      summarize_with_margins(spec, s = sum(v))
+    },
+    expand_with_margins = function() expand_with_margins(spec),
+    nest_with_margins = function() nest_with_margins(spec),
+    nest_by_with_margins = function() nest_by_with_margins(spec),
+    inspect_grouping = function() inspect_grouping(spec)
+  )
+
+  for (verb in names(calls)) {
+    raised <- expect_error(
+      calls[[verb]](),
+      "must be a data frame or a lazy table",
+      class = "marginplyr_error",
+      info = verb
+    )
+    expect_match(
+      conditionMessage(raised),
+      "Pass the data first and the Grouping specification as `.grouping`.",
+      fixed = TRUE,
+      info = verb
+    )
+    expect_no_match(conditionMessage(raised), "Convert it", info = verb)
+  }
 })
 
 test_that("non-tabular Arrow objects use the general admission refusal", {

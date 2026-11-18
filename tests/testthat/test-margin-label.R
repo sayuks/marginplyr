@@ -2032,6 +2032,37 @@ test_that("a named list refuses an element that is not a label", {
   }
 })
 
+# A logical `NA` is the natural spelling of a missing label, and is not a
+# character one (#1703).
+test_that("a logical missing label is answered with the missing spellings", {
+  data <- data.frame(first = "a", value = 1L)
+
+  for (label in list(NA, c(first = NA), NA_integer_)) {
+    error <- expect_error(
+      expand_with_margins(
+        data, .grouping = rollup(first), .margin_label = label
+      ),
+      class = "marginplyr_error"
+    )
+    expect_match(
+      conditionMessage(error),
+      "must be `NULL`, an unnamed character scalar",
+      fixed = TRUE
+    )
+    expect_match(
+      conditionMessage(error),
+      "Use `NA_character_` or `NULL` for a typed-missing label.",
+      fixed = TRUE
+    )
+  }
+
+  error <- expect_error(
+    expand_with_margins(data, .grouping = rollup(first), .margin_label = 1L),
+    class = "marginplyr_error"
+  )
+  expect_no_match(conditionMessage(error), "NA_character_", fixed = TRUE)
+})
+
 # The name rules are the vector's rules, so a list reaches the same refusals
 # rather than a second set. An unnamed dimension stays a refusal: read as
 # `NULL` it would turn a misspelled name into a silent whole-call change.
@@ -2144,6 +2175,45 @@ test_that("an observed-collision opt-out retains structural identity", {
   expect_setequal(result$set, c(1L, 2L))
 })
 
+# `grouping_bit()` and `grouping_id()` are summary helpers, so a verb with no
+# summaries offers `.id` alone as what keeps the rows apart (#1703).
+test_that("an observed-collision opt-out names only what the verb offers", {
+  data <- data.frame(group = c("All", "b"), value = 1:2)
+  verbs <- list(
+    expand_with_margins = function(.margin_label) {
+      expand_with_margins(
+        data, .grouping = rollup(group), .margin_label = .margin_label
+      )
+    },
+    nest_with_margins = function(.margin_label) {
+      nest_with_margins(
+        data, value, .grouping = rollup(group), .margin_label = .margin_label
+      )
+    },
+    nest_by_with_margins = function(.margin_label) {
+      nest_by_with_margins(
+        data, .grouping = rollup(group), .margin_label = .margin_label
+      )
+    }
+  )
+
+  for (verb in names(verbs)) {
+    for (label in list("All", list(group = "All"))) {
+      error <- expect_error(verbs[[verb]](label), class = "marginplyr_error")
+      expect_match(
+        conditionMessage(error),
+        paste0(
+          "Set `.check_margin_label = FALSE` only if you retain `.id` to ",
+          "distinguish source and Margin rows."
+        ),
+        fixed = TRUE,
+        info = verb
+      )
+      expect_no_match(conditionMessage(error), "grouping_", info = verb)
+    }
+  }
+})
+
 # The remedy has to be one. A bare `NULL` is the whole of `.margin_label`, so
 # it was a remedy only where there was a single dimension.
 test_that("the NA-level refusal names a remedy a caller can write", {
@@ -2171,4 +2241,50 @@ test_that("the NA-level refusal names a remedy a caller can write", {
 
   # Following the remedy has to work with more than one dimension in play.
   expect_no_error(operation(list(region = "All", status = NULL)))
+})
+
+# A simulated connection executes nothing, so the label read could not be sent
+# and base R's "no applicable method for 'collect'" was what arrived (#1703).
+test_that("an observed-label check on a simulated connection is refused", {
+  remote <- dbplyr::tbl_lazy(
+    data.frame(region = "a", v = 1),
+    con = dbplyr::simulate_postgres()
+  )
+  calls <- list(
+    summarize_with_margins = function(check) {
+      summarize_with_margins(
+        remote, n = sum(v), .grouping = rollup(region),
+        .check_margin_label = check
+      )
+    },
+    expand_with_margins = function(check) {
+      expand_with_margins(
+        remote, .grouping = rollup(region), .check_margin_label = check
+      )
+    }
+  )
+  for (verb in names(calls)) {
+    error <- expect_error(calls[[verb]](TRUE), class = "marginplyr_error")
+    lines <- strsplit(conditionMessage(error), "\n", fixed = TRUE)[[1L]]
+    expect_identical(
+      lines,
+      c(
+        paste0(
+          "Can't check Margin labels against the grouping columns, because ",
+          "this input can't execute a query."
+        ),
+        paste0(
+          "i A table built with `dbplyr::tbl_lazy()`, such as one on a ",
+          "`dbplyr::simulate_*()` connection, has no `dplyr::collect()` ",
+          "method."
+        ),
+        paste0(
+          "i Set `.check_margin_label = FALSE`, or use a table on a live ",
+          "connection."
+        )
+      ),
+      info = verb
+    )
+    expect_no_error(calls[[verb]](FALSE))
+  }
 })

@@ -14,6 +14,19 @@ normalize_margin_label <- function(.margin_label) {
   if (!is_label_list &&
         (!is.character(.margin_label) ||
            rlang::is_character(.margin_label, n = 0L))) {
+    if (is.atomic(.margin_label) && length(.margin_label) > 0L &&
+          all(is.na(.margin_label))) {
+      abort_marginplyr(c(
+        paste0(
+          "{.arg .margin_label} must be {.code NULL}, an unnamed character ",
+          "scalar, or a named character vector or list."
+        ),
+        i = paste0(
+          "Use {.code NA_character_} or {.code NULL} for a typed-missing ",
+          "label."
+        )
+      ))
+    }
     abort_marginplyr(paste0(
       "{.arg .margin_label} must be {.code NULL}, an unnamed character ",
       "scalar, or a named character vector or list."
@@ -192,7 +205,9 @@ validate_margin_label <- function(.data,
                                   .margin_label,
                                   margin_labels,
                                   .check_margin_label,
-                                  column_info) {
+                                  column_info,
+                                  on_observed_collision) {
+  stopifnot(is.function(on_observed_collision))
   validate_margin_label_names(
     .margin_label,
     dimensions = dimensions,
@@ -229,7 +244,7 @@ validate_margin_label <- function(.data,
     abort_marginplyr(c(
       paste0(
         "A non-missing {.arg .margin_label} cannot label packed ",
-        "grouping dimensions:"
+        "Margin dimensions:"
       ),
       i = "{.var {labelled_packed}}.",
       i = paste0(
@@ -247,11 +262,30 @@ validate_margin_label <- function(.data,
     abort_marginplyr(c(
       paste0(
         "A non-missing {.arg .margin_label} cannot label matrix or array ",
-        "grouping dimensions:"
+        "Margin dimensions:"
       ),
       i = "{.var {labelled_arrays}}.",
       i = paste0(
         "A non-missing scalar label cannot represent a matrix or array key. ",
+        "Use {.code NULL} or {.code NA_character_} for a typed-missing ",
+        "label, or split the key into separate columns."
+      )
+    ))
+  }
+
+  lists <- column_info$lists
+  labelled_lists <- lists[!vapply(
+    margin_labels[lists], is_missing_margin_label, logical(1)
+  )]
+  if (length(labelled_lists) > 0L) {
+    abort_marginplyr(c(
+      paste0(
+        "A non-missing {.arg .margin_label} cannot label list-column ",
+        "Margin dimensions:"
+      ),
+      i = "{.var {labelled_lists}}.",
+      i = paste0(
+        "A non-missing scalar label cannot represent a list key. ",
         "Use {.code NULL} or {.code NA_character_} for a typed-missing ",
         "label, or split the key into separate columns."
       )
@@ -303,7 +337,8 @@ validate_margin_label <- function(.data,
   check_observed_label_collision(
     .data,
     margin_labels = margin_labels,
-    factor_info = factor_info
+    factor_info = factor_info,
+    on_collision = on_observed_collision
   )
 }
 
@@ -337,7 +372,9 @@ check_declared_label_collision <- function(margin_labels,
 
 check_observed_label_collision <- function(data,
                                            margin_labels,
-                                           factor_info = list()) {
+                                           factor_info = list(),
+                                           on_collision =
+                                             abort_observed_label_collision) {
   col_names <- names(margin_labels)
   stopifnot(is.character(col_names), !anyNA(col_names))
 
@@ -356,6 +393,27 @@ check_observed_label_collision <- function(data,
   # a lazy input is not contacted to aggregate a set of constants.
   if (length(read_cols) == 0L) {
     return(invisible(NULL))
+  }
+  # A lazy table with no `collect()` method -- `dbplyr::tbl_lazy()` over a
+  # `dbplyr::simulate_*()` connection -- cannot be sent the read. Whether one
+  # dispatches is asked of the class, which sends no query.
+  if (inherits(data, "tbl_lazy") &&
+        !dispatches_dplyr_generic(data, "collect")) {
+    abort_marginplyr(c(
+      paste0(
+        "Can't check Margin labels against the grouping columns, because ",
+        "this input can't execute a query."
+      ),
+      i = paste0(
+        "A table built with {.fun dbplyr::tbl_lazy}, such as one on a ",
+        "{.code dbplyr::simulate_*()} connection, has no ",
+        "{.fun dplyr::collect} method."
+      ),
+      i = paste0(
+        "Set {.code .check_margin_label = FALSE}, or use a table on a live ",
+        "connection."
+      )
+    ))
   }
 
   aliases <- character()
@@ -446,12 +504,12 @@ check_observed_label_collision <- function(data,
   abort_margin_label_collision(
     margin_labels,
     found,
-    on_collision = abort_observed_label_collision
+    on_collision = on_collision
   )
 }
 
 # The columns a collision was found in and the labels that collided with them,
-# which is what both refusals below name. Each caller hands in the refusal that
+# which is what each refusal below names. Each caller hands in the refusal that
 # speaks for its own kind rather than a word naming that kind -- the shape
 # `R/grouping-plan.R`'s two renaming refusals take, since a discriminator this
 # function would only translate back into a call is one neither caller needs to
@@ -469,14 +527,14 @@ abort_margin_label_collision <- function(margin_labels, found, on_collision) {
   on_collision(bad_cols, bad_labels)
 }
 
-# Four arms across the two refusals below, rather than one template with two
+# Two arms in each refusal below, rather than one template with two
 # branches inside it. ADR 0023's third amendment was written about this
 # refusal and is authoritative for what the arms differ by and for why a
 # branch on a count is still inside its `{?}` rule.
 #
 # What the shape costs is every element the arms share, written out in each:
-# the bullet carrying the columns four times, the noun `column{?s}` inflects
-# four times, and each remedy twice.
+# the bullet carrying the columns and the noun `column{?s}` inflects once per
+# arm, and each remedy twice.
 #
 # `.check_margin_label = FALSE` is offered only where it is a remedy. It turns
 # off the read, and a declared collision is not found by reading, so naming it
@@ -513,9 +571,39 @@ abort_observed_label_collision <- function(bad_cols, bad_labels) {
       i = "Choose another {.arg .margin_label}.",
       i = paste0(
         "Set {.code .check_margin_label = FALSE} only if you retain ",
+        "{.arg .id} to distinguish source and Margin rows."
+      )
+    ))
+  }
+  abort_marginplyr(c(
+    paste0(
+      "Margin labels are already present in grouping ",
+      "{cli::qty(length(bad_cols))}column{?s}:"
+    ),
+    i = "{.var {bad_cols}}.",
+    i = "Choose another {.arg .margin_label}.",
+    i = paste0(
+      "Set {.code .check_margin_label = FALSE} only if you retain ",
+      "{.arg .id} to distinguish source and Margin rows."
+    )
+  ))
+}
+
+# The refusal `summarize_with_margins()` hands in: its summaries can also carry
+# `grouping_bit()` or `grouping_id()`, which no other verb offers.
+abort_summary_label_collision <- function(bad_cols, bad_labels) {
+  if (length(unique(bad_labels)) == 1L) {
+    abort_marginplyr(c(
+      paste0(
+        "{.val {unique(bad_labels)}} is already present in grouping ",
+        "{cli::qty(length(bad_cols))}column{?s}:"
+      ),
+      i = "{.var {bad_cols}}.",
+      i = "Choose another {.arg .margin_label}.",
+      i = paste0(
+        "Set {.code .check_margin_label = FALSE} only if you retain ",
         "{.arg .id}, {.fun grouping_bit}, or {.fun grouping_id} to ",
-        "distinguish ",
-        "source and Margin rows."
+        "distinguish source and Margin rows."
       )
     ))
   }

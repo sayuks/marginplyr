@@ -34,7 +34,7 @@ Before pushing, run both linters in that check.
 Before running or diagnosing lint, read the *Lint* step's comments in
 `.github/workflows/lint.yaml` for the required package-loading environment.
 
-When a repository needs lint configuration, `.lintr` records it; an inline
+When a repository needs lint configuration, `.lintr.R` records it; an inline
 `# nolint` records a fact about one expression. Neither substitutes for giving
 the linter the information it needs, so a lint that only appears in a blind
 environment is a reason to fix the environment, not to suppress it. Every
