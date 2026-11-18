@@ -197,6 +197,22 @@ test_that("the readings behind the coverage gate", {
   # is a call that is not `stop()` at all.
   expect_identical(invariant_plural_sites(body(invariants)), 1L)
 
+  # The arms read through `strip_coverage_wrapper()`.
+  for (generation in names(coverage_counters)) {
+    counter <- coverage_counters[[generation]]
+    instrumented <- bquote(stop(
+      "column",
+      if (n == 1L) .(coverage_wrap(" ", counter)) else
+        .(coverage_wrap("s ", counter)),
+      call. = FALSE
+    ))
+    expect_identical(
+      invariant_plural_sites(instrumented),
+      1L,
+      info = generation
+    )
+  }
+
   # `cli::pluralize()` is written qualified and `abort_marginplyr()` is not, so
   # the head reader has to answer both spellings and refuse the wrong name.
   expect_true(is_call_to(quote(cli::pluralize("x")), "pluralize"))

@@ -804,3 +804,23 @@ test_that("dtplyr key reads resolve a nested quosure in its own scope", {
   expect_identical(renamed$kept, c(20L, 20L, 40L))
   expect_identical(dplyr::collect(query)$kept, renamed$kept)
 })
+
+test_that("dtplyr key reads follow an unreadable removal to the column", {
+  skip_if_suggest_absent("dtplyr")
+  source <- dtplyr::lazy_dt(tibble::tibble(.N = c(10L, 10L, 20L)))
+  query <- summarize_with_margins(
+    source,
+    removed = base::local({
+      # A removal whose names are computed may drop the local binding. The
+      # binding deliberately shadows the data.table special name.
+      .N <- 9L # nolint: object_name_linter.
+      name <- ".N"
+      rm(list = name)
+      sum(.N)
+    }),
+    .grouping = rollup(.N), .margin_label = NULL, .sort = "last"
+  )
+  expect_identical(dplyr::collect(query), tibble::tibble(
+    .N = c(10L, 20L, NA_integer_), removed = c(20L, 20L, 40L)
+  ))
+})

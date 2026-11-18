@@ -86,8 +86,8 @@ has_literal_branch <- function(expr) {
   visit_calls(expr, function(node) {
     chosen <- is_call_to(node, "if") &&
       length(node) == 4L &&
-      is.character(node[[3]]) &&
-      is.character(node[[4]])
+      is.character(strip_coverage_wrapper(node[[3]])) &&
+      is.character(strip_coverage_wrapper(node[[4]]))
     if (chosen) {
       found <<- TRUE
     }

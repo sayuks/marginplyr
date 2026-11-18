@@ -2061,7 +2061,11 @@ admitted_nested_kinds <- local({
 # `preflight` carries the reading each nested argument got, so a caller running
 # more than one pass over one specification hands the same preflight to each
 # and no pass reads a nested quosure of its own. A recognized nested argument
-# is therefore evaluated once per call, whichever passes run (ADR-0008).
+# is therefore evaluated once per call, whichever passes run (ADR-0008). It
+# arrives complete: a name-only preflight never suspends, and
+# `prepare_grouping_plan()` resumes any other against the typed snapshot
+# before compiling it, so the default reading suits only a specification
+# names alone settle.
 compile_grouping_spec <- function(
   .grouping,
   data_vars,
@@ -2076,11 +2080,7 @@ compile_grouping_spec <- function(
     choices = duplicates_choices,
     arg_name = ".duplicates"
   )
-  stopifnot(identical(preflight$spec, .grouping))
-  preflight <- complete_grouping_preflight(
-    preflight, data_vars,
-    if (is.null(data_proxy)) grouping_name_proxy(data_vars) else data_proxy
-  )
+  stopifnot(identical(preflight$spec, .grouping), !isTRUE(preflight$deferred))
   compile_grouping_spec_impl(
     preflight,
     data_vars = data_vars,
