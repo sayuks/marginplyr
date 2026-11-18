@@ -9,11 +9,9 @@ verify_suite_coverage_workers <- function() {
   on.exit(unlink(fixture, recursive = TRUE), add = TRUE)
   scripts <- file.path(fixture, ".github", "scripts")
   tests <- file.path(fixture, "tests", "testthat")
-  records <- file.path(fixture, "workers")
   rows <- file.path(fixture, "rows")
   dir.create(scripts, recursive = TRUE)
   dir.create(tests, recursive = TRUE)
-  dir.create(records)
   files <- c("verify-suite-coverage.R", "ci-helpers.R")
   stopifnot(all(file.copy(file.path(".github", "scripts", files), scripts)))
   writeLines(c(
@@ -48,8 +46,6 @@ verify_suite_coverage_workers <- function() {
       "  expect_false(suggest_available(hidden))",
       "  present <- setdiff(optional_backends(), hidden)",
       "  expect_true(suggest_available(present))",
-      '  file.create(file.path("..", "..", "workers",',
-      '                        paste0(hidden, "-", Sys.getpid())))',
       "})",
       sprintf('test_that("%s contract runs", {', package),
       sprintf('  if (!suggest_available("%s")) {', package),
@@ -90,17 +86,22 @@ verify_suite_coverage_workers <- function() {
     }
     result
   }
-  expect_two_workers_each <- function(output) {
-    for (hidden in c("stats", "utils")) {
-      workers <- list.files(records, pattern = paste0("^", hidden, "-"))
-      if (length(workers) != 2L) {
-        stop(sprintf(
-          "Expected two workers with %s hidden, observed %d.\n%s",
-          hidden, length(workers), paste(output, collapse = "\n")
-        ), call. = FALSE)
-      }
+  # testthat's own count of the workers it started for each configuration's
+  # suite: one per fixture file, which the verifier's four CPUs cover. Which
+  # worker then takes which file is its scheduler's, so a count of the
+  # processes that ran the files can fall to one with two started.
+  expect_process_per_file <- function(result, configurations) {
+    files <- length(list.files(tests, pattern = "^test-"))
+    started <- grep("^Starting [0-9]+ test process", result$output,
+                    value = TRUE)
+    expected <- sprintf("Starting %d test processes.", files)
+    if (length(started) != configurations || !all(started == expected)) {
+      stop(sprintf(
+        "Expected '%s' for each of %d configurations.\n%s",
+        expected, configurations, paste(result$output, collapse = "\n")
+      ), call. = FALSE)
     }
-    unlink(list.files(records, full.names = TRUE))
+    result
   }
   # Everything after the suites ran: the summary counts are part of the verdict.
   verdict <- function(result) {
@@ -124,19 +125,20 @@ verify_suite_coverage_workers <- function() {
   observe_each <- function() {
     unlink(rows, recursive = TRUE)
     for (backend in c("stats", "utils")) {
-      succeeds(verifier(sprintf("--observe=%s", backend), "--rows=rows"))
+      expect_process_per_file(
+        succeeds(verifier(sprintf("--observe=%s", backend), "--rows=rows")),
+        configurations = 1L
+      )
     }
   }
 
-  local <- succeeds(verifier())
+  local <- expect_process_per_file(succeeds(verifier()), configurations = 2L)
   if (!any(grepl("Verified: all 4 tests execute", local$output))) {
     stop("The verifier did not aggregate all fixture tests.", call. = FALSE)
   }
-  expect_two_workers_each(local$output)
 
   # One process per configuration, as the matrix legs run it.
   observe_each()
-  expect_two_workers_each("per-configuration runs")
   expect_same_verdict(local, succeeds(aggregate()))
 
   # A leg whose rows never arrived.
@@ -172,7 +174,7 @@ verify_suite_coverage_workers <- function() {
   expect_same_verdict(local, fails_naming(aggregate(), "test-both.R"))
 
   message(paste0(
-    "Verified: every configuration used two workers for two files and ",
+    "Verified: every configuration started one test process per file and ",
     "inherited absence settings, the aggregate verdict matched the local ",
     "one, and missing, duplicate, and unobserved configurations failed."
   ))
