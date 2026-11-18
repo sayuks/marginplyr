@@ -210,6 +210,16 @@ test_that("row-only calls refuse argument shapes dtplyr does not generate", {
   }
 })
 
+test_that("a dtplyr call that changes the columns is refused", {
+  skip_if_suggest_absent("dtplyr")
+  skip_if_suggest_absent("tidyr")
+  fixture <- row_call_fixture()
+  step <- tidyr::pivot_longer(
+    dtplyr::lazy_dt(fixture$source), tidyselect::all_of("value")
+  )
+  row_call_refused(step, fixture, info = "pivot_longer")
+})
+
 test_that("row-only calls do not admit a refused parent", {
   skip_if_suggest_absent("dtplyr")
   skip_if_suggest_absent("tidyr")
