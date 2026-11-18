@@ -3165,6 +3165,16 @@ test_that("large duplicate proofs preserve typed selection precedence", {
   )
   expect_identical(calls, ncol(data))
 
+  # Sets completed before the proof still repeat by name, and the repeat is
+  # settled before the selection after the proof runs.
+  calls <- 0L
+  error <- expect_error(
+    inspect_grouping(data, .grouping = grouping_sets(a, a, !!unknown)),
+    "Duplicate grouping sets", class = "marginplyr_error"
+  )
+  expect_match(conditionMessage(error), "Repeated set: `(a)`", fixed = TRUE)
+  expect_identical(calls, 0L)
+
   calls <- 0L
   expect_error(
     inspect_grouping(data, .grouping = grouping_sets(!!pending, !!repeated),
