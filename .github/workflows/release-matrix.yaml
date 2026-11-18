@@ -192,8 +192,9 @@ jobs:
           needs: check
           cache-version: full-1
 
-      # Every other leg hides duckdb, so its JSON tests skip before loading
-      # the extension; the fixtures need not repeat per backend either.
+      # Other legs hide duckdb, so `duckdb_json_test_mode()` in
+      # `helper-duckdb.R` never asks them for the extension. The fixtures do
+      # not depend on the leg.
       - name: Provision DuckDB JSON extension
         if: matrix.backend.name == 'duckdb'
         run: Rscript .github/scripts/provision-duckdb-json.R
