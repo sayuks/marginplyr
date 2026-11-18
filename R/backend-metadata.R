@@ -178,16 +178,45 @@ dtplyr_registered_method <- function(name, expected, envir = baseenv(),
   identical(rlang::env_get(registry, name), expected)
 }
 
-# A full join must reach the ordinary generic and data.table method, including
-# S3 lookup in the effective query environment before registered-method lookup.
-dtplyr_merge_binding <- function(env) {
-  method <- get("merge.data.table", envir = asNamespace("data.table"))
-  dtplyr_function_binding("merge", env, base::merge) &&
+# Whether a generated bare call to `generic` reaches the ordinary generic and
+# data.table method, including S3 lookup in the effective query environment
+# before registered-method lookup. `owner` defines the generic and holds its
+# registration table.
+dtplyr_dispatch_binding <- function(generic, owner, env) {
+  name <- paste0(generic, ".data.table")
+  method <- get(name, envir = asNamespace("data.table"))
+  dtplyr_function_binding(generic, env, get(generic, envir = owner)) &&
     dtplyr_function_binding(
-      "merge.data.table", env, method,
+      name, env, method,
       # The fallback promise leaves an inapplicable registration unread.
-      fallback = dtplyr_registered_method("merge.data.table", method)
+      fallback = dtplyr_registered_method(name, method, envir = owner)
     )
+}
+
+# Whether a `dtplyr_step_call` only removes rows from its parent: dtplyr's
+# `head()`, `distinct()` and `tidyr::drop_na()` translations, with the argument
+# shapes those translations produce.
+dtplyr_row_call <- function(step) {
+  fun <- step[["fun"]]
+  args <- step[["args"]]
+  vars <- step[["parent"]][["vars"]]
+  if (!is.character(fun) || length(fun) != 1L || !is.list(args) ||
+        !identical(step[["vars"]], vars)) {
+    return(FALSE)
+  }
+  plain_columns <- function(x) {
+    is.character(x) && !is.object(x) && all(x %in% vars)
+  }
+  switch(fun,
+    head = identical(names(args), "n") && is.numeric(args[["n"]]) &&
+      !is.object(args[["n"]]) && length(args[["n"]]) == 1L &&
+      !is.na(args[["n"]]),
+    unique = length(args) == 0L ||
+      (identical(names(args), "by") && plain_columns(args[["by"]])),
+    na.omit = length(args) == 0L ||
+      (identical(names(args), "cols") && plain_columns(args[["cols"]])),
+    FALSE
+  )
 }
 
 # Generated brackets must reach the ordinary generic and data.table method.
@@ -370,7 +399,7 @@ dtplyr_metadata_safe_step <- function(step, env = step[["env"]]) {
   # Full joins generate a bare merge instead of a bracket operation.
   if (inherits(step, "dtplyr_step_join") &&
         identical(step[["style"]], "full") &&
-        !dtplyr_merge_binding(env)) {
+        !dtplyr_dispatch_binding("merge", baseenv(), env)) {
     return(FALSE)
   }
   if (inherits(step, "dtplyr_step_mutate")) {
@@ -440,10 +469,20 @@ dtplyr_metadata_safe_step <- function(step, env = step[["env"]]) {
     copy_call <- rlang::call2(
       base::`::`, rlang::sym("data.table"), rlang::sym("copy")
     )
-    return(identical(fun, quote(data.table::copy)) ||
-             identical(fun, copy_call) ||
-             (is.character(fun) &&
-                fun %in% c("copy", "setnames", "setcolorder", "setorder")))
+    if (identical(fun, quote(data.table::copy)) ||
+          identical(fun, copy_call) ||
+          (is.character(fun) &&
+             fun %in% c("copy", "setnames", "setcolorder", "setorder"))) {
+      return(TRUE)
+    }
+    # dtplyr binds the names above from data.table; these resolve lexically.
+    return(dtplyr_row_call(step) && dtplyr_dispatch_binding(
+      fun, switch(fun,
+        head = asNamespace("utils"),
+        unique = baseenv(),
+        na.omit = asNamespace("stats")
+      ), env
+    ))
   }
   if (inherits(step, "dtplyr_step_subset")) {
     return(!is.null(dtplyr_metadata_subset_columns(step)))

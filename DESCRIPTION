@@ -424,7 +424,8 @@ Config/testthat/start-first:
     computed-selection,
     grouping-masked-constructor,
     grouping-spec-as-summary,
-    list-grouping
+    list-grouping,
+    dtplyr-row-call-metadata
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
