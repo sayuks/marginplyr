@@ -21,8 +21,7 @@ row_call_result <- function(x) {
 }
 
 # A source holding a factor with an unused level, a Date with a missing value,
-# and an integer; its serialized original; and a counter for the bindings a
-# test installs to record.
+# and an integer; its serialized original; and a call counter.
 row_call_fixture <- function() {
   fixture <- new.env(parent = emptyenv())
   fixture$source <- data.table::data.table(
