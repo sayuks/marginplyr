@@ -116,7 +116,7 @@ test_that("empty projections do not admit unknown or value-dependent parents", {
   }
   root <- dtplyr::lazy_dt(source)
   unsafe <- list(
-    dplyr::distinct(root),
+    dplyr::summarise(root, value = sum(value), .by = g),
     dplyr::mutate(root, value = probe(value)),
     dplyr::mutate(root, value = factor(value)),
     dplyr::mutate(root, value = if (dplyr::n() > 0L) "text" else 0L)

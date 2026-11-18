@@ -746,13 +746,12 @@ A derived dtplyr step can compute column types or factor levels from its source
 values. A request for zero output rows can still run that upstream calculation
 over every source row before discarding them. marginplyr therefore reads the
 types only of steps whose output types follow from their input types alone:
-`filter()`, `select()`, `rename()`, `relocate()`, `arrange()`, `slice()`, a
-join, and a `transmute()` or a `mutate()` directly on `lazy_dt()` that adds
-constants, column copies, or arithmetic on numeric columns. Any other step is
-refused before processing source rows, including an aggregate such as
-`summarise()` or `count()`, a row-selecting step such as `head()`,
-`distinct()`, or `tidyr::drop_na()`, and a `mutate()` that calls another
-function:
+`filter()`, `select()`, `rename()`, `relocate()`, `arrange()`, `slice()`,
+`head()`, `distinct()`, `tidyr::drop_na()`, a join, and a `transmute()` or a
+`mutate()` directly on `lazy_dt()` that adds constants, column copies, or
+arithmetic on numeric columns. Any other step is refused before processing
+source rows, including an aggregate such as `summarise()` or `count()` and a
+`mutate()` that calls another function:
 
 ```{r}
 #| label: dtplyr-unsafe-metadata
