@@ -717,10 +717,12 @@
           },
           {
             "name": "Provision DuckDB JSON extension",
+            "if": "matrix.backend.name == 'duckdb'",
             "run": "Rscript .github/scripts/provision-duckdb-json.R"
           },
           {
             "name": "Verify DuckDB JSON provisioning command fixtures",
+            "if": "matrix.backend.name == 'duckdb'",
             "run": "Rscript tools/test-duckdb-json-provision.R"
           },
           {
