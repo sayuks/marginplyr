@@ -1238,3 +1238,23 @@ test_that("a visible numeric mean method keeps the checked share source", {
   expect_match(conditionMessage(error), "Detected type character",
                fixed = TRUE)
 })
+
+test_that("native shift by no offsets fails the share cardinality guard", {
+  skip_if_suggest_absent("dtplyr")
+  withr::local_options(list(datatable.optimize = 2L))
+  input <- dtplyr::lazy_dt(tibble::tibble(g = c("a", "a", "b"), x = 1:3))
+  # GForce's gshift() with an empty `n` returns no value for each group.
+  expression <- quote(data.table::shift(x, n = integer()))
+  result <- summarize_with_margins(
+    input, value = !!expression, p = share_of_total(value),
+    .grouping = rollup(g)
+  )
+  expect_error(dplyr::collect(result),
+               class = "marginplyr_share_cardinality_error")
+  ordinary <- summarize_with_margins(
+    input, extra = !!expression, value = sum(x), p = share_of_total(value),
+    .grouping = rollup(g)
+  )
+  expect_error(dplyr::collect(ordinary),
+               class = "marginplyr_share_cardinality_error")
+})

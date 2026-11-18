@@ -60,8 +60,13 @@ workflow_contract_cases <- function() {
     json_setup_fixtures = list(edit = edit_workflow(
       "run: Rscript tools/test-duckdb-json-provision.R", "run: echo skipped",
       "release-matrix.yaml"), diagnostic = mismatch),
+    json_structure_isolation = list(edit = edit_workflow(
+      "if: matrix.backend.name == 'duckdb'\n        run: Rscript .github/scripts/provision-duckdb-json.R\n\n      - name: Verify",
+      "if: true\n        run: Rscript .github/scripts/provision-duckdb-json.R\n\n      - name: Verify",
+      "release-matrix.yaml"), diagnostic = mismatch),
     json_backend_isolation = list(edit = edit_workflow(
-      "if: matrix.backend.name == 'duckdb'", "if: true",
+      "path: tarball\n\n      - name: Provision DuckDB JSON extension\n        if: matrix.backend.name == 'duckdb'",
+      "path: tarball\n\n      - name: Provision DuckDB JSON extension\n        if: true",
       "release-matrix.yaml"), diagnostic = mismatch),
     json_coverage_setup = list(edit = edit_workflow(
       "run: Rscript .github/scripts/provision-duckdb-json.R", "run: echo skipped",

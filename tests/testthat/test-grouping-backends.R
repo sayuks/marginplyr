@@ -3200,3 +3200,12 @@ test_that("SQL grouping requires a connection", {
     "A database connection is required", fixed = TRUE
   )
 })
+
+# dbplyr can change its query representation away from a list, which no
+# public input can produce, so the validator is given such a value directly.
+test_that("native grouping rejects a dbplyr query that is not a list", {
+  expect_error(
+    validate_grouping_sets_query(1L),
+    "dbplyr query representation has changed", fixed = TRUE
+  )
+})
