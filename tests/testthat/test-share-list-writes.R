@@ -336,3 +336,20 @@ test_that("structural write planning does not invoke or force caller code", {
   expect_identical(probe$invoked, 0L)
   expect_identical(probe$forced, 0L)
 })
+
+# An attribute replacement that may set a dispatching class leaves the member
+# unknown, and the single-bracket write enclosing it then leaves the whole
+# carrier unknown.
+test_that("an unknown member under a single-bracket write keeps dependencies", {
+  read <- function(remove) {
+    substitute((function(prior) {
+      carrier <- list(read = function() sum(prior))
+      attributes(carrier[1L]) <- list(class = "margin_share_member")
+      REMOVE
+      carrier$read()
+    })(1), list(REMOVE = remove))
+  }
+  data <- list_write_data()
+  expect_share_dependencies(data, list(read(quote(rm(prior)))))
+  expect_share_dependency_values(data, list(read(NULL)), expected = 1)
+})

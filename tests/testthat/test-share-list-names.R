@@ -182,3 +182,19 @@ test_that("incomplete attribute syntax reaches dplyr's error without removal", {
                      conditionMessage(direct$parent))
   }
 })
+
+# Replacing every attribute with a set that carries no names drops the
+# literal names and keeps each member in its position.
+test_that("attributes without names keep positional closure dependencies", {
+  read <- function(remove) {
+    substitute((function(prior) {
+      carrier <- list(read = function() sum(prior))
+      attributes(carrier) <- list(comment = "unnamed")
+      REMOVE
+      carrier[[1L]]()
+    })(1), list(REMOVE = remove))
+  }
+  data <- list_name_data()
+  expect_share_dependencies(data, list(read(quote(rm(prior)))))
+  expect_share_dependency_values(data, list(read(NULL)), expected = 1)
+})

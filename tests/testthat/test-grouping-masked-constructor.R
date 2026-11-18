@@ -140,6 +140,29 @@ test_that("a caller's own constructor is read as before", {
   }
 })
 
+# Neither a name bound to no function nor a primitive is a package's function,
+# so R's own failure reaches the caller.
+test_that("an unbound or primitive constructor name is read as before", {
+  data <- masked_constructor_data()
+  unattached <- rlang::new_environment(list(data = data), parent = baseenv())
+  expected <- tryCatch(
+    eval(quote(rollup(region)), unattached),
+    error = identity
+  )
+  error <- expect_error(eval(
+    quote(marginplyr::inspect_grouping(data, .grouping = rollup(region))),
+    unattached
+  ))
+  expect_false(inherits(error, "marginplyr_error"))
+  expect_identical(conditionMessage(error), conditionMessage(expected))
+
+  rollup <- sum
+  expected <- tryCatch(rollup(region), error = identity)
+  error <- expect_error(inspect_grouping(data, .grouping = rollup(region)))
+  expect_false(inherits(error, "marginplyr_error"))
+  expect_identical(conditionMessage(error), conditionMessage(expected))
+})
+
 test_that("data.table's rollup() and cube() are refused with the remedy", {
   skip_if_suggest_absent("data.table")
   data <- masked_constructor_data()

@@ -3165,6 +3165,16 @@ test_that("large duplicate proofs preserve typed selection precedence", {
   )
   expect_identical(calls, ncol(data))
 
+  # Sets completed before the proof still repeat by name, and the repeat is
+  # settled before the selection after the proof runs.
+  calls <- 0L
+  error <- expect_error(
+    inspect_grouping(data, .grouping = grouping_sets(a, a, !!unknown)),
+    "Duplicate grouping sets", class = "marginplyr_error"
+  )
+  expect_match(conditionMessage(error), "Repeated set: `(a)`", fixed = TRUE)
+  expect_identical(calls, 0L)
+
   calls <- 0L
   expect_error(
     inspect_grouping(data, .grouping = grouping_sets(!!pending, !!repeated),
@@ -3194,4 +3204,25 @@ test_that("a covered large cube proves duplicates in a product", {
     inspect_grouping(data, .grouping = spec, .by = x1),
     "both", class = "marginplyr_error"
   )
+})
+
+test_that("a duplicate prefix before a sized pending factor needs no type", {
+  data <- data.frame(a = 1L, b = "x", c = 2)
+  calls <- 0L
+  character_column <- function(column) {
+    calls <<- calls + 1L
+    is.character(column)
+  }
+  # The pending factor and its suffix fix two positions per prefix choice, and
+  # the two `rollup(a)` prefixes repeat `a` before any typed selection runs.
+  spec <- grouping_spec(
+    rollup(a), rollup(a), where(character_column),
+    grouping_sets(c, grouping_set())
+  )
+  cnd <- expect_error(
+    inspect_grouping(data, .grouping = spec),
+    "Duplicate grouping sets", class = "marginplyr_error"
+  )
+  expect_match(conditionMessage(cnd), "1, 3, 5.", fixed = TRUE)
+  expect_identical(calls, 0L)
 })
