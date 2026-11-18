@@ -86,15 +86,14 @@ verify_suite_coverage_workers <- function() {
     }
     result
   }
-  # testthat's own count of the workers it started for each configuration's
-  # suite: one per fixture file, which the verifier's four CPUs cover. Which
-  # worker then takes which file is its scheduler's, so a count of the
-  # processes that ran the files can fall to one with two started.
+  # testthat's line counting the workers it started for one suite.
+  started_line <- "^Starting [0-9]+ test process"
+  # Each configuration's suite starts one worker per fixture file, which the
+  # verifier's four CPUs cover.
   expect_process_per_file <- function(result, configurations) {
-    files <- length(list.files(tests, pattern = "^test-"))
-    started <- grep("^Starting [0-9]+ test process", result$output,
-                    value = TRUE)
-    expected <- sprintf("Starting %d test processes.", files)
+    file_count <- length(list.files(tests, pattern = "^test-"))
+    started <- grep(started_line, result$output, value = TRUE)
+    expected <- sprintf("Starting %d test processes.", file_count)
     if (length(started) != configurations || !all(started == expected)) {
       stop(sprintf(
         "Expected '%s' for each of %d configurations.\n%s",
@@ -105,10 +104,7 @@ verify_suite_coverage_workers <- function() {
   }
   # Everything after the suites ran: the summary counts are part of the verdict.
   verdict <- function(result) {
-    grep(
-      "^Starting [0-9]+ test processes", result$output,
-      value = TRUE, invert = TRUE
-    )
+    grep(started_line, result$output, value = TRUE, invert = TRUE)
   }
   aggregate <- function(directory = "rows") {
     verifier("--aggregate", sprintf("--rows=%s", directory))
