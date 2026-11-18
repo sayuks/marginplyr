@@ -102,8 +102,9 @@ isolated_dtplyr_proxy <- function(.data, env = .data[["env"]]) {
 
 # Whether function lookup reaches the expected function without evaluating an
 # active binding or forcing a promise. `fallback` answers for registered methods
-# when lexical lookup finds no function.
-dtplyr_function_binding <- function(name, env, expected, fallback = FALSE) {
+# when lexical lookup finds no function. A `top` environment ends the walk.
+dtplyr_function_binding <- function(name, env, expected, fallback = FALSE,
+                                    top = emptyenv()) {
   while (!identical(env, emptyenv())) {
     if (exists(name, envir = env, inherits = FALSE)) {
       if (bindingIsActive(name, env) ||
@@ -118,6 +119,9 @@ dtplyr_function_binding <- function(name, env, expected, fallback = FALSE) {
       if (is.function(value)) {
         return(identical(value, expected))
       }
+    }
+    if (identical(env, top)) {
+      break
     }
     env <- parent.env(env)
   }
@@ -179,43 +183,50 @@ dtplyr_registered_method <- function(name, expected, envir = baseenv(),
 }
 
 # Whether a generated bare call to `generic` reaches the ordinary generic and
-# data.table method, including S3 lookup in the effective query environment
-# before registered-method lookup. `owner` defines the generic and holds its
-# registration table.
+# data.table method. S3 lookup reads the query environment only through its
+# top-level environment before the registry. `owner` defines the generic and
+# holds its registration table.
 dtplyr_dispatch_binding <- function(generic, owner, env) {
   name <- paste0(generic, ".data.table")
   method <- get(name, envir = asNamespace("data.table"))
   dtplyr_function_binding(generic, env, get(generic, envir = owner)) &&
     dtplyr_function_binding(
-      name, env, method,
+      name, env, method, top = topenv(env),
       # The fallback promise leaves an inapplicable registration unread.
       fallback = dtplyr_registered_method(name, method, envir = owner)
     )
 }
 
-# Whether a `dtplyr_step_call` only removes rows from its parent: dtplyr's
-# `head()`, `distinct()` and `tidyr::drop_na()` translations, with the argument
-# shapes those translations produce.
-dtplyr_row_call <- function(step) {
+# The namespace defining the generic of a `dtplyr_step_call` that is one of
+# dtplyr's `head()`, `distinct()` and `tidyr::drop_na()` translations, with the
+# argument shapes those produce, or `NULL` for any other call.
+dtplyr_row_call_owner <- function(step) {
   fun <- step[["fun"]]
   args <- step[["args"]]
   vars <- step[["parent"]][["vars"]]
   if (!is.character(fun) || length(fun) != 1L || !is.list(args) ||
         !identical(step[["vars"]], vars)) {
-    return(FALSE)
+    return(NULL)
   }
   plain_columns <- function(x) {
     is.character(x) && !is.object(x) && all(x %in% vars)
   }
   switch(fun,
-    head = identical(names(args), "n") && is.numeric(args[["n"]]) &&
-      !is.object(args[["n"]]) && length(args[["n"]]) == 1L &&
-      !is.na(args[["n"]]),
-    unique = length(args) == 0L ||
-      (identical(names(args), "by") && plain_columns(args[["by"]])),
-    na.omit = length(args) == 0L ||
-      (identical(names(args), "cols") && plain_columns(args[["cols"]])),
-    FALSE
+    head = if (identical(names(args), "n") && is.numeric(args[["n"]]) &&
+                 !is.object(args[["n"]]) && length(args[["n"]]) == 1L &&
+                 !is.na(args[["n"]])) {
+      asNamespace("utils")
+    },
+    unique = if (length(args) == 0L ||
+                   (identical(names(args), "by") &&
+                      plain_columns(args[["by"]]))) {
+      baseenv()
+    },
+    na.omit = if (length(args) == 0L ||
+                    (identical(names(args), "cols") &&
+                       plain_columns(args[["cols"]]))) {
+      asNamespace("stats")
+    }
   )
 }
 
@@ -476,13 +487,8 @@ dtplyr_metadata_safe_step <- function(step, env = step[["env"]]) {
       return(TRUE)
     }
     # dtplyr binds the names above from data.table; these resolve lexically.
-    return(dtplyr_row_call(step) && dtplyr_dispatch_binding(
-      fun, switch(fun,
-        head = asNamespace("utils"),
-        unique = baseenv(),
-        na.omit = asNamespace("stats")
-      ), env
-    ))
+    owner <- dtplyr_row_call_owner(step)
+    return(!is.null(owner) && dtplyr_dispatch_binding(fun, owner, env))
   }
   if (inherits(step, "dtplyr_step_subset")) {
     return(!is.null(dtplyr_metadata_subset_columns(step)))
