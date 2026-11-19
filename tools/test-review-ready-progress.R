@@ -215,9 +215,20 @@ local({
     }
     unlink(helper)
     if (mode == "worker") {
+      exited <- any(grepl(
+        "testthat subprocess exited in file 'test-second.R'", output,
+        fixed = TRUE
+      ))
+      # callr reports the closed connection instead of the exit status when the
+      # worker is still alive as its connection closes.
+      cause <- any(grepl(paste0(
+        "R session (crashed with exit code 17|",
+        "closed the process connection, killed)"
+      ), output))
+      if (!(exited && cause)) cat(output, sep = "\n")
       stopifnot(
-        any(grepl("testthat subprocess exited in file 'test-second.R'", output, fixed = TRUE)),
-        any(grepl("R session crashed with exit code 17", output, fixed = TRUE))
+        "worker exit was not forwarded" = exited,
+        "worker exit cause was not forwarded" = cause
       )
       next
     }
