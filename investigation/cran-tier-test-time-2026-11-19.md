@@ -96,11 +96,33 @@ PostgreSQL server running.
 `test_local()` sets `NOT_CRAN=true`, so these runs executed the snapshot
 expectations a CRAN check skips.
 
+## The tier under `R CMD check`
+
+Commit `37b5f3de4ba3baa203a4762f99c1aace9c093f5f` registered those 28 files
+in `tests/testthat.R`. `R CMD build --no-build-vignettes --no-manual` on a
+`git archive` copy of it produced a 1,297,493-byte tarball, and
+`R CMD check --no-manual --ignore-vignettes --no-build-vignettes` on that
+tarball, with `NOT_CRAN`, `MARGINPLYR_COMPLETE_SUITE` and `TESTTHAT_PARALLEL`
+unset and `_R_CHECK_FORCE_SUGGESTS_=true`, ended `Status: OK`. Its
+`testthat.Rout` reported `[ FAIL 0 | WARN 0 | SKIP 9 | PASS 10557 ]`, all nine
+skips `On CRAN`, and an elapsed time of 77.041 s.
+`verify-cran-test-budget.R` read that check directory as 77 s.
+
+With `MARGINPLYR_HIDE_SUGGESTS` naming all nine members of
+`optional_backends()`, the same 28 files ran through `test_local()` in 39.5 s:
+5,915 passing expectations, no failure, and 290 skips whose reasons named
+every one of the nine packages as not installed.
+
+`tools/local-cran-preflight.R` was run twice from the agent sandbox without
+`--output` and stopped at `R CMD build` both times: Quarto's Deno runtime
+reported `unable to open database file` from `openKv` while rendering each
+vignette. Setting `XDG_CACHE_HOME`, `XDG_DATA_HOME`, `XDG_CONFIG_HOME`,
+`XDG_STATE_HOME` and `DENO_DIR` to writable directories did not change that.
+The preflight's own check step was therefore not exercised on a real check.
+
 ## Size of the shipped sources
 
-`tar -czf` over `DESCRIPTION`, `NAMESPACE`, `LICENSE`, `NEWS.md`, `README.md`,
-`R`, `man`, `tests`, `vignettes`, `inst` and `data` produced 1,351,680 bytes;
-`tests/` was 5.0 MB uncompressed. No tarball was built with `R CMD build`.
+`tests/` was 5.0 MB uncompressed.
 
 ## What the existing gates read
 
