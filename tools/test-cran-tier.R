@@ -172,10 +172,15 @@ main <- function() {
     outside$output)
   # setup-r exports NOT_CRAN=true into a job that does not set it; such a job
   # ran the complete suite and must not report the tier's gate green.
-  for (name in tier_variables) {
-    complete <- verify(log("78.962"), stats::setNames("true", name))
-    expect(complete$status != 0L &&
-      grepl("complete suite", complete$output, fixed = TRUE), complete$output)
+  defaulted <- verify(log("78.962"), c(NOT_CRAN = "true"))
+  expect(defaulted$status != 0L &&
+    grepl("NOT_CRAN: false", defaulted$output, fixed = TRUE), defaulted$output)
+  # Only a job that names the complete suite passes unmeasured.
+  for (values in list(c(MARGINPLYR_COMPLETE_SUITE = "true"),
+                      c(NOT_CRAN = "true", MARGINPLYR_COMPLETE_SUITE = "true"))) {
+    named <- verify(log("1301.250"), values)
+    expect(named$status == 0L &&
+      grepl("does not apply", named$output, fixed = TRUE), named$output)
   }
 
   cat("CRAN tier fixtures passed.\n")

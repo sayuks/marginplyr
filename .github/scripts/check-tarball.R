@@ -151,15 +151,9 @@ if (cran_notes_block(classifications, strict_release)) {
   ))
 }
 
-# Holds this check's test run to the CRAN tier's time budget, unless the job
-# asked for the complete suite by name, as a `backend` job does. `NOT_CRAN` is
-# deliberately not what excuses a job: `setup-r` exports it as true into any
-# job that leaves it unset, and the verifier's refusal of that check is what
-# catches a `depends-only` or `tarball` job that lost its `NOT_CRAN: false`.
-# This follows the stops above so that a failing check reports its failure
-# rather than a test log that never finished, and it is sourced here rather
-# than run as a workflow step for the reason the two assertions at the top
-# give.
-if (!isTRUE(as.logical(Sys.getenv("MARGINPLYR_COMPLETE_SUITE")))) {
-  source(".github/scripts/verify-cran-test-budget.R", local = new.env())
-}
+# Holds this check's test run to the CRAN tier's time budget; the script's
+# header says which jobs it passes unmeasured and which it refuses. It follows
+# the stops above so that a failing check reports its failure rather than a
+# test log that never finished, and it is sourced here rather than run as a
+# workflow step for the reason the two assertions at the top give.
+source(".github/scripts/verify-cran-test-budget.R", local = new.env())

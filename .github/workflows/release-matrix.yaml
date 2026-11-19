@@ -61,7 +61,7 @@
 #
 # The soundness layer is what a `proves` list of contract test names used to
 # approximate. It is strictly stronger: a skip for any other reason -- a stray
-# `skip_if()`, a `skip_on_os()`, or `NOT_CRAN` being dropped so the snapshot
+# `skip_if()`, a `skip_on_os()`, or `NOT_CRAN` being false so the snapshot
 # tests skip -- now fails the job, and none of those was caught before.
 #
 # `structure` stands outside the tarball scheme deliberately. It asks about the
@@ -575,12 +575,12 @@ jobs:
       # testthat skips snapshot expectations under CRAN semantics, which marks
       # the whole test skipped. These jobs prove behavior rather than emulate
       # CRAN, so they opt out; the `depends-only` and `tarball` jobs
-      # deliberately do not. Dropping this no longer merely weakens the job:
-      # `verify-backend.R` refuses an "On CRAN" skip, because it is not a
-      # backend this job withheld.
+      # deliberately do not. Setting this to false no longer merely weakens
+      # the job: `verify-backend.R` refuses an "On CRAN" skip, because it is
+      # not a backend this job withheld.
       NOT_CRAN: true
       # Says by name that this job runs the complete suite, which is what
-      # excuses it from the CRAN tier's time budget in `check-tarball.R`.
+      # excuses it from the CRAN tier's time budget `check-tarball.R` applies.
       MARGINPLYR_COMPLETE_SUITE: true
       # Every other optional backend is absent on purpose: proving one backend
       # in isolation also proves it does not depend on the others. That second

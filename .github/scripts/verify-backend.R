@@ -24,7 +24,7 @@
 #   nothing skipped silently every skip reason names a backend this job withheld
 #
 # The last line is what `proves` could never do. A skip for any other reason --
-# a stray `skip_if()`, a `skip_on_os()`, or `NOT_CRAN` being dropped so the
+# a stray `skip_if()`, a `skip_on_os()`, or `NOT_CRAN` being false so the
 # snapshot tests skip under CRAN semantics -- fails the job, whether or not
 # anyone remembered to name the test it belongs to. It is the same technique
 # `verify-depends-only.R` uses, pointed the other way: there every optional

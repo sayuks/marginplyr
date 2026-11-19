@@ -272,11 +272,12 @@ jobs:
       # coverage this job does not have.
       #
       # Snapshots run in `release-matrix.yaml`'s `backend` jobs, which set
-      # `NOT_CRAN` to true because they prove behavior rather than emulate CRAN, and
-      # whose uploaded check directory carries any `.new.md` diff. The local
-      # Review-ready check and CI coverage run also enable them (ADR 0030). This
-      # five-platform CRAN matrix leaves them skipped: #23 holds snapshots to
-      # diagnostic meaning rather than byte-for-byte wording across platforms.
+      # `NOT_CRAN` to true because they prove behavior rather than emulate
+      # CRAN, and whose uploaded check directory carries any `.new.md` diff.
+      # The local Review-ready check and CI coverage run also enable them
+      # (ADR 0030). This CRAN matrix leaves them skipped: #23 holds snapshots
+      # to diagnostic meaning rather than byte-for-byte wording across
+      # platforms.
       - name: Check package
         uses: r-lib/actions/check-r-package@v2
         with:
@@ -293,8 +294,7 @@ jobs:
           upload-results: true
 
       # The CRAN-tier row's reason for existing. The script's header says what
-      # it reads and why it refuses a check that ran the complete suite, which
-      # is every other row.
+      # it reads; the other rows name the complete suite, which has no budget.
       - name: Verify the CRAN tier's test time
         if: matrix.config.cran_tier
         run: Rscript .github/scripts/verify-cran-test-budget.R
