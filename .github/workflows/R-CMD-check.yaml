@@ -272,7 +272,7 @@ jobs:
       # coverage this job does not have.
       #
       # Snapshots run in `release-matrix.yaml`'s `backend` jobs, which set
-      # `NOT_CRAN` because they prove behavior rather than emulate CRAN, and
+      # `NOT_CRAN` to true because they prove behavior rather than emulate CRAN, and
       # whose uploaded check directory carries any `.new.md` diff. The local
       # Review-ready check and CI coverage run also enable them (ADR 0030). This
       # five-platform CRAN matrix leaves them skipped: #23 holds snapshots to

@@ -1084,6 +1084,7 @@
         "env": {
           "MARGINPLYR_REQUIRED_SUGGESTS": "${{ matrix.backend.required }}",
           "NOT_CRAN": "true",
+          "MARGINPLYR_COMPLETE_SUITE": "true",
           "_R_CHECK_FORCE_SUGGESTS_": "false",
           "MARGINPLYR_CHECK_ARGS": "--as-cran --ignore-vignettes",
           "MARGINPLYR_CHECK_LABEL": "Live ${{ matrix.backend.name }}",
@@ -1196,8 +1197,7 @@
       }
     },
     "env": {
-      "RHUB_ACTIONS_INSTALL_LOCAL_PACKAGE": "true",
-      "NOT_CRAN": "false"
+      "RHUB_ACTIONS_INSTALL_LOCAL_PACKAGE": "true"
     },
     "jobs": {
       "setup": {

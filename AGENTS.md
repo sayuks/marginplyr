@@ -261,7 +261,7 @@ rather than assumed: one records the internal functions that reach an execution
 entry point, one records the set of entry points scanned for, and one records
 which backend kinds hold `collect_selection_proxy`. A scan that stopped
 covering an entry point would otherwise report a clean result, which reads
-exactly like a package that added none. They run only where `NOT_CRAN` is set.
+exactly like a package that added none. They run only where `NOT_CRAN` is true.
 
 Deciding by billing model is the option that was rejected, and
 `investigation/query-cost-across-lazy-backends.md` records why: four models are

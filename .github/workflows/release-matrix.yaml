@@ -38,8 +38,9 @@
 # `depends-only` and `tarball` set `NOT_CRAN: false`, so what their tests run is
 # the CRAN tier `tests/testthat.R` registers (ADR 0045), and `check-tarball.R`
 # holds that run to the tier's time budget. The `backend` jobs set `NOT_CRAN:
-# true`, which is what asks for the complete suite as well. Neither is left to
-# default: `setup-r` exports `NOT_CRAN=true` into a job that does not set it.
+# true`, which is what asks for the complete suite as well. None of the three
+# leaves it to default: `setup-r` exports `NOT_CRAN=true` into a job that does
+# not set it.
 #
 # Which contracts those jobs prove is settled by construction rather than by a
 # list (#93). Every `backend` job installs one optional backend -- plus the
@@ -69,7 +70,7 @@
 # before pushing: `Rscript .github/scripts/verify-suite-coverage.R` gives the
 # same verdict locally that `structure-verdict` gives in CI.
 #
-# Snapshot expectations run only where `NOT_CRAN` is set: testthat skips them
+# Snapshot expectations run only where `NOT_CRAN` is true: testthat skips them
 # under CRAN semantics, so a snapshot never fails in a job that emulates CRAN.
 # That is the `backend` jobs, which set it in the workflow, and the `structure`
 # job, whose script sets it so a local run matches CI. The coverage workflow
@@ -578,6 +579,9 @@ jobs:
       # `verify-backend.R` refuses an "On CRAN" skip, because it is not a
       # backend this job withheld.
       NOT_CRAN: true
+      # Says by name that this job runs the complete suite, which is what
+      # excuses it from the CRAN tier's time budget in `check-tarball.R`.
+      MARGINPLYR_COMPLETE_SUITE: true
       # Every other optional backend is absent on purpose: proving one backend
       # in isolation also proves it does not depend on the others. That second
       # half is only worth stating because `check-tarball.R` enforces it; a

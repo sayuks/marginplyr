@@ -257,6 +257,14 @@ expect_true(
   "the disabled lintr progress"
 )
 pipeline_source <- paste(deparse(run_preflight_pipeline), collapse = "\n")
+expect_true(
+  grepl(
+    "test_budget_problem = cran_test_budget_problem(",
+    pipeline_source,
+    fixed = TRUE
+  ),
+  "the pipeline holds its check to the CRAN tier's test budget"
+)
 identity_position <- regexpr(
   "Tarball name, directory, DESCRIPTION, and SHA-256 agree.",
   pipeline_source,
