@@ -1007,6 +1007,8 @@ run_local_cran_preflight <- function(args, repository_root,
 }
 
 # Runs the sole full R CMD check against an already-built candidate tarball.
+# The last three settings make its tests the run CRAN performs whatever the
+# caller's environment holds: the CRAN tier, in one process (ADR 0045).
 run_rcmdcheck <- function(tarball, evidence_path) {
   check_dir <- file.path(evidence_path, "check")
   dir.create(check_dir)
@@ -1022,11 +1024,27 @@ run_rcmdcheck <- function(tarball, evidence_path) {
       env = c(
         `_R_CHECK_CRAN_INCOMING_REMOTE_` = "true",
         `_R_CHECK_FORCE_SUGGESTS_` = "true",
-        `_R_CHECK_DEPENDS_ONLY_` = "false"
+        `_R_CHECK_DEPENDS_ONLY_` = "false",
+        NOT_CRAN = "false",
+        MARGINPLYR_COMPLETE_SUITE = "false",
+        TESTTHAT_PARALLEL = "false"
       )
     )
   )
   list(result = result, check_dir = check_dir, console = console)
+}
+
+# Holds a completed check's test run to the CRAN tier's time budget, whose
+# policy is `.github/scripts/cran-test-budget.R`. `NULL` when within it.
+check_test_budget_problem <- function(check_dir) {
+  log_path <- Sys.glob(file.path(check_dir, "*.Rcheck", "tests", "testthat.Rout"))
+  if (length(log_path) != 1L) {
+    return(paste0(
+      "The check left no finished testthat log, so the CRAN tier's run ",
+      "cannot be held to its budget."
+    ))
+  }
+  cran_test_budget_problem(readLines(log_path, warn = FALSE))
 }
 
 # Returns R source that writes a fresh base-only child's two package resolutions
@@ -1223,7 +1241,10 @@ rcmdcheck_repository_outage <- function(result) {
 }
 
 # Classifies structured R CMD check output before any conditional follow-up.
-classify_rcmdcheck_result <- function(result, cran_status) {
+# `test_budget` is `check_test_budget_problem()`'s answer for the same check; it
+# counts only against a check that completed without an ERROR, because a failing
+# test script never records the time the budget reads.
+classify_rcmdcheck_result <- function(result, cran_status, test_budget = NULL) {
   process_status <- suppressWarnings(as.integer(result$status))
   if (length(process_status) != 1L || is.na(process_status)) {
     process_status <- NA_integer_
@@ -1244,9 +1265,10 @@ classify_rcmdcheck_result <- function(result, cran_status) {
     function(note) identical(note$status, "unknown-note"),
     logical(1)
   )
-  has_failures <- counts[["errors"]] > 0L ||
-    counts[["warnings"]] > 0L || any(unknown_notes)
   completed <- identical(process_status, 0L) && !timeout
+  over_budget <- completed && counts[["errors"]] == 0L && !is.null(test_budget)
+  has_failures <- counts[["errors"]] > 0L ||
+    counts[["warnings"]] > 0L || any(unknown_notes) || over_budget
   status_text <- if (is.na(process_status)) "unavailable" else process_status
 
   if (rcmdcheck_repository_outage(result)) {
@@ -1288,7 +1310,7 @@ classify_rcmdcheck_result <- function(result, cran_status) {
     problem = if (has_failures) "candidate" else NULL,
     counts = counts,
     classifications = classifications,
-    detail = NULL
+    detail = if (over_budget) test_budget else NULL
   )
 }
 
@@ -1652,7 +1674,11 @@ run_preflight_pipeline <- function(state, repository_root, description) {
   }
 
   result <- check$result
-  outcome <- classify_rcmdcheck_result(result, state$cran_status)
+  outcome <- classify_rcmdcheck_result(
+    result,
+    state$cran_status,
+    test_budget = check_test_budget_problem(check$check_dir)
+  )
   state$counts <- outcome$counts
   classifications <- outcome$classifications
   state$note_classifications <- classifications
@@ -1676,11 +1702,14 @@ run_preflight_pipeline <- function(state, repository_root, description) {
       outcome$status,
       proc.time()[["elapsed"]] - started,
       check$check_dir,
-      sprintf(
-        "%d ERROR(s), %d WARNING(s), %d NOTE(s); classifications: %s.",
-        state$counts[["errors"]], state$counts[["warnings"]],
-        state$counts[["notes"]], note_path
-      )
+      paste(c(
+        sprintf(
+          "%d ERROR(s), %d WARNING(s), %d NOTE(s); classifications: %s.",
+          state$counts[["errors"]], state$counts[["warnings"]],
+          state$counts[["notes"]], note_path
+        ),
+        outcome$detail
+      ), collapse = " ")
     )
     if (!is.null(outcome$problem)) {
       record_problem(state, outcome$problem)

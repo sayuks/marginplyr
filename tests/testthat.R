@@ -9,6 +9,65 @@
 library(testthat)
 library(marginplyr)
 
+# The CRAN tier (ADR 0045): the test files `R CMD check` runs when nothing asks
+# for the complete suite, each named as testthat's `filter` matches it, without
+# `test-` and `.R`. A file this vector does not name runs in the complete suite
+# only, which is where a new test file therefore starts.
+cran_tier <- c(
+  "dependency-floor",
+  "documentation",
+  "expand-operation",
+  "factor",
+  "get-col-names",
+  "grouping-backends",
+  "grouping-interface",
+  "grouping-patterns",
+  "grouping-plan",
+  "inspect-grouping",
+  "margin-display",
+  "margin-id",
+  "margin-label",
+  "metamorphic-margin-semantics",
+  "native-classes",
+  "nest-operation",
+  "nest-rows",
+  "optional-backends",
+  "package-metadata",
+  "postgres-share-probe",
+  "retail-sales",
+  "sent-queries",
+  "sent-query-details",
+  "sf-summary",
+  "share",
+  "share-backends",
+  "summarize-operation",
+  "utils"
+)
+
+# `R CMD check` runs this file from `tests/`. A registered name with no file
+# would shrink the tier without failing anything.
+unmatched <- cran_tier[
+  !file.exists(file.path("testthat", paste0("test-", cran_tier, ".R")))
+]
+if (length(unmatched) > 0L) {
+  stop(
+    "tests/testthat.R registers CRAN-tier test files that do not exist: ",
+    paste0("test-", unmatched, ".R", collapse = ", "),
+    call. = FALSE
+  )
+}
+
+# `.github/scripts/cran-test-budget.R` reads the same two variables to decide
+# whether the budget applies; this file ships and cannot source it.
+complete_suite <- any(vapply(
+  c("NOT_CRAN", "MARGINPLYR_COMPLETE_SUITE"),
+  function(name) isTRUE(as.logical(Sys.getenv(name))),
+  logical(1)
+))
+filter <- if (!complete_suite) {
+  paste0("^(", paste(cran_tier, collapse = "|"), ")$")
+}
+
 reporter <- testthat::check_reporter()
 progress_reporter <- Sys.getenv("MARGINPLYR_REVIEW_PROGRESS_REPORTER")
 if (nzchar(progress_reporter)) {
@@ -16,4 +75,4 @@ if (nzchar(progress_reporter)) {
     Sys.getenv("MARGINPLYR_REVIEW_PROGRESS")
   )
 }
-test_check("marginplyr", reporter = reporter)
+test_check("marginplyr", reporter = reporter, filter = filter)

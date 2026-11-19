@@ -20,7 +20,7 @@ jobs:
     # Includes setup, vignette rebuilding and the complete test suite.
     timeout-minutes: 180
 
-    name: ${{ matrix.config.os }} (${{ matrix.config.r }})
+    name: ${{ matrix.config.os }} (${{ matrix.config.r }}${{ matrix.config.cran_tier && ', CRAN tier' || '' }})
 
     strategy:
       fail-fast: false
@@ -31,11 +31,23 @@ jobs:
           - {os: ubuntu-latest,   r: 'devel', http-user-agent: 'release'}
           - {os: ubuntu-latest,   r: 'release', no_build_vignettes: true}
           - {os: ubuntu-latest,   r: 'oldrel-1'}
+          # The check CRAN itself runs: every Suggested package installed, one
+          # test process, and nothing asking for the complete suite, so
+          # `tests/testthat.R` runs the CRAN tier (ADR 0045). The rows above
+          # ask for the complete suite instead. Windows, because it is the
+          # slowest platform CRAN checks on and the time budget below is what
+          # this row is for.
+          - {os: windows-latest, r: 'release', cran_tier: true}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
-      TESTTHAT_PARALLEL: "true"
+      # Without this, `tests/testthat.R` runs only the CRAN tier whenever
+      # `NOT_CRAN` is unset, as it is here. These rows are the only place every
+      # backend's tests run together on macOS, Windows, R-devel and oldrel, so
+      # they keep the complete suite and its four workers.
+      MARGINPLYR_COMPLETE_SUITE: ${{ matrix.config.cran_tier && 'false' || 'true' }}
+      TESTTHAT_PARALLEL: ${{ matrix.config.cran_tier && 'false' || 'true' }}
       TESTTHAT_CPUS: 4
 
     steps:
@@ -251,7 +263,7 @@ jobs:
 
       # No `upload-snapshots` here, and no `NOT_CRAN`. This matrix emulates
       # CRAN, and testthat skips snapshot expectations under CRAN semantics, so
-      # all three snapshot-bearing tests skip and there is never a snapshot to
+      # every snapshot expectation skips and there is never a snapshot to
       # upload. Asking for one implied a coverage this job does not have.
       #
       # Snapshots run in `release-matrix.yaml`'s `backend` jobs, which set
@@ -275,6 +287,13 @@ jobs:
           # the release review has to account for every NOTE.
           upload-results: true
 
+      # The CRAN-tier row's reason for existing. The script's header says what
+      # it reads; it passes the complete-suite rows without measuring them, so
+      # the condition here only saves the step.
+      - name: Verify the CRAN tier's test time
+        if: matrix.config.cran_tier
+        run: Rscript .github/scripts/verify-cran-test-budget.R
+
       # Puts the status line and the full text of every ERROR, WARNING, and
       # NOTE on the run page, so auditing them does not require downloading
       # and unzipping the check directory.
@@ -283,4 +302,4 @@ jobs:
         run: Rscript .github/scripts/summarize-check-log.R
         env:
           MARGINPLYR_CHECK_LABEL: >-
-            ${{ matrix.config.os }} (${{ matrix.config.r }})
+            ${{ matrix.config.os }} (${{ matrix.config.r }}${{ matrix.config.cran_tier && ', CRAN tier' || '' }})

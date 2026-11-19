@@ -28,6 +28,8 @@ checks. Unknown inputs and R edits remain Full.
 Documentation and Repository success do not assert full-suite or snapshot
 execution. CRAN-emulating CI jobs
 retain their existing environment.
+[ADR 0045](0045-run-a-registered-cran-tier-under-cran-semantics.md) later
+decides which tests such a job runs.
 
 A reachable branch gets a test asserting its behavior or diagnostic; a
 meaningful internal backstop gets an abnormal-state test; a branch with no

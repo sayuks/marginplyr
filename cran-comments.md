@@ -32,6 +32,11 @@ Quarto 1.9.38.
   `_R_CHECK_FORCE_SUGGESTS_=false` is what stops `--as-cran` from treating the
   absent packages as a failure.
 
+In both runs the tests are the subset `tests/testthat.R` registers for CRAN,
+which is what runs whenever `NOT_CRAN` is unset. It calls every exported
+function and is held to a time budget, because the complete suite takes hours
+in one process; that suite runs in the package's own continuous integration.
+
 Neither entry quotes a test count, deliberately: a count is accurate on the day
 it is measured and silently wrong afterwards. What these runs are offered as
 evidence for is the status line above and the account of the skips, and both of

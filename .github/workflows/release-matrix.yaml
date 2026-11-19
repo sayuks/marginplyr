@@ -35,6 +35,11 @@
 # so that a backend which failed to install fails the job instead of skipping
 # into a false green. See `tests/testthat/helper-optional-backends.R`.
 #
+# `depends-only` and `tarball` also ask for nothing CRAN does not, so what their
+# tests run is the CRAN tier `tests/testthat.R` registers (ADR 0045), and
+# `check-tarball.R` holds that run to the tier's time budget. The `backend`
+# jobs set `NOT_CRAN`, which is what asks for the complete suite as well.
+#
 # Which contracts those jobs prove is settled by construction rather than by a
 # list (#93). Every `backend` job installs one optional backend -- plus the
 # companions its entry declares, which may themselves be tracked entries when

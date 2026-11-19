@@ -128,7 +128,9 @@ The invariant local audit performs, once each:
 3. the shared checktor baseline against the candidate tarball;
 4. full `R CMD check --as-cran` through rcmdcheck, against that same tarball,
    with the manual, rebuilt vignettes, full Suggests, and incoming remote
-   checks;
+   checks; its tests are the CRAN tier in one process, as on CRAN, and a run
+   over the tier's time budget is a candidate finding
+   ([ADR 0045](../design/adr/0045-run-a-registered-cran-tier-under-cran-semantics.md));
 5. a fresh base-only R child that resolves `marginplyr` through the check
    library and retains its expected path, `find.package()` path,
    `loadNamespace()` path, and match result;
