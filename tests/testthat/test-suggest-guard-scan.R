@@ -1,11 +1,8 @@
 # `optional_suggest_spec()` marks a package no job withholds `asserted = FALSE`.
-# Most such entries are inside the hard dependency closure and are never
-# absent. One outside it is absent in `depends-only` and `tarball`, which run
-# the CRAN tier with `NOT_CRAN: false`: testthat turns its missing namespace
-# into a skip there, a file outside the tier is never loaded, and no `backend`
-# job withholds it. An unguarded reference would fail nowhere, so this gate
-# reads the test sources for one instead (*Structural gates* in
-# `design/architecture.md`).
+# One outside the hard dependency closure is still absent from the jobs that
+# run only the CRAN tier (`.github/workflows/release-matrix.yaml`'s header), so
+# an unguarded reference to it fails nowhere and this gate reads the test
+# sources for one instead (*Structural gates* in `design/architecture.md`).
 #
 # The rule it holds is deliberately blunt: inside a `test_that()` call, a
 # `skip_if_suggest_absent()` or `suggest_available()` naming the package as a
@@ -13,35 +10,13 @@
 # not count even when that package imports this one, and a reference outside
 # any `test_that()` -- in a helper or at top level -- is never guarded.
 
-# Package names in one DESCRIPTION dependency field, without version
-# constraints or `R` itself.
-dependency_field_packages <- function(field) {
-  if (length(field) == 0L || is.na(field)) {
+# The packages one DESCRIPTION dependency field names, other than `R`, read the
+# way the shipped guard reads Suggests.
+field_packages <- function(field) {
+  if (is.na(field)) {
     return(character())
   }
-  entries <- trimws(sub("[(].*$", "", strsplit(field, ",", fixed = TRUE)[[1]]))
-  setdiff(entries[nzchar(entries)], "R")
-}
-
-# marginplyr's own Depends and Imports, read from the DESCRIPTION
-# `declared_suggests()` reads, for the reason given there.
-declared_hard_dependencies <- function() {
-  path <- repository_file("DESCRIPTION")
-  if (is.na(path)) {
-    path <- system.file("DESCRIPTION", package = "marginplyr")
-  }
-  if (!nzchar(path) || !file.exists(path)) {
-    stop("No DESCRIPTION is reachable to read Imports from.")
-  }
-  fields <- read.dcf(path, fields = c("Depends", "Imports"))[1L, ]
-  packages <- unlist(
-    lapply(fields, dependency_field_packages),
-    use.names = FALSE
-  )
-  if (length(packages) == 0L) {
-    stop(sprintf("%s states no Imports.", path))
-  }
-  packages
+  setdiff(suggest_guard()$marginplyr_suggest_names(field), "R")
 }
 
 # Every package `roots` require through Depends, Imports and LinkingTo,
@@ -49,7 +24,9 @@ declared_hard_dependencies <- function() {
 # them is installed wherever these tests run, `_R_CHECK_DEPENDS_ONLY_`
 # included, so one that is not means this is not the closure a check installs,
 # and the gate refuses to answer rather than guess.
-hard_dependency_closure <- function(roots = declared_hard_dependencies()) {
+hard_dependency_closure <- function(
+  roots = field_packages(dcf_field(metadata_path("DESCRIPTION"), "Imports"))
+) {
   closure <- character()
   pending <- roots
   while (length(pending) > 0L) {
@@ -75,10 +52,7 @@ hard_dependency_closure <- function(roots = declared_hard_dependencies()) {
       drop = FALSE
     )
     closure <- c(closure, package)
-    pending <- c(pending, unlist(
-      lapply(fields, dependency_field_packages),
-      use.names = FALSE
-    ))
+    pending <- c(pending, unlist(lapply(fields, field_packages)))
   }
   closure
 }
@@ -152,7 +126,7 @@ unguarded_in_source <- function(file, packages) {
     }
     found
   }
-  start <- function(ids) {
+  source_order <- function(ids) {
     rows <- match(ids, data$id)
     data$line1[rows] * 1e6 + data$col1[rows]
   }
@@ -163,9 +137,17 @@ unguarded_in_source <- function(file, packages) {
   call_ids <- parent_of[parent_of[callees$id]]
   calls_to <- function(names) call_ids[callees$text %in% names]
 
-  qualified <- data[data$token == "SYMBOL_PACKAGE" & data$text %in% packages, ]
-  reference_ids <- qualified$id
-  reference_packages <- qualified$text
+  # The package side of `::` and `:::` is the operator's first sibling, a
+  # symbol or a string, either of which may carry quotes.
+  operators <- data[data$token %in% c("NS_GET", "NS_GET_INT"), , drop = FALSE]
+  sides <- data[data$parent %in% operators$parent, , drop = FALSE]
+  sides <- sides[order(sides$line1, sides$col1), , drop = FALSE]
+  sides <- sides[!duplicated(sides$parent), , drop = FALSE]
+  named <- vapply(sides$text, function(text) {
+    as.character(str2lang(text))
+  }, character(1), USE.NAMES = FALSE)
+  reference_ids <- sides$id[named %in% packages]
+  reference_packages <- named[named %in% packages]
   for (call in calls_to(namespace_loading_calls)) {
     # Every one of these takes the package as its first formal, `package`.
     arguments <- call_arguments(data, call)
@@ -193,23 +175,22 @@ unguarded_in_source <- function(file, packages) {
     arguments <- arguments[!names(arguments) %in% c("known", "suggests")]
     vapply(arguments, function(id) literal_package(data, id), character(1))
   })
-  guard_tests <- lapply(guards, function(guard) {
-    intersect(ancestors(guard), tests)
-  })
+  # A guard reaches the test it sits directly in and every test nested inside
+  # that one, so only its innermost enclosing test is kept.
+  guard_tests <- vapply(guards, function(guard) {
+    c(intersect(ancestors(guard), tests), NA_integer_)[[1L]]
+  }, integer(1))
 
   covered <- vapply(seq_along(reference_ids), function(i) {
-    test <- intersect(ancestors(reference_ids[[i]]), tests)
-    if (length(test) == 0L) {
-      return(FALSE)
-    }
+    enclosing <- intersect(ancestors(reference_ids[[i]]), tests)
     any(vapply(seq_along(guards), function(j) {
       reference_packages[[i]] %in% guarded[[j]] &&
-        test[[1L]] %in% guard_tests[[j]] &&
-        start(guards[[j]]) < start(reference_ids[[i]])
+        guard_tests[[j]] %in% enclosing &&
+        source_order(guards[[j]]) < source_order(reference_ids[[i]])
     }, logical(1)))
   }, logical(1))
 
-  ranked <- order(start(reference_ids))
+  ranked <- order(source_order(reference_ids))
   ranked <- ranked[!covered[ranked]]
   sprintf(
     "%s:%d {%s}",
@@ -258,8 +239,6 @@ test_that("no test source references an unwithheld Suggest without its guard", {
 })
 
 test_that("the candidate set is computed from the installed closure", {
-  # dbplyr imports DBI, so no check can lack it and no guard is required.
-  expect_true("DBI" %in% hard_dependency_closure())
   expect_false("DBI" %in% unwithheld_suggests())
   expect_identical(
     unwithheld_suggests(
@@ -271,6 +250,25 @@ test_that("the candidate set is computed from the installed closure", {
   expect_error(
     hard_dependency_closure("marginplyrAbsentSentinel"),
     "closure cannot be computed"
+  )
+})
+
+test_that("a two-sided constraint in an installed Imports is one entry", {
+  library <- withr::local_tempdir()
+  install <- function(package, imports = character()) {
+    dir.create(file.path(library, package))
+    writeLines(
+      c(paste("Package:", package), "Version: 1.5", imports),
+      file.path(library, package, "DESCRIPTION")
+    )
+  }
+  install("marginplyrFixtureA", "Imports: marginplyrFixtureB (>= 1.0, < 2.0)")
+  install("marginplyrFixtureB")
+  withr::local_libpaths(library, action = "prefix")
+
+  expect_identical(
+    hard_dependency_closure("marginplyrFixtureA"),
+    c("marginplyrFixtureA", "marginplyrFixtureB")
   )
 })
 
@@ -352,6 +350,26 @@ test_that("only an earlier guard naming the package covers a reference", {
     )),
     "test-fixture.R:5 {bit64}"
   )
+  # Nor does one in a test nested inside it, while one in an enclosing test
+  # reaches a nested test.
+  expect_identical(
+    scan(c(
+      "test_that(\"outer\", {",
+      "  test_that(\"inner\", skip_if_suggest_absent(\"bit64\"))",
+      use,
+      "})"
+    )),
+    "test-fixture.R:3 {bit64}"
+  )
+  expect_identical(
+    scan(in_test(
+      "  skip_if_suggest_absent(\"bit64\")",
+      "  test_that(\"inner\", {",
+      use,
+      "  })"
+    )),
+    character()
+  )
   # A variable is not a literal, whatever it holds.
   expect_identical(
     scan(in_test(
@@ -390,6 +408,20 @@ test_that("attaching and loading calls naming the package are references", {
   expect_identical(
     unguarded_suggest_references(paths, "bit64"),
     sprintf("test-fixture.R:%d {bit64}", 2:5)
+  )
+})
+
+test_that("a quoted package name is a reference", {
+  paths <- fixture_sources(list("test-fixture.R" = c(
+    "test_that(\"fixture\", {",
+    "  `bit64`::as.integer64(1)",
+    "  \"bit64\":::as.integer64(1)",
+    "})"
+  )))
+
+  expect_identical(
+    unguarded_suggest_references(paths, "bit64"),
+    sprintf("test-fixture.R:%d {bit64}", 2:3)
   )
 })
 

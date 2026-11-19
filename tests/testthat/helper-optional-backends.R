@@ -158,10 +158,8 @@ suggest_status <- function(package, suggests = declared_suggests()) {
 # require a `{DBI} is not installed` line that no run can produce, and
 # `verify-library-isolation.R` would find DBI on `.libPaths()` in every job that
 # withheld it. An entry that is not `asserted` gets no job of its own; it
-# reaches CI as another entry's companion. One that is also outside the hard
-# dependency closure is absent from `depends-only` and `tarball` with no job
-# withholding it, so `test-suggest-guard-scan.R` holds its references to the
-# guard.
+# reaches CI as another entry's companion. `test-suggest-guard-scan.R` holds
+# the references to one outside the hard dependency closure to the guard.
 #
 # `companions` names the packages a job proving this entry must install
 # alongside it. They are not the entry the job is for, so they are not what it
