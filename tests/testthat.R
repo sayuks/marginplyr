@@ -39,7 +39,6 @@ cran_tier <- c(
   "sent-query-details",
   "sf-summary",
   "share",
-  "share-backends",
   "summarize-operation",
   "utils"
 )
