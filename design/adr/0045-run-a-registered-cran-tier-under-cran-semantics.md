@@ -27,6 +27,12 @@ and `verify-suite-coverage.R` refuse a skip that names no withheld backend,
 `testthat::test_local()` and `devtools::test()` do not evaluate
 `tests/testthat.R`, so they run the complete suite as before.
 
+A workflow job never leaves `NOT_CRAN` to default. `r-lib/actions/setup-r`
+exports `NOT_CRAN=true` into a job that does not set the variable, so a job
+meant to run what CRAN runs states `NOT_CRAN: false`, and
+`verify-cran-test-budget.R` refuses a check that ran the complete suite rather
+than report the tier's budget met.
+
 ## Membership
 
 The tier is chosen to reach the public surface, not to be the fastest files:
@@ -48,17 +54,19 @@ the tier runs with every Suggested package installed, as on CRAN — the
 
 | Run | Tests |
 |---|---|
-| CRAN, R-hub, win-builder, local CRAN preflight | CRAN tier |
+| CRAN, win-builder, local CRAN preflight | CRAN tier |
 | `R-CMD-check.yaml`, *CRAN tier* row | CRAN tier |
-| `release-matrix.yaml` `depends-only` and `tarball` | CRAN tier |
-| `R-CMD-check.yaml`, other rows | complete suite, by `MARGINPLYR_COMPLETE_SUITE` |
+| `release-matrix.yaml` `depends-only` and `tarball`, `rhub.yaml` | CRAN tier |
+| `R-CMD-check.yaml`, other rows | complete suite under CRAN semantics, by `MARGINPLYR_COMPLETE_SUITE` |
 | `release-matrix.yaml` `backend` and `structure`, coverage, Review-ready `full` | complete suite, by `NOT_CRAN` |
 
 The other `R-CMD-check.yaml` rows keep the complete suite because they are the
 only place every backend's tests run together on macOS, Windows, R-devel and
 oldrel. This amends [ADR 0030](0030-require-complete-test-line-coverage.md),
-which left every CRAN-emulating job its environment: those rows now state the
-request the unset `NOT_CRAN` used to imply.
+which left every CRAN-emulating job its environment. No workflow job set
+`NOT_CRAN` except `backend`, so `setup-r` set it to true in the jobs documented
+as emulating CRAN; `R-CMD-check.yaml`, `depends-only`, `tarball` and
+`rhub.yaml` now set it to false.
 
 ## Rejected
 

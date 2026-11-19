@@ -44,19 +44,6 @@ cran_tier <- c(
   "utils"
 )
 
-# `R CMD check` runs this file from `tests/`. A registered name with no file
-# would shrink the tier without failing anything.
-unmatched <- cran_tier[
-  !file.exists(file.path("testthat", paste0("test-", cran_tier, ".R")))
-]
-if (length(unmatched) > 0L) {
-  stop(
-    "tests/testthat.R registers CRAN-tier test files that do not exist: ",
-    paste0("test-", unmatched, ".R", collapse = ", "),
-    call. = FALSE
-  )
-}
-
 # `.github/scripts/cran-test-budget.R` reads the same two variables to decide
 # whether the budget applies; this file ships and cannot source it.
 complete_suite <- any(vapply(

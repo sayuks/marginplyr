@@ -31,6 +31,11 @@ on:
 # that process can load marginplyr while R CMD build creates the vignettes.
 env:
   RHUB_ACTIONS_INSTALL_LOCAL_PACKAGE: true
+  # An R-hub check stands in for a CRAN one, so its tests are the CRAN tier
+  # (ADR 0045). Written out because an action that sets up R may export
+  # `NOT_CRAN=true` into a job that leaves it unset, as `r-lib/actions/setup-r`
+  # does, and that asks `tests/testthat.R` for the complete suite.
+  NOT_CRAN: false
 
 jobs:
 

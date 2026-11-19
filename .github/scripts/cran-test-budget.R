@@ -40,11 +40,20 @@ test_elapsed_seconds <- function(test_log) {
   if (length(elapsed) != 3L || anyNA(elapsed)) NA_real_ else elapsed[[3L]]
 }
 
-# `NULL` when a CRAN-tier test log is within `budget`, otherwise the finding as
-# one sentence. An unreadable time is a finding too: a gate that cannot see the
-# run would otherwise pass it.
-cran_test_budget_problem <- function(test_log, budget = cran_test_budget_seconds) {
-  elapsed <- test_elapsed_seconds(test_log)
+# `NULL` when the CRAN-tier check that left `rcheck`, its `<package>.Rcheck`
+# directory, ran its tests within `budget`; otherwise the finding as one
+# sentence. A run whose time cannot be read is a finding too, since a gate that
+# cannot see the run would otherwise pass it: `R CMD check` renames a failing
+# script's log to `.Rout.fail`, so only `testthat.Rout` is a finished run.
+cran_test_budget_problem <- function(rcheck, budget = cran_test_budget_seconds) {
+  log_path <- file.path(rcheck, "tests", "testthat.Rout")
+  if (length(log_path) != 1L || !file.exists(log_path)) {
+    return(paste0(
+      "The check left no finished testthat log, so the CRAN tier's run cannot ",
+      "be held to its budget."
+    ))
+  }
+  elapsed <- test_elapsed_seconds(readLines(log_path, warn = FALSE))
   if (is.na(elapsed)) {
     return(paste0(
       "The testthat log does not end with its elapsed time, so the CRAN tier's ",

@@ -21,8 +21,8 @@ set.
 
 ## Time of the complete suite
 
-`R-CMD-check.yaml` ran with `NOT_CRAN` unset and four test workers. Its
-*Check package* step for that SHA (run of 2026-11-18) took:
+`R-CMD-check.yaml` ran with four test workers. Its *Check package* step for
+that SHA (run of 2026-11-18) took:
 
 | Row | Step time |
 |---|---|
@@ -120,8 +120,25 @@ vignette. Setting `XDG_CACHE_HOME`, `XDG_DATA_HOME`, `XDG_CONFIG_HOME`,
 `XDG_STATE_HOME` and `DENO_DIR` to writable directories did not change that.
 The preflight's own check step was therefore not exercised on a real check.
 
+## `NOT_CRAN` in the workflows
+
+At that SHA no job in `R-CMD-check.yaml` or `release-matrix.yaml` set
+`NOT_CRAN` except `backend`, which set it to `true`. Every job ran
+`r-lib/actions/setup-r@v2`, whose `setup-r/src/installer.ts` at ref `v2`, read
+on this date, held
+
+```text
+if (!process.env["NOT_CRAN"]) core.exportVariable("NOT_CRAN", "true");
+```
+
+so the jobs their comments described as emulating CRAN ran with
+`NOT_CRAN=true`, and the step times above are for a complete suite run that
+way. Their logs were not read to confirm the exported value.
+
 ## Size of the shipped sources
 
+`tar -czf` over `DESCRIPTION`, `NAMESPACE`, `LICENSE`, `NEWS.md`, `README.md`,
+`R`, `man`, `tests`, `vignettes`, `inst` and `data` produced 1,351,680 bytes;
 `tests/` was 5.0 MB uncompressed.
 
 ## What the existing gates read

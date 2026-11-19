@@ -952,7 +952,7 @@ clean_check <- list(
 over_budget_outcome <- classify_rcmdcheck_result(
   clean_check,
   "unpublished",
-  test_budget = "fixture budget finding"
+  test_budget_problem = "fixture budget finding"
 )
 expect_identical(
   over_budget_outcome[c("status", "problem", "detail")],
@@ -978,34 +978,11 @@ expect_identical(
       notes = character()
     ),
     "unpublished",
-    test_budget = "fixture budget finding"
+    test_budget_problem = "fixture budget finding"
   )$detail,
   NULL,
   "a failing check reports its failure, not an unfinished test log's time"
 )
-local({
-  check_dir <- file.path(fixture_root, "test-budget-check")
-  tests <- file.path(check_dir, "marginplyr.Rcheck", "tests")
-  dir.create(tests, recursive = TRUE)
-  expect_true(
-    grepl("testthat", check_test_budget_problem(check_dir), fixed = TRUE),
-    "a check without a testthat log cannot be held to the budget"
-  )
-  trailer <- function(elapsed) {
-    c("> proc.time()", "   user  system elapsed ", paste(" 1.0 1.0", elapsed))
-  }
-  writeLines(trailer("78.9"), file.path(tests, "testthat.Rout"))
-  expect_identical(
-    check_test_budget_problem(check_dir),
-    NULL,
-    "a check whose tests ran within the CRAN tier's budget"
-  )
-  writeLines(trailer("1301.2"), file.path(tests, "testthat.Rout"))
-  expect_true(
-    grepl("1301", check_test_budget_problem(check_dir), fixed = TRUE),
-    "a check whose tests ran over the CRAN tier's budget"
-  )
-})
 check_environment <- paste(deparse(run_rcmdcheck), collapse = "\n")
 for (setting in c(
   "NOT_CRAN = \"false\"",

@@ -42,10 +42,14 @@ jobs:
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
-      # Without this, `tests/testthat.R` runs only the CRAN tier whenever
-      # `NOT_CRAN` is unset, as it is here. These rows are the only place every
-      # backend's tests run together on macOS, Windows, R-devel and oldrel, so
-      # they keep the complete suite and its four workers.
+      # `setup-r` exports `NOT_CRAN=true` into a job that does not set the
+      # variable, which would run every snapshot and, in the CRAN-tier row, the
+      # complete suite. Set, it is left alone.
+      NOT_CRAN: false
+      # Under CRAN semantics `tests/testthat.R` runs only the CRAN tier unless
+      # this asks for more. The other rows are the only place every backend's
+      # tests run together on macOS, Windows, R-devel and oldrel, so they keep
+      # the complete suite and its four workers.
       MARGINPLYR_COMPLETE_SUITE: ${{ matrix.config.cran_tier && 'false' || 'true' }}
       TESTTHAT_PARALLEL: ${{ matrix.config.cran_tier && 'false' || 'true' }}
       TESTTHAT_CPUS: 4
@@ -261,10 +265,11 @@ jobs:
         if: runner.os == 'Windows'
         run: Rscript tools/test-duckdb-json-provision.R
 
-      # No `upload-snapshots` here, and no `NOT_CRAN`. This matrix emulates
-      # CRAN, and testthat skips snapshot expectations under CRAN semantics, so
-      # every snapshot expectation skips and there is never a snapshot to
-      # upload. Asking for one implied a coverage this job does not have.
+      # No `upload-snapshots` here. This matrix emulates CRAN, which the job's
+      # `NOT_CRAN: false` is what makes true, and testthat skips snapshot
+      # expectations under CRAN semantics, so every snapshot expectation skips
+      # and there is never a snapshot to upload. Asking for one implied a
+      # coverage this job does not have.
       #
       # Snapshots run in `release-matrix.yaml`'s `backend` jobs, which set
       # `NOT_CRAN` because they prove behavior rather than emulate CRAN, and
@@ -288,8 +293,8 @@ jobs:
           upload-results: true
 
       # The CRAN-tier row's reason for existing. The script's header says what
-      # it reads; it passes the complete-suite rows without measuring them, so
-      # the condition here only saves the step.
+      # it reads and why it refuses a check that ran the complete suite, which
+      # is every other row.
       - name: Verify the CRAN tier's test time
         if: matrix.config.cran_tier
         run: Rscript .github/scripts/verify-cran-test-budget.R

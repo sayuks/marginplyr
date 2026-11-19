@@ -1034,19 +1034,6 @@ run_rcmdcheck <- function(tarball, evidence_path) {
   list(result = result, check_dir = check_dir, console = console)
 }
 
-# Holds a completed check's test run to the CRAN tier's time budget, whose
-# policy is `.github/scripts/cran-test-budget.R`. `NULL` when within it.
-check_test_budget_problem <- function(check_dir) {
-  log_path <- Sys.glob(file.path(check_dir, "*.Rcheck", "tests", "testthat.Rout"))
-  if (length(log_path) != 1L) {
-    return(paste0(
-      "The check left no finished testthat log, so the CRAN tier's run ",
-      "cannot be held to its budget."
-    ))
-  }
-  cran_test_budget_problem(readLines(log_path, warn = FALSE))
-}
-
 # Returns R source that writes a fresh base-only child's two package resolutions
 # as one DCF record.
 marginplyr_candidate_library_identity_child_source <- function() {
@@ -1241,10 +1228,14 @@ rcmdcheck_repository_outage <- function(result) {
 }
 
 # Classifies structured R CMD check output before any conditional follow-up.
-# `test_budget` is `check_test_budget_problem()`'s answer for the same check; it
-# counts only against a check that completed without an ERROR, because a failing
-# test script never records the time the budget reads.
-classify_rcmdcheck_result <- function(result, cran_status, test_budget = NULL) {
+# `test_budget_problem` is `cran_test_budget_problem()`'s answer for the same
+# check; it counts only against a check that completed without an ERROR,
+# because a failing test script never records the time the budget reads.
+classify_rcmdcheck_result <- function(
+  result,
+  cran_status,
+  test_budget_problem = NULL
+) {
   process_status <- suppressWarnings(as.integer(result$status))
   if (length(process_status) != 1L || is.na(process_status)) {
     process_status <- NA_integer_
@@ -1266,7 +1257,8 @@ classify_rcmdcheck_result <- function(result, cran_status, test_budget = NULL) {
     logical(1)
   )
   completed <- identical(process_status, 0L) && !timeout
-  over_budget <- completed && counts[["errors"]] == 0L && !is.null(test_budget)
+  over_budget <- completed && counts[["errors"]] == 0L &&
+    !is.null(test_budget_problem)
   has_failures <- counts[["errors"]] > 0L ||
     counts[["warnings"]] > 0L || any(unknown_notes) || over_budget
   status_text <- if (is.na(process_status)) "unavailable" else process_status
@@ -1310,7 +1302,7 @@ classify_rcmdcheck_result <- function(result, cran_status, test_budget = NULL) {
     problem = if (has_failures) "candidate" else NULL,
     counts = counts,
     classifications = classifications,
-    detail = if (over_budget) test_budget else NULL
+    detail = if (over_budget) test_budget_problem else NULL
   )
 }
 
@@ -1677,7 +1669,9 @@ run_preflight_pipeline <- function(state, repository_root, description) {
   outcome <- classify_rcmdcheck_result(
     result,
     state$cran_status,
-    test_budget = check_test_budget_problem(check$check_dir)
+    test_budget_problem = cran_test_budget_problem(
+      Sys.glob(file.path(check$check_dir, "*.Rcheck"))
+    )
   )
   state$counts <- outcome$counts
   classifications <- outcome$classifications

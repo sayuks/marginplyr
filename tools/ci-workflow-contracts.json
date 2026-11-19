@@ -59,6 +59,7 @@
         "env": {
           "GITHUB_PAT": "${{ secrets.GITHUB_TOKEN }}",
           "R_KEEP_PKG_SOURCE": "yes",
+          "NOT_CRAN": "false",
           "MARGINPLYR_COMPLETE_SUITE": "${{ matrix.config.cran_tier && 'false' || 'true' }}",
           "TESTTHAT_PARALLEL": "${{ matrix.config.cran_tier && 'false' || 'true' }}",
           "TESTTHAT_CPUS": "4"
@@ -924,6 +925,7 @@
         "env": {
           "_R_CHECK_DEPENDS_ONLY_": "true",
           "_R_CHECK_FORCE_SUGGESTS_": "false",
+          "NOT_CRAN": "false",
           "MARGINPLYR_CHECK_LABEL": "Minimal dependencies (depends-only)"
         },
         "steps": [
@@ -1010,6 +1012,7 @@
         },
         "env": {
           "_R_CHECK_FORCE_SUGGESTS_": "false",
+          "NOT_CRAN": "false",
           "MARGINPLYR_CHECK_LABEL": "Tarball ${{ matrix.config.os }} (${{ matrix.config.r }})"
         },
         "steps": [
@@ -1193,7 +1196,8 @@
       }
     },
     "env": {
-      "RHUB_ACTIONS_INSTALL_LOCAL_PACKAGE": "true"
+      "RHUB_ACTIONS_INSTALL_LOCAL_PACKAGE": "true",
+      "NOT_CRAN": "false"
     },
     "jobs": {
       "setup": {

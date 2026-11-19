@@ -152,8 +152,12 @@ if (cran_notes_block(classifications, strict_release)) {
 }
 
 # Holds this check's test run to the CRAN tier's time budget when the tier is
-# what ran. It follows the stops above so that a failing check reports its
-# failure rather than a test log that never finished, and it is sourced here
-# rather than run as a workflow step for the reason the two assertions at the
-# top give.
-source(".github/scripts/verify-cran-test-budget.R", local = new.env())
+# what ran; a `backend` job asks for the complete suite, which has no budget.
+# It follows the stops above so that a failing check reports its failure
+# rather than a test log that never finished, and it is sourced here rather
+# than run as a workflow step for the reason the two assertions at the top
+# give.
+source(".github/scripts/cran-test-budget.R")
+if (cran_tier_run()) {
+  source(".github/scripts/verify-cran-test-budget.R", local = new.env())
+}

@@ -22,10 +22,11 @@ with_environment <- function(values, code) {
   force(code)
 }
 
-# The test files `tests_dir`/testthat.R asks testthat for: its script evaluated
-# from that directory, as R CMD check runs it, with test_check() replaced by a
-# recorder and the filter it received resolved by testthat's own file search.
-selected_files <- function(tests_dir, values) {
+# What `tests_dir`/testthat.R asks testthat for: its script evaluated from that
+# directory, as R CMD check runs it, with test_check() replaced by a recorder.
+# `files` is the filter it passed resolved by testthat's own file search, and
+# `registered` the names it registers.
+selection <- function(tests_dir, values) {
   with_environment(values, {
     received <- NULL
     scope <- new.env(parent = globalenv())
@@ -35,8 +36,9 @@ selected_files <- function(tests_dir, values) {
     on.exit(setwd(previous), add = TRUE)
     sys.source("testthat.R", envir = scope)
     expect(!is.null(received), "tests/testthat.R never called test_check().")
-    testthat::find_test_scripts("testthat", filter = received$filter,
-      full.names = FALSE)
+    list(registered = scope$cran_tier,
+      files = testthat::find_test_scripts("testthat", filter = received$filter,
+        full.names = FALSE))
   })
 }
 
@@ -60,14 +62,20 @@ main <- function() {
   every <- list.files(file.path(tests_dir, "testthat"), pattern = "^test-.*[.]R$")
 
   # Nothing asking for the complete suite is how CRAN runs the check.
-  tier <- selected_files(tests_dir, character())
+  cran <- selection(tests_dir, character())
+  tier <- cran$files
   expect(length(tier) > 0L && length(tier) < length(every) && all(tier %in% every),
     paste0("CRAN semantics must select a strict, non-empty subset; selected ",
       length(tier), " of ", length(every), "."))
-  expect(identical(selected_files(tests_dir, c(NOT_CRAN = "false")), tier),
+  # A registered name with no file would shrink the tier without a failure.
+  unmatched <- setdiff(paste0("test-", cran$registered, ".R"), tier)
+  expect(length(unmatched) == 0L && !anyDuplicated(cran$registered),
+    paste0("tests/testthat.R must register each existing test file once; no ",
+      "file answers: ", paste(unmatched, collapse = ", "), "."))
+  expect(identical(selection(tests_dir, c(NOT_CRAN = "false"))$files, tier),
     "NOT_CRAN=false must select the CRAN tier.")
   for (name in tier_variables) {
-    complete <- selected_files(tests_dir, stats::setNames("true", name))
+    complete <- selection(tests_dir, stats::setNames("true", name))$files
     expect(identical(sort(complete), sort(every)),
       paste0(name, "=true must select every test file."))
   }
@@ -96,22 +104,6 @@ main <- function() {
     paste(unguarded, collapse = ", "), ". Register a test file that is in ",
     "tests/testthat.R."))
 
-  # A registered name with no file would shrink the tier without a failure.
-  fixture <- tempfile("cran-tier-")
-  dir.create(file.path(fixture, "tests", "testthat"), recursive = TRUE)
-  on.exit(unlink(fixture, recursive = TRUE), add = TRUE)
-  file.copy(file.path(tests_dir, "testthat.R"), file.path(fixture, "tests"))
-  kept <- tier[-1L]
-  file.create(file.path(fixture, "tests", "testthat", kept))
-  for (values in list(character(), c(NOT_CRAN = "true"))) {
-    refused <- tryCatch(selected_files(file.path(fixture, "tests"), values),
-      error = conditionMessage)
-    expect(is.character(refused) && length(refused) == 1L &&
-      grepl(tier[[1L]], refused, fixed = TRUE),
-      paste0("A registered file that does not exist must stop the run and be ",
-        "named; got: ", paste(refused, collapse = " ")))
-  }
-
   # The budget reads the proc.time() trailer R CMD BATCH ends a test log with.
   source(file.path(source_root, ".github", "scripts", "cran-test-budget.R"),
     local = TRUE)
@@ -120,35 +112,48 @@ main <- function() {
     sprintf(" 73.507   5.577 %s ", elapsed))
   expect(identical(test_elapsed_seconds(log("78.962")), 78.962),
     "The elapsed seconds of a finished test log must be read.")
-  expect(is.null(cran_test_budget_problem(log("78.962"), budget = 300)),
+  fixture <- tempfile("cran-tier-")
+  check <- file.path(fixture, "check")
+  rcheck <- file.path(check, "marginplyr.Rcheck")
+  dir.create(file.path(rcheck, "tests"), recursive = TRUE)
+  on.exit(unlink(fixture, recursive = TRUE), add = TRUE)
+  finished <- function(lines, name = "testthat.Rout") {
+    unlink(list.files(file.path(rcheck, "tests"), full.names = TRUE))
+    writeLines(lines, file.path(rcheck, "tests", name))
+    rcheck
+  }
+  expect(is.null(cran_test_budget_problem(finished(log("78.962")), budget = 300)),
     "A run inside the budget must raise nothing.")
-  expect(is.null(cran_test_budget_problem(log("300.000"), budget = 300)),
+  expect(is.null(cran_test_budget_problem(finished(log("300.000")), budget = 300)),
     "A run exactly on the budget must raise nothing.")
-  over <- cran_test_budget_problem(log("1301.250"), budget = 300)
+  over <- cran_test_budget_problem(finished(log("1301.250")), budget = 300)
   expect(is.character(over) && grepl("1301", over, fixed = TRUE) &&
     grepl("300", over, fixed = TRUE), "A run over the budget must be reported.")
-  unread <- cran_test_budget_problem(log("78.962")[1:2], budget = 300)
+  unread <- cran_test_budget_problem(finished(log("78.962")[1:2]), budget = 300)
   expect(is.character(unread) && grepl("elapsed", unread, fixed = TRUE),
     "A log without the trailer must be reported, not passed.")
+  # A failing script's log is renamed, and is not a finished run.
+  stopped <- cran_test_budget_problem(
+    finished(log("78.962"), "testthat.Rout.fail"), budget = 300)
+  expect(is.character(stopped) && grepl("finished", stopped, fixed = TRUE),
+    "A check without a finished test log must be reported, not passed.")
+  absent <- cran_test_budget_problem(character(), budget = 300)
+  expect(is.character(absent), "A check directory that is absent must be reported.")
 
   # The budget's reading of the environment must match tests/testthat.R's.
   cases <- list(character(), c(NOT_CRAN = "false"), c(NOT_CRAN = "true"),
     c(MARGINPLYR_COMPLETE_SUITE = "true"),
     c(NOT_CRAN = "false", MARGINPLYR_COMPLETE_SUITE = "true"))
   for (values in cases) {
-    ran_tier <- length(selected_files(tests_dir, values)) < length(every)
+    ran_tier <- length(selection(tests_dir, values)$files) < length(every)
     expect(identical(with_environment(values, cran_tier_run()), ran_tier),
       paste0("cran_tier_run() disagrees with tests/testthat.R under: ",
         paste(names(values), values, sep = "=", collapse = " ")))
   }
 
   # The verifier, as a workflow step runs it against a finished check.
-  check <- file.path(fixture, "check")
-  logs <- file.path(check, "marginplyr.Rcheck", "tests")
-  dir.create(logs, recursive = TRUE)
-  verify <- function(lines, values, name = "testthat.Rout") {
-    unlink(list.files(logs, full.names = TRUE))
-    writeLines(lines, file.path(logs, name))
+  verify <- function(lines, values) {
+    finished(lines)
     with_environment(values, {
       Sys.setenv(MARGINPLYR_CHECK_DIR = check)
       on.exit(Sys.unsetenv("MARGINPLYR_CHECK_DIR"), add = TRUE)
@@ -159,17 +164,19 @@ main <- function() {
         output = paste(output, collapse = "\n"))
     })
   }
-  inside <- verify(log("78.962"), character())
-  expect(inside$status == 0L, inside$output)
-  outside <- verify(log("1301.250"), character())
+  inside <- verify(log("78.962"), c(NOT_CRAN = "false"))
+  expect(inside$status == 0L && grepl("79 s", inside$output, fixed = TRUE),
+    inside$output)
+  outside <- verify(log("1301.250"), c(NOT_CRAN = "false"))
   expect(outside$status != 0L && grepl("1301", outside$output, fixed = TRUE),
     outside$output)
-  complete <- verify(log("1301.250"), c(MARGINPLYR_COMPLETE_SUITE = "true"))
-  expect(complete$status == 0L, complete$output)
-  # A failing script is renamed and never prints its time.
-  stopped <- verify(log("78.962")[1:2], character(), "testthat.Rout.fail")
-  expect(stopped$status != 0L && grepl("elapsed", stopped$output, fixed = TRUE),
-    stopped$output)
+  # setup-r exports NOT_CRAN=true into a job that does not set it; such a job
+  # ran the complete suite and must not report the tier's gate green.
+  for (name in tier_variables) {
+    complete <- verify(log("78.962"), stats::setNames("true", name))
+    expect(complete$status != 0L &&
+      grepl("complete suite", complete$output, fixed = TRUE), complete$output)
+  }
 
   cat("CRAN tier fixtures passed.\n")
 }
