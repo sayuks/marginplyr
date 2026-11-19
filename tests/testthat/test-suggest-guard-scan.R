@@ -24,7 +24,7 @@ field_packages <- function(field) {
 # wherever these tests run, `_R_CHECK_DEPENDS_ONLY_` included, so one that is
 # not means this is not the closure a check installs, and the gate refuses to
 # answer rather than guess. LinkingTo is left out: a binary install does not
-# bring it, so it is absent at run time on CRAN's Windows and macOS builds.
+# bring it.
 hard_dependency_closure <- function(
   roots = field_packages(dcf_field(metadata_path("DESCRIPTION"), "Imports"))
 ) {
@@ -93,6 +93,11 @@ call_arguments <- function(data, call) {
   stats::setNames(ids, labels)
 }
 
+# The name the text of a symbol or string token spells, its quotes removed.
+unquoted <- function(text) {
+  as.character(str2lang(text))
+}
+
 # The package an argument expression names as a string literal, or, when
 # `symbols` is TRUE, as a bare symbol too; NA when it is anything else.
 literal_package <- function(data, expression, symbols = FALSE) {
@@ -100,11 +105,8 @@ literal_package <- function(data, expression, symbols = FALSE) {
   if (nrow(inner) != 1L) {
     return(NA_character_)
   }
-  if (inner$token == "STR_CONST") {
-    return(str2lang(inner$text))
-  }
-  if (symbols && inner$token == "SYMBOL") {
-    return(gsub("`", "", inner$text, fixed = TRUE))
+  if (inner$token == "STR_CONST" || (symbols && inner$token == "SYMBOL")) {
+    return(unquoted(inner$text))
   }
   NA_character_
 }
@@ -144,9 +146,7 @@ unguarded_in_source <- function(file, packages) {
   sides <- data[data$parent %in% operators$parent, , drop = FALSE]
   sides <- sides[order(sides$line1, sides$col1), , drop = FALSE]
   sides <- sides[!duplicated(sides$parent), , drop = FALSE]
-  named <- vapply(sides$text, function(text) {
-    as.character(str2lang(text))
-  }, character(1), USE.NAMES = FALSE)
+  named <- vapply(sides$text, unquoted, character(1), USE.NAMES = FALSE)
   reference_ids <- sides$id[named %in% packages]
   reference_packages <- named[named %in% packages]
   for (call in calls_to(namespace_loading_calls)) {
@@ -254,18 +254,26 @@ test_that("the candidate set is computed from the installed closure", {
   )
 })
 
-test_that("a two-sided constraint in an installed Imports is one entry", {
-  library <- withr::local_tempdir()
-  install <- function(package, imports = character()) {
+# Puts a package of each name in `fields`, its DESCRIPTION carrying that
+# element's fields, in a fresh library prefixed to the library paths until
+# `env` exits.
+local_fixture_library <- function(fields, env = parent.frame()) {
+  library <- withr::local_tempdir(.local_envir = env)
+  for (package in names(fields)) {
     dir.create(file.path(library, package))
     writeLines(
-      c(paste("Package:", package), "Version: 1.5", imports),
+      c(paste("Package:", package), "Version: 1.5", fields[[package]]),
       file.path(library, package, "DESCRIPTION")
     )
   }
-  install("marginplyrFixtureA", "Imports: marginplyrFixtureB (>= 1.0, < 2.0)")
-  install("marginplyrFixtureB")
-  withr::local_libpaths(library, action = "prefix")
+  withr::local_libpaths(library, action = "prefix", .local_envir = env)
+}
+
+test_that("a two-sided constraint in an installed Imports is one entry", {
+  local_fixture_library(list(
+    marginplyrFixtureA = "Imports: marginplyrFixtureB (>= 1.0, < 2.0)",
+    marginplyrFixtureB = character()
+  ))
 
   expect_identical(
     hard_dependency_closure("marginplyrFixtureA"),
@@ -274,16 +282,9 @@ test_that("a two-sided constraint in an installed Imports is one entry", {
 })
 
 test_that("a LinkingTo package absent at run time is outside the closure", {
-  library <- withr::local_tempdir()
-  dir.create(file.path(library, "marginplyrFixtureC"))
-  writeLines(
-    c(
-      "Package: marginplyrFixtureC", "Version: 1.0",
-      "LinkingTo: marginplyrAbsentSentinel"
-    ),
-    file.path(library, "marginplyrFixtureC", "DESCRIPTION")
-  )
-  withr::local_libpaths(library, action = "prefix")
+  local_fixture_library(list(
+    marginplyrFixtureC = "LinkingTo: marginplyrAbsentSentinel"
+  ))
 
   expect_identical(
     hard_dependency_closure("marginplyrFixtureC"),
