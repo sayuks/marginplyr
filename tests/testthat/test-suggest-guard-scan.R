@@ -19,11 +19,12 @@ field_packages <- function(field) {
   setdiff(suggest_guard()$marginplyr_suggest_names(field), "R")
 }
 
-# Every package `roots` require through Depends, Imports and LinkingTo,
-# recursively, read from the installed packages' own metadata. Every one of
-# them is installed wherever these tests run, `_R_CHECK_DEPENDS_ONLY_`
-# included, so one that is not means this is not the closure a check installs,
-# and the gate refuses to answer rather than guess.
+# Every package `roots` require through Depends and Imports, recursively, read
+# from the installed packages' own metadata. Every one of them is installed
+# wherever these tests run, `_R_CHECK_DEPENDS_ONLY_` included, so one that is
+# not means this is not the closure a check installs, and the gate refuses to
+# answer rather than guess. LinkingTo is left out: a binary install does not
+# bring it, so it is absent at run time on CRAN's Windows and macOS builds.
 hard_dependency_closure <- function(
   roots = field_packages(dcf_field(metadata_path("DESCRIPTION"), "Imports"))
 ) {
@@ -48,7 +49,7 @@ hard_dependency_closure <- function(
     fields <- utils::packageDescription(
       package,
       lib.loc = dirname(location[[1L]]),
-      fields = c("Depends", "Imports", "LinkingTo"),
+      fields = c("Depends", "Imports"),
       drop = FALSE
     )
     closure <- c(closure, package)
@@ -269,6 +270,24 @@ test_that("a two-sided constraint in an installed Imports is one entry", {
   expect_identical(
     hard_dependency_closure("marginplyrFixtureA"),
     c("marginplyrFixtureA", "marginplyrFixtureB")
+  )
+})
+
+test_that("a LinkingTo package absent at run time is outside the closure", {
+  library <- withr::local_tempdir()
+  dir.create(file.path(library, "marginplyrFixtureC"))
+  writeLines(
+    c(
+      "Package: marginplyrFixtureC", "Version: 1.0",
+      "LinkingTo: marginplyrAbsentSentinel"
+    ),
+    file.path(library, "marginplyrFixtureC", "DESCRIPTION")
+  )
+  withr::local_libpaths(library, action = "prefix")
+
+  expect_identical(
+    hard_dependency_closure("marginplyrFixtureC"),
+    "marginplyrFixtureC"
   )
 })
 
