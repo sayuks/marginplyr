@@ -247,7 +247,7 @@ When a subject-tested entry forces its caller's promise, tracing is re-enabled
 for that force alone, so an execution entry point nested in the argument remains
 visible. Positive controls cover both shapes (#303).
 
-Snapshots run only where `NOT_CRAN` is set: the `structure` and `backend` jobs,
+Snapshots run only where `NOT_CRAN` is true: the `structure` and `backend` jobs,
 the local Review-ready check, and the CI coverage run (ADR 0030). A plain CRAN
 check does not execute this gate.
 

@@ -35,6 +35,13 @@
 # so that a backend which failed to install fails the job instead of skipping
 # into a false green. See `tests/testthat/helper-optional-backends.R`.
 #
+# `depends-only` and `tarball` set `NOT_CRAN: false`, so what their tests run is
+# the CRAN tier `tests/testthat.R` registers (ADR 0045), and `check-tarball.R`
+# holds that run to the tier's time budget. The `backend` jobs set `NOT_CRAN:
+# true`, which is what asks for the complete suite as well. None of the three
+# leaves it to default: `setup-r` exports `NOT_CRAN=true` into a job that does
+# not set it.
+#
 # Which contracts those jobs prove is settled by construction rather than by a
 # list (#93). Every `backend` job installs one optional backend -- plus the
 # companions its entry declares, which may themselves be tracked entries when
@@ -54,7 +61,7 @@
 #
 # The soundness layer is what a `proves` list of contract test names used to
 # approximate. It is strictly stronger: a skip for any other reason -- a stray
-# `skip_if()`, a `skip_on_os()`, or `NOT_CRAN` being dropped so the snapshot
+# `skip_if()`, a `skip_on_os()`, or `NOT_CRAN` being false so the snapshot
 # tests skip -- now fails the job, and none of those was caught before.
 #
 # `structure` stands outside the tarball scheme deliberately. It asks about the
@@ -63,7 +70,7 @@
 # before pushing: `Rscript .github/scripts/verify-suite-coverage.R` gives the
 # same verdict locally that `structure-verdict` gives in CI.
 #
-# Snapshot expectations run only where `NOT_CRAN` is set: testthat skips them
+# Snapshot expectations run only where `NOT_CRAN` is true: testthat skips them
 # under CRAN semantics, so a snapshot never fails in a job that emulates CRAN.
 # That is the `backend` jobs, which set it in the workflow, and the `structure`
 # job, whose script sets it so a local run matches CI. The coverage workflow
@@ -397,6 +404,9 @@ jobs:
       # Without this, `--as-cran` treats the deliberately absent Suggests as a
       # check failure, which would make the job impossible to run.
       _R_CHECK_FORCE_SUGGESTS_: false
+      # A minimal CRAN flavor runs the CRAN tier; the header says why this is
+      # written out.
+      NOT_CRAN: false
       MARGINPLYR_CHECK_LABEL: Minimal dependencies (depends-only)
 
     steps:
@@ -470,6 +480,9 @@ jobs:
       # `backend` jobs execute them. Without this, `--as-cran` would fail the
       # job for the missing Suggests rather than let the tests skip.
       _R_CHECK_FORCE_SUGGESTS_: false
+      # The artifact as CRAN checks it runs the CRAN tier; the header says why
+      # this is written out.
+      NOT_CRAN: false
       MARGINPLYR_CHECK_LABEL: >-
         Tarball ${{ matrix.config.os }} (${{ matrix.config.r }})
 
@@ -562,10 +575,13 @@ jobs:
       # testthat skips snapshot expectations under CRAN semantics, which marks
       # the whole test skipped. These jobs prove behavior rather than emulate
       # CRAN, so they opt out; the `depends-only` and `tarball` jobs
-      # deliberately do not. Dropping this no longer merely weakens the job:
-      # `verify-backend.R` refuses an "On CRAN" skip, because it is not a
-      # backend this job withheld.
+      # deliberately do not. Setting this to false no longer merely weakens
+      # the job: `verify-backend.R` refuses an "On CRAN" skip, because it is
+      # not a backend this job withheld.
       NOT_CRAN: true
+      # Says by name that this job runs the complete suite, which is what
+      # excuses it from the CRAN tier's time budget `check-tarball.R` applies.
+      MARGINPLYR_COMPLETE_SUITE: true
       # Every other optional backend is absent on purpose: proving one backend
       # in isolation also proves it does not depend on the others. That second
       # half is only worth stating because `check-tarball.R` enforces it; a

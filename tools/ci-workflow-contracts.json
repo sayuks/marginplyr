@@ -21,7 +21,7 @@
       "R-CMD-check": {
         "runs-on": "${{ matrix.config.os }}",
         "timeout-minutes": "180",
-        "name": "${{ matrix.config.os }} (${{ matrix.config.r }})",
+        "name": "${{ matrix.config.os }} (${{ matrix.config.r }}${{ matrix.config.cran_tier && ', CRAN tier' || '' }})",
         "strategy": {
           "fail-fast": "false",
           "matrix": {
@@ -47,6 +47,11 @@
               {
                 "os": "ubuntu-latest",
                 "r": "oldrel-1"
+              },
+              {
+                "os": "windows-latest",
+                "r": "release",
+                "cran_tier": "true"
               }
             ]
           }
@@ -54,7 +59,9 @@
         "env": {
           "GITHUB_PAT": "${{ secrets.GITHUB_TOKEN }}",
           "R_KEEP_PKG_SOURCE": "yes",
-          "TESTTHAT_PARALLEL": "true",
+          "NOT_CRAN": "false",
+          "MARGINPLYR_COMPLETE_SUITE": "${{ matrix.config.cran_tier && 'false' || 'true' }}",
+          "TESTTHAT_PARALLEL": "${{ matrix.config.cran_tier && 'false' || 'true' }}",
           "TESTTHAT_CPUS": "4"
         },
         "steps": [
@@ -130,11 +137,16 @@
             }
           },
           {
+            "name": "Verify the CRAN tier's test time",
+            "if": "matrix.config.cran_tier",
+            "run": "Rscript .github/scripts/verify-cran-test-budget.R"
+          },
+          {
             "name": "Summarize the check log",
             "if": "always() && steps.setup-r.outcome == 'success'",
             "run": "Rscript .github/scripts/summarize-check-log.R",
             "env": {
-              "MARGINPLYR_CHECK_LABEL": "${{ matrix.config.os }} (${{ matrix.config.r }})"
+              "MARGINPLYR_CHECK_LABEL": "${{ matrix.config.os }} (${{ matrix.config.r }}${{ matrix.config.cran_tier && ', CRAN tier' || '' }})"
             }
           }
         ]
@@ -424,6 +436,10 @@
           {
             "name": "Verify suite-coverage worker execution",
             "run": "Rscript tools/test-suite-coverage-workers.R"
+          },
+          {
+            "name": "Verify the CRAN tier and its time budget",
+            "run": "Rscript tools/test-cran-tier.R"
           },
           {
             "uses": "actions/setup-go@v7",
@@ -909,6 +925,7 @@
         "env": {
           "_R_CHECK_DEPENDS_ONLY_": "true",
           "_R_CHECK_FORCE_SUGGESTS_": "false",
+          "NOT_CRAN": "false",
           "MARGINPLYR_CHECK_LABEL": "Minimal dependencies (depends-only)"
         },
         "steps": [
@@ -995,6 +1012,7 @@
         },
         "env": {
           "_R_CHECK_FORCE_SUGGESTS_": "false",
+          "NOT_CRAN": "false",
           "MARGINPLYR_CHECK_LABEL": "Tarball ${{ matrix.config.os }} (${{ matrix.config.r }})"
         },
         "steps": [
@@ -1066,6 +1084,7 @@
         "env": {
           "MARGINPLYR_REQUIRED_SUGGESTS": "${{ matrix.backend.required }}",
           "NOT_CRAN": "true",
+          "MARGINPLYR_COMPLETE_SUITE": "true",
           "_R_CHECK_FORCE_SUGGESTS_": "false",
           "MARGINPLYR_CHECK_ARGS": "--as-cran --ignore-vignettes",
           "MARGINPLYR_CHECK_LABEL": "Live ${{ matrix.backend.name }}",

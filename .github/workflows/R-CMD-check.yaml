@@ -20,7 +20,7 @@ jobs:
     # Includes setup, vignette rebuilding and the complete test suite.
     timeout-minutes: 180
 
-    name: ${{ matrix.config.os }} (${{ matrix.config.r }})
+    name: ${{ matrix.config.os }} (${{ matrix.config.r }}${{ matrix.config.cran_tier && ', CRAN tier' || '' }})
 
     strategy:
       fail-fast: false
@@ -31,11 +31,27 @@ jobs:
           - {os: ubuntu-latest,   r: 'devel', http-user-agent: 'release'}
           - {os: ubuntu-latest,   r: 'release', no_build_vignettes: true}
           - {os: ubuntu-latest,   r: 'oldrel-1'}
+          # The check CRAN itself runs: every Suggested package installed, one
+          # test process, and nothing asking for the complete suite, so
+          # `tests/testthat.R` runs the CRAN tier (ADR 0045). The rows above
+          # ask for the complete suite instead. Windows, because it is the
+          # slowest platform CRAN checks on and the time budget below is what
+          # this row is for.
+          - {os: windows-latest, r: 'release', cran_tier: true}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
-      TESTTHAT_PARALLEL: "true"
+      # `setup-r` exports `NOT_CRAN=true` into a job that does not set the
+      # variable, which would run every snapshot and, in the CRAN-tier row, the
+      # complete suite. Set, it is left alone.
+      NOT_CRAN: false
+      # Under CRAN semantics `tests/testthat.R` runs only the CRAN tier unless
+      # this asks for more. The other rows are the only place every backend's
+      # tests run together on macOS, Windows, R-devel and oldrel, so they keep
+      # the complete suite and its four workers.
+      MARGINPLYR_COMPLETE_SUITE: ${{ matrix.config.cran_tier && 'false' || 'true' }}
+      TESTTHAT_PARALLEL: ${{ matrix.config.cran_tier && 'false' || 'true' }}
       TESTTHAT_CPUS: 4
 
     steps:
@@ -249,17 +265,19 @@ jobs:
         if: runner.os == 'Windows'
         run: Rscript tools/test-duckdb-json-provision.R
 
-      # No `upload-snapshots` here, and no `NOT_CRAN`. This matrix emulates
-      # CRAN, and testthat skips snapshot expectations under CRAN semantics, so
-      # all three snapshot-bearing tests skip and there is never a snapshot to
-      # upload. Asking for one implied a coverage this job does not have.
+      # No `upload-snapshots` here. This matrix emulates CRAN, which the job's
+      # `NOT_CRAN: false` is what makes true, and testthat skips snapshot
+      # expectations under CRAN semantics, so every snapshot expectation skips
+      # and there is never a snapshot to upload. Asking for one implied a
+      # coverage this job does not have.
       #
       # Snapshots run in `release-matrix.yaml`'s `backend` jobs, which set
-      # `NOT_CRAN` because they prove behavior rather than emulate CRAN, and
-      # whose uploaded check directory carries any `.new.md` diff. The local
-      # Review-ready check and CI coverage run also enable them (ADR 0030). This
-      # five-platform CRAN matrix leaves them skipped: #23 holds snapshots to
-      # diagnostic meaning rather than byte-for-byte wording across platforms.
+      # `NOT_CRAN` to true because they prove behavior rather than emulate
+      # CRAN, and whose uploaded check directory carries any `.new.md` diff.
+      # The local Review-ready check and CI coverage run also enable them
+      # (ADR 0030). This CRAN matrix leaves them skipped: #23 holds snapshots
+      # to diagnostic meaning rather than byte-for-byte wording across
+      # platforms.
       - name: Check package
         uses: r-lib/actions/check-r-package@v2
         with:
@@ -275,6 +293,12 @@ jobs:
           # the release review has to account for every NOTE.
           upload-results: true
 
+      # The CRAN-tier row's reason for existing. The script's header says what
+      # it reads; the other rows name the complete suite, which has no budget.
+      - name: Verify the CRAN tier's test time
+        if: matrix.config.cran_tier
+        run: Rscript .github/scripts/verify-cran-test-budget.R
+
       # Puts the status line and the full text of every ERROR, WARNING, and
       # NOTE on the run page, so auditing them does not require downloading
       # and unzipping the check directory.
@@ -283,4 +307,4 @@ jobs:
         run: Rscript .github/scripts/summarize-check-log.R
         env:
           MARGINPLYR_CHECK_LABEL: >-
-            ${{ matrix.config.os }} (${{ matrix.config.r }})
+            ${{ matrix.config.os }} (${{ matrix.config.r }}${{ matrix.config.cran_tier && ', CRAN tier' || '' }})

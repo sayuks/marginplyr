@@ -712,6 +712,12 @@ and an absence is a failure. `test-optional-backends.R` covers the helper
 itself. Snapshot expectations belong to the same seam: testthat skips them
 under CRAN semantics, so they run only in those jobs.
 
+Which test files a check runs at all is a separate decision. Unless something
+asks for the complete suite, `tests/testthat.R` runs the CRAN tier it
+registers ([ADR 0045](adr/0045-run-a-registered-cran-tier-under-cran-semantics.md));
+a file outside the tier is filtered out rather than skipped, so it adds no
+skip for the gates above to read.
+
 What the seam does not ask is that a test keep its title: no job names the
 tests it executes (#93). Coverage is structural instead, resting on a policy
 about what a test may require, whose one home is `AGENTS.md`'s *Release matrix*

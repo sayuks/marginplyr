@@ -4,6 +4,7 @@
 # deliberately narrow NOTE allowance fail before either expensive gate runs.
 
 source(".github/scripts/cran-note-policy.R")
+source(".github/scripts/cran-test-budget.R")
 source(".github/scripts/checktor-baseline.R")
 source("tools/dependency-requirements.R")
 source("tools/cran-preflight-lib.R")
@@ -256,6 +257,14 @@ expect_true(
   "the disabled lintr progress"
 )
 pipeline_source <- paste(deparse(run_preflight_pipeline), collapse = "\n")
+expect_true(
+  grepl(
+    "test_budget_problem = cran_test_budget_problem(",
+    pipeline_source,
+    fixed = TRUE
+  ),
+  "the pipeline holds its check to the CRAN tier's test budget"
+)
 identity_position <- regexpr(
   "Tarball name, directory, DESCRIPTION, and SHA-256 agree.",
   pipeline_source,
@@ -941,6 +950,58 @@ expect_identical(
   "candidate",
   "a parsed R CMD check error does not become tooling"
 )
+clean_check <- list(
+  status = 0L,
+  timeout = FALSE,
+  errors = character(),
+  warnings = character(),
+  notes = character()
+)
+over_budget_outcome <- classify_rcmdcheck_result(
+  clean_check,
+  "unpublished",
+  test_budget_problem = "fixture budget finding"
+)
+expect_identical(
+  over_budget_outcome[c("status", "problem", "detail")],
+  list(
+    status = "failed",
+    problem = "candidate",
+    detail = "fixture budget finding"
+  ),
+  "a clean check over the CRAN tier's test budget is a candidate finding"
+)
+expect_identical(
+  classify_rcmdcheck_result(clean_check, "unpublished")$status,
+  "passed",
+  "a clean check within the CRAN tier's test budget"
+)
+expect_identical(
+  classify_rcmdcheck_result(
+    list(
+      status = 1L,
+      timeout = FALSE,
+      errors = "fixture ERROR",
+      warnings = character(),
+      notes = character()
+    ),
+    "unpublished",
+    test_budget_problem = "fixture budget finding"
+  )$detail,
+  NULL,
+  "a failing check reports its failure, not an unfinished test log's time"
+)
+check_environment <- paste(deparse(run_rcmdcheck), collapse = "\n")
+for (setting in c(
+  "NOT_CRAN = \"false\"",
+  "MARGINPLYR_COMPLETE_SUITE = \"false\"",
+  "TESTTHAT_PARALLEL = \"false\""
+)) {
+  expect_true(
+    grepl(setting, check_environment, fixed = TRUE),
+    paste("the check runs the CRAN tier as CRAN does:", setting)
+  )
+}
 remote_outage_note <- paste(
   paste0(
     "checking CRAN incoming feasibility ...Warning: unable to access index ",
@@ -1121,6 +1182,7 @@ expect_true(all(copied_tools), "the fixture tool copies")
 copied_policy <- file.copy(
   c(
     ".github/scripts/cran-note-policy.R",
+    ".github/scripts/cran-test-budget.R",
     ".github/scripts/verify-agent-network-policy.R"
   ),
   file.path(cli_root, ".github", "scripts")
@@ -1172,6 +1234,7 @@ writeLines("export(fixture)", file.path(cli_root, "NAMESPACE"))
 writeLines(
   c(
     "source('.github/scripts/cran-note-policy.R')",
+    "source('.github/scripts/cran-test-budget.R')",
     "source('tools/dependency-requirements.R')",
     "source('tools/cran-preflight-lib.R')",
     "args <- commandArgs(trailingOnly = TRUE)",
