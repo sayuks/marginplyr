@@ -152,3 +152,21 @@ way. Their logs were not read to confirm the exported value.
 - `coverage_check_shard()` in `tools/coverage-check-lib.R` replaced the
   `filter` argument of the one top-level `test_check()` call in a copy of that
   file.
+
+## The tier on a hosted Windows runner
+
+Pull request #1736 ran `R-CMD-check.yaml`'s `windows-latest (release, CRAN
+tier)` row at `69a6285cdc830b05f5ae1588018d2a74c9c2b5f6`, with every Suggested
+package installed and one test process. Its check log held
+`Running 'testthat.R' [258s]` and `[ FAIL 0 | WARN 0 | SKIP 9 | PASS 10557 ]`,
+and `verify-cran-test-budget.R` reported 258 s against the 300 s budget: 3.35
+times the 77.041 s the same 28 files took locally.
+
+Commit `b254f96dec88fe9be3e10c1b5fab6ba1b76d8745` then removed `share-backends`,
+which had taken 17.6 s of the 30-file local run. The local check described
+under *The tier under `R CMD check`*, repeated on that commit, ended
+`Status: OK` with `[ FAIL 0 | WARN 0 | SKIP 4 | PASS 9583 ]` and an elapsed
+time of 64.823 s. `test-grouping-backends.R`, `test-sent-queries.R` and
+`test-metamorphic-margin-semantics.R`, all still registered, held 4, 3 and 2
+calls of `share_of_parent()` or `share_of_total()`. The 27 files were not
+timed on Windows before that commit was pushed.
