@@ -27,11 +27,14 @@ reporting.
 
 ## Scope
 
-marginplyr builds SQL from the data a caller passes in, so the following are
-in scope:
+marginplyr builds SQL and R expressions from the data a caller passes in, so
+the following are in scope:
 
 - column names, margin labels, or data values that change the structure of
   the SQL marginplyr generates (SQL injection);
+- column names, margin labels, or data values that marginplyr parses or
+  evaluates as R code, including as glue templates, so that data causes code
+  to run;
 - marginplyr reading a lazy table's data, or writing to a backend, when the
   call did not ask it to;
 - weaknesses in this repository's GitHub Actions workflows or release process
