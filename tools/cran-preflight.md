@@ -139,7 +139,9 @@ The invariant local audit performs, once each:
 7. byte-for-byte comparison of the repository's before/after `git status`
    record.
 
-lintr runs with its cache disabled and reports each finding as a candidate-
+lintr reads the clean repository root's `.lintr.R`, since `.Rbuildignore` keeps
+that file out of the unpacked candidate; a missing file makes the audit exit
+`2`. It runs with its cache disabled and reports each finding as a candidate-
 relative file, line, column, linter, and message. Findings make the audit exit
 `1`; a package-load or linter condition makes it exit `2`. Neither route skips
 the normal human summary, machine result, step table, tool versions, or final

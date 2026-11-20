@@ -271,10 +271,21 @@ identity_position <- regexpr(
   fixed = TRUE
 )[[1L]]
 lintr_position <- regexpr(
-  "run_preflight_lintr_step(state, identity$package_path)",
+  "run_preflight_lintr_step(",
   pipeline_source,
   fixed = TRUE
 )[[1L]]
+expect_true(
+  grepl(
+    paste0(
+      "run_preflight_lintr_step(state, identity$package_path, ",
+      'file.path(repository_root, ".lintr.R"))'
+    ),
+    gsub("[[:space:]]+", " ", gsub("\\(\\s+", "(", pipeline_source)),
+    fixed = TRUE
+  ),
+  "the pipeline lints the candidate with the repository's .lintr.R"
+)
 spelling_position <- regexpr(
   "run_preflight_spelling_step(state, identity$package_path)",
   pipeline_source,
@@ -313,6 +324,49 @@ for (marker in c(
     paste("the lint classification marker", marker)
   )
 }
+expect_true(
+  grepl("options(lintr.linter_file = linter_file)", lintr_source, fixed = TRUE),
+  "the candidate lint configuration reaches lintr"
+)
+# `.Rbuildignore` keeps `.lintr.R` out of the unpacked candidate, so the step
+# has to hand the repository's file to the checker and treat a missing one as
+# tooling rather than let lintr fall back to its default linters.
+lint_state <- new_preflight_state(tempdir())
+received_linter_file <- NULL
+run_preflight_lintr_step(
+  lint_state,
+  tempdir(),
+  "/repository/.lintr.R",
+  checker = function(package_path, linter_file) {
+    received_linter_file <<- linter_file
+    list()
+  }
+)
+expect_identical(
+  received_linter_file,
+  "/repository/.lintr.R",
+  "the lint step passes the repository's .lintr.R to its checker"
+)
+expect_identical(
+  lint_state$steps$status,
+  "passed",
+  "no lint finding passes the lint step"
+)
+missing_config_state <- new_preflight_state(tempdir())
+run_preflight_lintr_step(
+  missing_config_state,
+  tempdir(),
+  file.path(tempdir(), "absent", ".lintr.R")
+)
+expect_identical(
+  c(
+    missing_config_state$steps$status,
+    missing_config_state$tool_failed,
+    missing_config_state$candidate_failed
+  ),
+  c("unavailable", "TRUE", "FALSE"),
+  "a missing lint configuration is a tooling failure"
+)
 expect_identical(
   grepl("spelling.tsv", preflight_sources, fixed = TRUE),
   FALSE,
