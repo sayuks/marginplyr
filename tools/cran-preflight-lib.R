@@ -853,11 +853,14 @@ run_preflight_spelling_step <- function(
 # Quarto generates executable vignette scripts under inst/doc while building the
 # tarball, so lint their maintained .qmd sources rather than those by-products.
 # The caller holds `linter_file`, the absolute path of the candidate's
-# `.lintr.R`. `.Rbuildignore` keeps that file out of the tarball, and without
-# it lintr would fall back to its default linters.
+# `.lintr.R`. `.Rbuildignore` keeps that file out of the tarball, so lintr
+# cannot find it beside the unpacked candidate.
 run_lintr_check <- function(package_path, linter_file) {
   if (!file.exists(linter_file)) {
-    stop("The candidate's lint configuration does not exist: ", linter_file)
+    stop(
+      "The candidate's lint configuration does not exist: ", linter_file,
+      call. = FALSE
+    )
   }
   pkgload::load_all(package_path, quiet = TRUE)
   # lintr reads an absolute `lintr.linter_file` before it looks for a
@@ -1621,8 +1624,8 @@ run_preflight_pipeline <- function(state, repository_root, description) {
     "Tarball name, directory, DESCRIPTION, and SHA-256 agree."
   )
 
-  # The worktree-before step holds the repository root clean at the candidate
-  # SHA, so its `.lintr.R` is the candidate's.
+  # The pipeline runs only after worktree-before found the repository root
+  # clean at the candidate SHA, so its `.lintr.R` is the candidate's.
   run_preflight_lintr_step(
     state,
     identity$package_path,

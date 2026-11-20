@@ -328,9 +328,6 @@ expect_true(
   grepl("options(lintr.linter_file = linter_file)", lintr_source, fixed = TRUE),
   "the candidate lint configuration reaches lintr"
 )
-# `.Rbuildignore` keeps `.lintr.R` out of the unpacked candidate, so the step
-# has to hand the repository's file to the checker and treat a missing one as
-# tooling rather than let lintr fall back to its default linters.
 lint_state <- new_preflight_state(tempdir())
 received_linter_file <- NULL
 run_preflight_lintr_step(
