@@ -18,8 +18,8 @@ and reports no note.
 Both runs check a source tarball produced by `R CMD build`, not the
 development tree.
 
-* Locally, on R 4.6.1, aarch64-apple-darwin23, macOS Tahoe 26.6.2, with
-  Quarto 1.10.18: `R CMD check --as-cran`, every Suggested package installed.
+* Locally, on R 4.6.2, aarch64-apple-darwin23, macOS Tahoe 26.6.2, with
+  Quarto 1.11.9: `R CMD check --as-cran`, every Suggested package installed.
   Installation, examples, tests, vignette re-building, and the PDF and HTML
   manuals all pass. Every skipped test is an `expect_snapshot()` diagnostic,
   which testthat skips on CRAN by default.
