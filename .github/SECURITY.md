@@ -50,9 +50,9 @@ The following are out of scope:
 
 ## What to expect
 
-The maintainer will acknowledge your report as soon as possible. Please keep
-the details confidential until a fix is published, or for 90 days after your
-report, whichever comes first; the timeline can be extended by agreement.
+The maintainer will acknowledge your report within a reasonable time. Please
+keep the details confidential until a fix is published, or for 90 days after
+your report, whichever comes first; the timeline can be extended by agreement.
 Confirmed vulnerabilities are published as a GitHub security advisory, with a
 CVE requested where appropriate. You will be credited unless you prefer to
 remain anonymous.
