@@ -1,0 +1,61 @@
+# Security policy
+
+## Reporting a vulnerability
+
+Please do **not** report security vulnerabilities through public GitHub
+issues, discussions, or pull requests.
+
+Report them privately through GitHub's
+[private vulnerability reporting][report]: the **Report a vulnerability**
+button on this repository's **Security** tab. If that option is unavailable,
+email the maintainer at <sayuks.dev@gmail.com>.
+
+Please include:
+
+- what an attacker can do, and under what conditions;
+- the marginplyr version or commit, R version, and the database backend and
+  driver involved, if any;
+- a minimal reproducible example, ideally with the SQL marginplyr generated
+  (`dplyr::show_query()`);
+- any known mitigation or workaround.
+
+## Supported versions
+
+Fixes are made on the default branch. Please confirm the issue against the
+latest commit on the default branch before reporting.
+
+## Scope
+
+The following are in scope:
+
+- column names, margin labels, or data values that change the structure of
+  the SQL marginplyr generates (SQL injection);
+- column names, margin labels, or data values that marginplyr parses or
+  evaluates as R code, including as glue templates, so that data causes code
+  to run;
+- marginplyr reading a lazy table's data, modifying the caller's input, or
+  writing to a backend, when the call did not ask it to;
+- weaknesses in this repository's GitHub Actions workflows or release process
+  that could expose secrets or let untrusted code run with repository
+  privileges.
+
+The following are out of scope:
+
+- the effects of R code or `dplyr::sql()` fragments the caller writes
+  themselves;
+- vulnerabilities in dependencies such as dplyr, dbplyr, DBI, or a database
+  driver, which should be reported to that project;
+- incorrect results without a security impact, which are ordinary bugs and
+  belong in the [issue tracker][issues].
+
+## What to expect
+
+The maintainer will acknowledge your report within a reasonable time. Please
+keep the details confidential until a fix is published, or for 90 days after
+your report, whichever comes first; the timeline can be extended by agreement.
+Confirmed vulnerabilities are published as a GitHub security advisory, with a
+CVE requested where appropriate. You will be credited unless you prefer to
+remain anonymous.
+
+[report]: https://github.com/sayuks/marginplyr/security/advisories/new
+[issues]: https://github.com/sayuks/marginplyr/issues
