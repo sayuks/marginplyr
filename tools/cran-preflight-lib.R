@@ -852,8 +852,21 @@ run_preflight_spelling_step <- function(
 # Runs package-aware lint policy in the candidate's default load environment.
 # Quarto generates executable vignette scripts under inst/doc while building the
 # tarball, so lint their maintained .qmd sources rather than those by-products.
-run_lintr_check <- function(package_path) {
+# The caller holds `linter_file`, the absolute path of the candidate's
+# `.lintr.R`. `.Rbuildignore` keeps that file out of the tarball, so lintr
+# cannot find it beside the unpacked candidate.
+run_lintr_check <- function(package_path, linter_file) {
+  if (!file.exists(linter_file)) {
+    stop(
+      "The candidate's lint configuration does not exist: ", linter_file,
+      call. = FALSE
+    )
+  }
   pkgload::load_all(package_path, quiet = TRUE)
+  # lintr reads an absolute `lintr.linter_file` before it looks for a
+  # configuration beside the linted package.
+  old <- options(lintr.linter_file = linter_file)
+  on.exit(options(old), add = TRUE)
   lintr::lint_package(
     package_path,
     cache = FALSE,
@@ -889,10 +902,14 @@ report_lint_findings <- function(lints, package_path) {
 run_preflight_lintr_step <- function(
   state,
   package_path,
+  linter_file,
   checker = run_lintr_check
 ) {
   started <- proc.time()[["elapsed"]]
-  lints <- tryCatch(checker(package_path), error = function(cnd) cnd)
+  lints <- tryCatch(
+    checker(package_path, linter_file),
+    error = function(cnd) cnd
+  )
   if (inherits(lints, "condition")) {
     record_preflight_step(
       state,
@@ -1607,7 +1624,13 @@ run_preflight_pipeline <- function(state, repository_root, description) {
     "Tarball name, directory, DESCRIPTION, and SHA-256 agree."
   )
 
-  run_preflight_lintr_step(state, identity$package_path)
+  # The pipeline runs only after worktree-before found the repository root
+  # clean at the candidate SHA, so its `.lintr.R` is the candidate's.
+  run_preflight_lintr_step(
+    state,
+    identity$package_path,
+    file.path(repository_root, ".lintr.R")
+  )
   run_preflight_spelling_step(state, identity$package_path)
 
   started <- proc.time()[["elapsed"]]
