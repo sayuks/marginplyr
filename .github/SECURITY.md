@@ -16,7 +16,7 @@ Please include:
 - the marginplyr version or commit, R version, and the database backend and
   driver involved, if any;
 - a minimal reproducible example, ideally with the SQL marginplyr generated
-  (`dbplyr::show_query()`);
+  (`dplyr::show_query()`);
 - any known mitigation or workaround.
 
 ## Supported versions
