@@ -138,6 +138,7 @@ repeated constructor argument, comes before this one, and so does any refusal
 raised before the plan is proved too large. Once it is, the plan is refused
 there, and a refusal a later part of the specification would have raised is
 not reached: reaching it would mean building the family between, which is the
-cost the limit exists to refuse. A `grouping_sets()` union reads on through
-bare selections, which add one set each, and stops only before a nested
-family.
+cost the limit exists to refuse. A `grouping_sets()` union stops before its
+next branch once its count passes the limit, even a bare selection: one that
+needs a lazy input's column types is read by a pass that queries the input
+first.

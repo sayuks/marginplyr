@@ -2399,14 +2399,14 @@ expand_grouping_sets <- function(preflight, resolve_selection, emit,
   limit <- grouping_set_limit()
   family <- list()
   seen <- character()
-  # A bare selection adds one set, so only a nested family still to come can
-  # make finishing the union costly; until then later branches keep their own
-  # refusals and the count stays exact.
-  nested <- !vapply(preflight$args, function(arg) is.null(arg$nested),
-                    logical(1))
-  nested_after <- rev(cumsum(rev(nested))) - nested
-  for (i in seq_along(preflight$args)) {
-    arg <- preflight$args[[i]]
+  for (arg in preflight$args) {
+    # Past the limit, the next branch is not read: a nested family can build
+    # many sets, and even a bare selection can need a lazy input's column
+    # types, which the pass it unwinds to queries for. Only after the last
+    # branch is the union's count exact.
+    if (length(family) > limit) {
+      abort_grouping_set_limit(limit, constructor = "grouping_sets")
+    }
     branch <- if (is.null(arg$nested)) {
       emit_grouping_family(
         list(resolve_selection(grouping_selection_quo(arg))), emit
@@ -2426,9 +2426,6 @@ expand_grouping_sets <- function(preflight, resolve_selection, emit,
       seen <- c(seen, keys[fresh])
     }
     family <- c(family, branch)
-    if (nested_after[[i]] > 0L && length(family) > limit) {
-      abort_grouping_set_limit(limit, constructor = "grouping_sets")
-    }
   }
   check_grouping_set_count(length(family), "grouping_sets")
   family

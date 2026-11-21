@@ -190,13 +190,20 @@ test_that("a lazy input is refused before any query is sent", {
   summarize_with_margins(remote, total = sum(value), .grouping = cube(a, b, c))
   expect_gt(nrow(last_sent_queries()), 0L)
 
+  # A union past the limit stops before its next branch, here a selection
+  # whose column types would be queried for.
+  awaiting_types <- grouping_sets(
+    a, b, c, d, c(a, b), c(a, c), c(a, d), c(b, c), c(b, d), where(is.numeric)
+  )
   for (verb in c("summarize_with_margins", "expand_with_margins")) {
     call <- forwarded_verbs[[verb]]
-    expect_error(
-      call(remote, NULL, cube(a, b, c, d)), "the limit of 8",
-      class = "marginplyr_error"
-    )
-    expect_identical(nrow(last_sent_queries()), 0L)
+    for (spec in list(cube(a, b, c, d), awaiting_types)) {
+      expect_error(
+        call(remote, NULL, spec), "the limit of 8",
+        class = "marginplyr_error"
+      )
+      expect_identical(nrow(last_sent_queries()), 0L)
+    }
   }
 })
 
@@ -220,16 +227,10 @@ test_that("sibling families in a union are bounded together", {
     inspect_grouping(twelve$data, .grouping = cube(!!!twelve$syms))
   )
 
-  # Bare selections after the limit is passed cost one set each, so they are
-  # still read: their own refusal comes first, and otherwise the count.
-  bare <- grouping_sets(cube(!!!twelve$syms), x1, zzz)
+  # Passing the limit at the last branch states the union's count.
+  last <- grouping_sets(cube(!!!twelve$syms), x1)
   expect_error(
-    inspect_grouping(twelve$data, .grouping = bare, .duplicates = "keep"),
-    "doesn't exist"
-  )
-  bare <- grouping_sets(cube(!!!twelve$syms), x1, x2)
-  expect_error(
-    inspect_grouping(twelve$data, .grouping = bare, .duplicates = "keep"),
-    "expands to 4,098 grouping sets", class = "marginplyr_error"
+    inspect_grouping(twelve$data, .grouping = last, .duplicates = "keep"),
+    "expands to 4,097 grouping sets", class = "marginplyr_error"
   )
 })
