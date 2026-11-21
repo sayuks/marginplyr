@@ -2,7 +2,7 @@
 
 <!-- README.md is generated from README.qmd. Please edit that file -->
 
-# marginplyr
+# marginplyr <a href="https://sayuks.github.io/marginplyr/"><img src="man/figures/logo.png" align="right" height="139" alt="marginplyr website" /></a>
 
 ### SQL-style grouping sets, rollups, and cubes for dplyr and dbplyr
 

@@ -623,6 +623,31 @@ if (length(dangling) > 0L) {
   )
 }
 
+# Every image a page shows must be a file the site serves. A missing one still
+# renders a complete page, so nothing above notices. The home page includes
+# README.md, whose logo path names `man/figures/`, which reaches the site only
+# through `tools/site-figures.R`.
+broken <- character()
+for (page in pages) {
+  srcs <- regmatches(
+    texts[[page]],
+    gregexpr('<img [^>]*src="[^"]+"', texts[[page]])
+  )[[1L]]
+  for (src in unique(sub('.*src="([^"]+)"$', "\\1", srcs))) {
+    target <- link_target(sub("[?#].*", "", src), page)
+    if (!is.na(target) && !file.exists(target)) {
+      broken <- c(broken, sprintf("%s: %s", page, src))
+    }
+  }
+}
+if (length(broken) > 0L) {
+  stop(
+    call. = FALSE,
+    "Images whose file the site does not serve:\n",
+    paste0("- ", broken, collapse = "\n")
+  )
+}
+
 # The first tabset must open on the Total tab, which no marker can express.
 article <- texts[["docs/vignettes/get_started.html"]]
 first_tabset <- strsplit(

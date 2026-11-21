@@ -1,6 +1,8 @@
 project:
   type: website
   output-dir: ../docs/
+  # Puts man/figures/ where README.md, included as the home page, finds it.
+  pre-render: ../tools/site-figures.R
 
 # Note: freeze functionality can be set at a project level or for individual .qmd files
 # execute:
@@ -10,6 +12,7 @@ website:
   title: "$ALTDOC_PACKAGE_NAME"
   # code-links: true
   navbar:
+    logo: man/figures/logo.png
     search: true
     left:
       - text: Get started
