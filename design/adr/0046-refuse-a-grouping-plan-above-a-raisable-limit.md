@@ -133,9 +133,13 @@ unit above.
 
 ## Amendment: which refusal comes first (2026-11-22)
 
-A refusal the specification earns before expansion, such as an empty or
-repeated constructor argument, comes before this one. A refusal raised during
-expansion can come after it: a `grouping_sets()` union whose branches pass the
-limit stops before its next branch, so that branch's own refusal is not
-reached. Reading it would mean building the branch, or, for a selection that
-needs a lazy input's column types, querying the input first.
+A refusal preflight raises, such as an empty or named constructor argument,
+comes before this one, and so does one a family raises about itself before it
+is built, such as a column one `cube()` selects in more than one argument.
+Under `"keep"` and `"error"`, expansion reads families in the order written
+and builds each before reading the next, so a later family's own refusal comes after an earlier family's
+refusal for size: `grouping_spec(cube(a, b, c, d), cube(x, x))` over a limit
+of 8 is refused for the first cube. A `grouping_sets()` union whose branches
+pass the limit likewise stops before its next branch, since reading it would
+mean building it, or, for a selection that needs a lazy input's column types,
+querying the input first.
