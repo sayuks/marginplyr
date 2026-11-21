@@ -302,7 +302,10 @@ eight calls reported the time limit. The expansion on the local data frame
 did not, and repeated at other limits it ended with the time-limit message,
 with an error dplyr's `mutate()` raised around the interrupted step, or with
 "missing value where TRUE/FALSE needed", depending on where the limit
-struck. Which handler produced the last was not traced.
+struck: 38, 19 and 3 times at 60 limits between 0.3 s and 1.8 s. The last
+form's call was the `if` in `dplyr:::new_error_context()`, and it arose without
+marginplyr: `repeat mutate(df, k = "Total")` on a 256-row data frame under 300
+limits between 0.05 s and 0.15 s ended that way 31 times, with dplyr 1.2.1.
 
 The same limit around `inspect_grouping()` of a 24-column cube (16,777,216
 sets) on a two-row local data frame ended it at 3.15 s, by which time R's peak
