@@ -21,7 +21,8 @@
 # renaming a vignette cannot quietly drop its markers instead of moving them.
 #
 # Every link into the site that names a fragment must also land on an element
-# carrying that id. The links are read from the rendered pages, so a fragment
+# carrying that id, and every image a page shows must be a file the site
+# serves. Both are read from the rendered pages, so a fragment or an image
 # added to any source is covered without an edit here either.
 
 source(".github/scripts/ci-helpers.R")
@@ -623,10 +624,8 @@ if (length(dangling) > 0L) {
   )
 }
 
-# Every image a page shows must be a file the site serves. A missing one still
-# renders a complete page, so nothing above notices. The home page includes
-# README.md, whose logo path names `man/figures/`, which reaches the site only
-# through `tools/site-figures.R`.
+# A missing image still renders a complete page, so nothing above notices it.
+# `tools/site-figures.R` is what puts the README's and navbar's logo there.
 broken <- character()
 for (page in pages) {
   srcs <- regmatches(

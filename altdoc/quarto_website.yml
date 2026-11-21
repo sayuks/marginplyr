@@ -1,7 +1,8 @@
 project:
   type: website
   output-dir: ../docs/
-  # Puts man/figures/ where README.md, included as the home page, finds it.
+  # Puts man/figures/ where README.md, included as the home page, and the
+  # navbar logo find it.
   pre-render: ../tools/site-figures.R
 
 # Note: freeze functionality can be set at a project level or for individual .qmd files
