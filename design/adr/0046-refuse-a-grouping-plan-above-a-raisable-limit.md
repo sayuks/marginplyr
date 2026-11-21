@@ -127,6 +127,6 @@ grouping_set(a8, ..., a13)))` holds 191 sets after a prefix of 8,192. Counting
 the plan exactly there means building the prefix, which is the cost the limit
 exists to refuse, so #1745 refuses a product whose deduplicated prefix passes
 the limit, and such a plan is refused although it would be within it. The
-message names the family that passed the limit, a `cube()` or a Cartesian
-product, rather than a count of the plan. Every other refusal holds to the
+message names the constructor whose family passed the limit, `cube()` or
+`grouping_spec()`, rather than a count of the plan. Every other refusal holds to the
 unit above.

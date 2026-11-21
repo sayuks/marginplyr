@@ -27,20 +27,20 @@ grouping_set_limit <- function() {
   as.numeric(limit)
 }
 
-# Refuse a plan known to hold more than `limit` occurrences. Without `family`,
-# `count` is the plan's own count after the duplicate policy. With it, `count`
-# is what that family of the specification expands to, a lower bound on the
-# plan's, and `NULL` says only that the family passes the limit. A count too
-# large for a double is the same as none.
-check_grouping_set_count <- function(count, family = NULL,
+# Refuse a plan known to hold more than `limit` occurrences. Without
+# `constructor`, `count` is the plan's own count after the duplicate policy.
+# With it, `count` is what a family that constructor wrote expands to, a lower
+# bound on the plan's, and `NULL` says only that the family passes the limit.
+# A count too large for a double is the same as none.
+check_grouping_set_count <- function(count, constructor = NULL,
                                      limit = grouping_set_limit()) {
   if (!is.null(count) && count <= limit) {
     return(invisible(NULL))
   }
-  abort_grouping_set_limit(limit, count, family)
+  abort_grouping_set_limit(limit, count, constructor)
 }
 
-abort_grouping_set_limit <- function(limit, count = NULL, family = NULL) {
+abort_grouping_set_limit <- function(limit, count = NULL, constructor = NULL) {
   # Read only from the cli templates below, which codetools cannot see.
   # nolint start: object_usage_linter.
   limit_text <- format_grouping_set_count(limit)
@@ -48,29 +48,53 @@ abort_grouping_set_limit <- function(limit, count = NULL, family = NULL) {
     format_grouping_set_count(count)
   }
   # nolint end
-  headline <- if (is.null(family) && is.null(count_text)) {
-    paste0(
-      "The Grouping plan holds more grouping sets than the limit of ",
-      "{limit_text}."
-    )
-  } else if (is.null(family)) {
-    paste0(
-      "The Grouping plan holds {count_text} grouping sets, more than the ",
-      "limit of {limit_text}."
-    )
-  } else if (is.null(count_text)) {
-    paste0(
-      family, " in the Grouping specification expands to more grouping ",
-      "sets than the limit of {limit_text}."
-    )
-  } else {
-    paste0(
-      family, " in the Grouping specification expands to {count_text} ",
-      "grouping sets, more than the limit of {limit_text}."
-    )
+  if (is.null(constructor) && is.null(count_text)) {
+    abort_marginplyr(c(
+      paste0(
+        "The Grouping plan holds more grouping sets than the limit of ",
+        "{limit_text}."
+      ),
+      i = "Use fewer Margin dimensions or a narrower Grouping specification.",
+      i = paste0(
+        "Or raise the limit with ",
+        "{.code options(marginplyr.max_grouping_sets = )}, which takes a ",
+        "whole number or {.code Inf}."
+      )
+    ))
+  }
+  if (is.null(constructor)) {
+    abort_marginplyr(c(
+      paste0(
+        "The Grouping plan holds {count_text} grouping sets, more than the ",
+        "limit of {limit_text}."
+      ),
+      i = "Use fewer Margin dimensions or a narrower Grouping specification.",
+      i = paste0(
+        "Or raise the limit with ",
+        "{.code options(marginplyr.max_grouping_sets = )}, which takes a ",
+        "whole number or {.code Inf}."
+      )
+    ))
+  }
+  if (is.null(count_text)) {
+    abort_marginplyr(c(
+      paste0(
+        "A {.fun {constructor}} in the Grouping specification expands to ",
+        "more grouping sets than the limit of {limit_text}."
+      ),
+      i = "Use fewer Margin dimensions or a narrower Grouping specification.",
+      i = paste0(
+        "Or raise the limit with ",
+        "{.code options(marginplyr.max_grouping_sets = )}, which takes a ",
+        "whole number or {.code Inf}."
+      )
+    ))
   }
   abort_marginplyr(c(
-    headline,
+    paste0(
+      "A {.fun {constructor}} in the Grouping specification expands to ",
+      "{count_text} grouping sets, more than the limit of {limit_text}."
+    ),
     i = "Use fewer Margin dimensions or a narrower Grouping specification.",
     i = paste0(
       "Or raise the limit with ",
@@ -79,10 +103,6 @@ abort_grouping_set_limit <- function(limit, count = NULL, family = NULL) {
     )
   ))
 }
-
-# The two families expansion can refuse before building them.
-cube_family_label <- "A {.fun cube}"
-product_family_label <- "A Cartesian product"
 
 format_grouping_set_count <- function(count) {
   format(count, big.mark = ",", scientific = FALSE, trim = TRUE)

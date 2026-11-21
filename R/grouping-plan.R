@@ -2509,7 +2509,7 @@ check_repeated_grouping_units <- function(units, constructor) {
 # Enumerate resolved cube units in descending subset size and combination order.
 cube_grouping_family <- function(units) {
   n <- length(units)
-  check_grouping_set_count(2^n, cube_family_label)
+  check_grouping_set_count(2^n, "cube")
   indices <- unlist(
     lapply(
       rev(seq.int(0L, n)),
@@ -2562,7 +2562,7 @@ distinct_cube_sets <- function(
     # The retained sets never shrink from one unit to the next, though a
     # later factor of an enclosing product can merge them (ADR 0046).
     if (length(sets) > limit) {
-      abort_grouping_set_limit(limit, family = cube_family_label)
+      abort_grouping_set_limit(limit, constructor = "cube")
     }
   }
   sets
@@ -2601,7 +2601,7 @@ expand_grouping_product <- function(preflight, resolve_selection, emit,
       witness_family %||% cross_grouping_families(families), emit
     ))
   }
-  check_grouping_set_count(prod(lengths(families)), product_family_label)
+  check_grouping_set_count(prod(lengths(families)), "grouping_spec")
   n <- length(args)
   left <- cross_grouping_families(families[-n])
   right <- families[[n]]
@@ -2677,7 +2677,7 @@ product_duplicate_witness <- function(families, family) {
   repeat {
     # Every position walked so far holds a distinct membership.
     if (position > limit + 1) {
-      abort_grouping_set_limit(limit, family = product_family_label)
+      abort_grouping_set_limit(limit, constructor = "grouping_spec")
     }
     sets <- Map(`[[`, families, choices)
     key <- grouping_set_key(unlist(sets, use.names = FALSE), dimensions)
@@ -2790,7 +2790,7 @@ observe_product_factor <- function(arg, prefix, suffix,
 
 # Cross the factor families in left-major order.
 cross_grouping_families <- function(families) {
-  check_grouping_set_count(prod(lengths(families)), product_family_label)
+  check_grouping_set_count(prod(lengths(families)), "grouping_spec")
   Reduce(combine_grouping_factors, families, init = list(character()))
 }
 
@@ -2968,7 +2968,7 @@ distinct_product_step <- function(product, factor, required) {
         # A later factor can still merge these sets, so this bounds the
         # expansion rather than proving the plan's count (ADR 0046).
         if (length(sets) > limit) {
-          abort_grouping_set_limit(limit, family = product_family_label)
+          abort_grouping_set_limit(limit, constructor = "grouping_spec")
         }
       }
     }

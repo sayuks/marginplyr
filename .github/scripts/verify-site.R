@@ -384,6 +384,10 @@ markers <- list(
     "share_of_total",
     "Completion stays in the lazy input pipeline",
     "Record the SQL marginplyr prepares",
+    # The section `?margin_verbs` links for what bounds an application's call,
+    # by its anchor and by the diagnostic its rejected-call chunk renders.
+    "id=\"grouping-specifications-from-user-input\"",
+    "grouping sets, more than the limit of 4,096.",
     # The dialect question's control row, from the record chunk's printed
     # tibble. It appears only when that chunk is the page's first DuckDB share
     # request, since a cached answer records neither question, so a chunk moved
