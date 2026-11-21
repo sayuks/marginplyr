@@ -105,6 +105,11 @@ test_that("an invalid option value is refused naming the option", {
       "marginplyr.max_grouping_sets", class = "marginplyr_error"
     )
   }
+  # A refusal preflight raises keeps its precedence over the option's.
+  expect_error(
+    inspect_grouping(data, .grouping = cube()),
+    "requires at least one dimension", class = "marginplyr_error"
+  )
   withr::local_options(marginplyr.max_grouping_sets = 1L)
   expect_identical(
     nrow(inspect_grouping(data, .grouping = grouping_set(a))), 1L

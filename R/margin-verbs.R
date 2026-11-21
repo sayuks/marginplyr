@@ -159,7 +159,9 @@
 #' reads *When marginplyr queries your data* lists. The count is the plan's
 #' after `.duplicates` is applied, the rows [inspect_grouping()] returns, so a
 #' specification that writes many repeats of a few sets passes under
-#' `.duplicates = "drop"`. A [cube()] of n dimensions is 2^n grouping sets, so
+#' `.duplicates = "drop"`, except that a Cartesian product whose leading
+#' factors alone pass the limit is refused even where a later factor would merge
+#' their sets back within it. A [cube()] of n dimensions is 2^n grouping sets, so
 #' a `cube()` of 13 columns is refused; a selection such as
 #' `cube(where(is.character))` reaches that on a wide table without naming a
 #' column. Use fewer Margin dimensions or a narrower Grouping specification,
@@ -167,14 +169,11 @@
 #' or to `Inf` for no limit.
 #'
 #' The limit keeps a plan from exhausting memory in your R session; it does
-#' not make a large plan cheap. At 4,096 grouping sets a summary can still
-#' take minutes to build on the backends that build one branch per grouping
-#' set, an expansion returns one copy of each input row per grouping set, and
-#' a portable summary reads its source once per grouping set. A database's own
-#' limits, such as PostgreSQL's refusal of more than 4,096 native grouping
-#' sets, still apply to a plan the raised option admits. *Grouping
-#' specifications from user input* in [Database and lazy backends][db-size]
-#' says what bounds an application's call.
+#' not make a large plan cheap, and a database's own limits, such as
+#' PostgreSQL's refusal of more than 4,096 native grouping sets, still apply to
+#' a plan the raised option admits. *Grouping specifications from user input*
+#' in [Database and lazy backends][db-size] says what a plan within the limit
+#' still costs and what bounds an application's call.
 #'
 #' [db-size]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html#grouping-specifications-from-user-input
 #'

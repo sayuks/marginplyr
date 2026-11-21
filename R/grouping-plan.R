@@ -381,9 +381,6 @@ prepare_grouping_plan <- function(.data,
 
   with_margin_error_call(
     {
-      # Read here only to refuse an invalid value whatever the plan; expansion
-      # reads it again where it materializes occurrences (ADR 0046).
-      grouping_set_limit()
       # An empty `.grouping` is the argument left absent, which is what
       # `.grouping = ` already means: R matches a named formal's empty argument
       # to that formal's default. Only injection carries the missing marker
@@ -450,6 +447,10 @@ prepare_grouping_plan <- function(.data,
         grouping_spec, data_vars, local_proxy = local_proxy,
         allow_data_peek = allow_data_peek
       )
+      # Read here only to refuse an invalid value whatever the plan, after the
+      # refusals preflight raises; expansion reads it again where it
+      # materializes occurrences (ADR 0046).
+      grouping_set_limit()
       local_dimensions <- character()
       if (preflight$name_only) {
         # Reject name-only plan errors before acquiring typed metadata. The

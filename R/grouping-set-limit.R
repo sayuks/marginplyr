@@ -6,7 +6,7 @@ default_grouping_set_limit <- 4096
 # The limit for the call being prepared: the option's value, or the default
 # when the option is unset or `NULL`. Read wherever expansion is about to
 # materialize occurrences, so no caller has to carry it; every entry point reads
-# it once before expansion too, so an invalid value is refused at the same
+# it once just before expansion too, so an invalid value is refused at the same
 # point whatever the plan.
 grouping_set_limit <- function() {
   limit <- getOption("marginplyr.max_grouping_sets")
@@ -27,19 +27,22 @@ grouping_set_limit <- function() {
   as.numeric(limit)
 }
 
-# Refuse a plan known to hold more than `limit` occurrences. Without
-# `constructor`, `count` is the plan's own count after the duplicate policy.
-# With it, `count` is what a family that constructor wrote expands to, a lower
-# bound on the plan's, and `NULL` says only that the family passes the limit.
-# A count too large for a double is the same as none.
-check_grouping_set_count <- function(count, constructor = NULL,
-                                     limit = grouping_set_limit()) {
-  if (!is.null(count) && count <= limit) {
+# Refuse `count` occurrences when they pass the limit; `constructor` is as for
+# `abort_grouping_set_limit()`.
+check_grouping_set_count <- function(count, constructor = NULL) {
+  limit <- grouping_set_limit()
+  if (count <= limit) {
     return(invisible(NULL))
   }
   abort_grouping_set_limit(limit, count, constructor)
 }
 
+# Refuse a plan that passes `limit`. Without `constructor`, `count` is the
+# plan's own count after the duplicate policy. With it, `count` is what a
+# family that constructor wrote expands to, a lower bound on the plan's, and
+# `NULL` says only that the family passes the limit, which is all a
+# deduplicating expansion knows when it stops. A count too large for a double
+# is the same as none.
 abort_grouping_set_limit <- function(limit, count = NULL, constructor = NULL) {
   # Read only from the cli templates below, which codetools cannot see.
   # nolint start: object_usage_linter.

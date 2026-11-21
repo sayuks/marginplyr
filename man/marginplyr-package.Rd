@@ -82,14 +82,12 @@ row is what your own \code{\link[dplyr:collect]{dplyr::collect()}} will send.
 
 \section{Limiting the size of a Grouping plan}{
 
-A Margin verb or \code{\link[=inspect_grouping]{inspect_grouping()}} refuses a Grouping plan holding more
-than 4,096 grouping sets, counted after \code{.duplicates} is applied, with a
-\code{"marginplyr_error"} raised before any grouping set is built.
-\code{options(marginplyr.max_grouping_sets = )} replaces the limit: a whole
-number of at least 1, or \code{Inf} for none. Unset or \code{NULL} means 4,096, and
-any other value is refused naming the option. The option is read on each
-call. \emph{Behavior shared by the Margin verbs} (\link{margin_verbs}) states what the
-limit does not protect against.
+\code{options(marginplyr.max_grouping_sets = )} sets the number of grouping sets
+a Grouping plan may hold before a Margin verb or \code{\link[=inspect_grouping]{inspect_grouping()}}
+refuses it: a whole number of at least 1, or \code{Inf} for none. Unset or
+\code{NULL} means 4,096, and any other value is refused naming the option. The
+option is read on each call. \emph{Grouping plan size} in \link{margin_verbs} states
+how the sets are counted and what the limit does not protect against.
 }
 
 \examples{
