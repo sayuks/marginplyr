@@ -167,9 +167,9 @@ reads \emph{When marginplyr queries your data} lists. The count is the plan's
 after \code{.duplicates} is applied, the rows \code{\link[=inspect_grouping]{inspect_grouping()}} returns, so a
 specification that writes many repeats of a few sets passes under
 \code{.duplicates = "drop"}, except that a Cartesian product whose leading
-factors alone pass the limit is refused even where a later factor would merge
-their sets back within it. A \code{\link[=cube]{cube()}} of n dimensions is 2^n grouping sets, so
-a \code{cube()} of 13 columns is refused; a selection such as
+factors alone pass the limit is refused even where a later factor would
+merge their sets back within it. A \code{\link[=cube]{cube()}} of n dimensions is 2^n grouping
+sets, so a \code{cube()} of 13 columns is refused; a selection such as
 \code{cube(where(is.character))} reaches that on a wide table without naming a
 column. Use fewer Margin dimensions or a narrower Grouping specification,
 or set \code{options(marginplyr.max_grouping_sets = )} to a larger whole number,
