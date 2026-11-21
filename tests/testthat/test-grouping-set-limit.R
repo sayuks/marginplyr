@@ -219,4 +219,17 @@ test_that("sibling families in a union are bounded together", {
     dropped,
     inspect_grouping(twelve$data, .grouping = cube(!!!twelve$syms))
   )
+
+  # Bare selections after the limit is passed cost one set each, so they are
+  # still read: their own refusal comes first, and otherwise the count.
+  bare <- grouping_sets(cube(!!!twelve$syms), x1, zzz)
+  expect_error(
+    inspect_grouping(twelve$data, .grouping = bare, .duplicates = "keep"),
+    "doesn't exist"
+  )
+  bare <- grouping_sets(cube(!!!twelve$syms), x1, x2)
+  expect_error(
+    inspect_grouping(twelve$data, .grouping = bare, .duplicates = "keep"),
+    "expands to 4,098 grouping sets", class = "marginplyr_error"
+  )
 })
