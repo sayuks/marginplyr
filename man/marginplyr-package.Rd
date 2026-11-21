@@ -86,8 +86,9 @@ row is what your own \code{\link[dplyr:collect]{dplyr::collect()}} will send.
 a Grouping plan may hold before a Margin verb or \code{\link[=inspect_grouping]{inspect_grouping()}}
 refuses it: a whole number of at least 1, or \code{Inf} for none. Unset or
 \code{NULL} means 4,096, and any other value is refused naming the option. The
-option is read on each call. \emph{Grouping plan size} in \link{margin_verbs} states
-how the sets are counted and what the limit does not protect against.
+option is read on each call. \emph{\link[=margin_verbs]{Grouping plan size}} in
+\link{margin_verbs} states how the sets are counted and what the limit does not
+protect against.
 }
 
 \examples{

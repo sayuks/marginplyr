@@ -72,8 +72,9 @@
 #' a Grouping plan may hold before a Margin verb or [inspect_grouping()]
 #' refuses it: a whole number of at least 1, or `Inf` for none. Unset or
 #' `NULL` means 4,096, and any other value is refused naming the option. The
-#' option is read on each call. *Grouping plan size* in [margin_verbs] states
-#' how the sets are counted and what the limit does not protect against.
+#' option is read on each call. *[Grouping plan size][margin_verbs]* in
+#' [margin_verbs] states how the sets are counted and what the limit does not
+#' protect against.
 #'
 #' @examples
 #' # A Margin verb raises the class directly, so `tryCatch()` catches it.
