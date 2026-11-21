@@ -261,3 +261,23 @@ test_that("a union crossed under \"drop\" is bounded across its branches", {
     fixed = TRUE, class = "marginplyr_error"
   )
 })
+
+test_that("a product walked for a duplicate stops at the limit", {
+  # No factor has a private column, so under "error" the product is walked
+  # for a repeat; its first repeat is at position 513, past the limit of 300.
+  withr::local_options(marginplyr.max_grouping_sets = 300)
+  ten <- limit_columns(10L)
+  product <- grouping_spec(
+    grouping_sets(x1, x2), grouping_sets(x1, x2), cube(!!!ten$syms[3:10])
+  )
+  expect_error(
+    inspect_grouping(ten$data, .grouping = product),
+    "`grouping_spec()` in the Grouping specification expands to more",
+    fixed = TRUE, class = "marginplyr_error"
+  )
+  withr::local_options(marginplyr.max_grouping_sets = 600)
+  expect_error(
+    inspect_grouping(ten$data, .grouping = product),
+    "257, 513", fixed = TRUE, class = "marginplyr_error"
+  )
+})
