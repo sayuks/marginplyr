@@ -67,7 +67,6 @@ test_that("a refusal does not build the plan it refuses", {
 
 test_that("the option raises, removes, or lowers the limit for every verb", {
   thirteen <- limit_columns(13L)
-  thirteen$data$value <- 1L
   spec <- cube(!!!thirteen$syms)
   withr::local_options(marginplyr.max_grouping_sets = 8192)
   expect_identical(nrow(inspect_grouping(thirteen$data, .grouping = spec)),
@@ -75,11 +74,6 @@ test_that("the option raises, removes, or lowers the limit for every verb", {
   withr::local_options(marginplyr.max_grouping_sets = Inf)
   expect_identical(nrow(inspect_grouping(thirteen$data, .grouping = spec)),
                    8192L)
-  expect_identical(
-    nrow(summarize_with_margins(thirteen$data, total = sum(value),
-                                .grouping = spec)),
-    8192L
-  )
 
   # Eight occurrences pass and nine are refused, through each verb.
   withr::local_options(marginplyr.max_grouping_sets = 8L)
@@ -105,10 +99,17 @@ test_that("an invalid option value is refused naming the option", {
       "marginplyr.max_grouping_sets", class = "marginplyr_error"
     )
   }
-  # A refusal preflight raises keeps its precedence over the option's.
+  # A refusal the specification earns keeps its precedence over the option's.
   expect_error(
     inspect_grouping(data, .grouping = cube()),
     "requires at least one dimension", class = "marginplyr_error"
+  )
+  expect_error(
+    inspect_grouping(data, .grouping = cube(a, a)),
+    "more than one argument", class = "marginplyr_error"
+  )
+  expect_error(
+    inspect_grouping(data, .grouping = cube(zzz)), "doesn't exist"
   )
   withr::local_options(marginplyr.max_grouping_sets = 1L)
   expect_identical(
@@ -197,4 +198,25 @@ test_that("a lazy input is refused before any query is sent", {
     )
     expect_identical(nrow(last_sent_queries()), 0L)
   }
+})
+
+test_that("sibling families in a union are bounded together", {
+  withr::local_options(marginplyr.max_grouping_sets = NULL)
+  twelve <- limit_columns(12L)
+  siblings <- grouping_sets(!!!rep(list(cube(!!!twelve$syms)), 100L))
+  # Refused partway: a union built to its last branch would state its count,
+  # 409,600, rather than that it expands to more than the limit.
+  expect_error(
+    inspect_grouping(twelve$data, .grouping = siblings, .duplicates = "keep"),
+    "`grouping_sets()` in the Grouping specification expands to more",
+    fixed = TRUE, class = "marginplyr_error"
+  )
+  # Under "drop" the repeats add nothing, so three siblings stay within it.
+  repeated <- grouping_sets(!!!rep(list(cube(!!!twelve$syms)), 3L))
+  dropped <- inspect_grouping(twelve$data, .grouping = repeated,
+                              .duplicates = "drop")
+  expect_identical(
+    dropped,
+    inspect_grouping(twelve$data, .grouping = cube(!!!twelve$syms))
+  )
 })

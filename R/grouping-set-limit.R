@@ -5,9 +5,9 @@ default_grouping_set_limit <- 4096
 
 # The limit for the call being prepared: the option's value, or the default
 # when the option is unset or `NULL`. Read wherever expansion is about to
-# materialize occurrences, so no caller has to carry it; every entry point reads
-# it once just before expansion too, so an invalid value is refused at the same
-# point whatever the plan.
+# materialize occurrences, so no caller has to carry it. Every compiled plan
+# reaches at least its final count, so an invalid value is refused whatever
+# the plan, unless another refusal comes first.
 grouping_set_limit <- function() {
   limit <- getOption("marginplyr.max_grouping_sets")
   if (is.null(limit)) {
@@ -40,9 +40,8 @@ check_grouping_set_count <- function(count, constructor = NULL) {
 # Refuse a plan that passes `limit`. Without `constructor`, `count` is the
 # plan's own count after the duplicate policy. With it, `count` is what a
 # family that constructor wrote expands to, a lower bound on the plan's, and
-# `NULL` says only that the family passes the limit, which is all a
-# deduplicating expansion knows when it stops. A count too large for a double
-# is the same as none.
+# `NULL` or a count too large for a double says only that the family passes
+# the limit, which is all an expansion knows when it stops partway.
 abort_grouping_set_limit <- function(limit, count = NULL, constructor = NULL) {
   # Read only from the cli templates below, which codetools cannot see.
   # nolint start: object_usage_linter.
@@ -51,20 +50,6 @@ abort_grouping_set_limit <- function(limit, count = NULL, constructor = NULL) {
     format_grouping_set_count(count)
   }
   # nolint end
-  if (is.null(constructor) && is.null(count_text)) {
-    abort_marginplyr(c(
-      paste0(
-        "The Grouping plan holds more grouping sets than the limit of ",
-        "{limit_text}."
-      ),
-      i = "Use fewer Margin dimensions or a narrower Grouping specification.",
-      i = paste0(
-        "Or raise the limit with ",
-        "{.code options(marginplyr.max_grouping_sets = )}, which takes a ",
-        "whole number or {.code Inf}."
-      )
-    ))
-  }
   if (is.null(constructor)) {
     abort_marginplyr(c(
       paste0(

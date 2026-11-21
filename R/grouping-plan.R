@@ -447,10 +447,6 @@ prepare_grouping_plan <- function(.data,
         grouping_spec, data_vars, local_proxy = local_proxy,
         allow_data_peek = allow_data_peek
       )
-      # Read here only to refuse an invalid value whatever the plan, after the
-      # refusals preflight raises; expansion reads it again where it
-      # materializes occurrences (ADR 0046).
-      grouping_set_limit()
       local_dimensions <- character()
       if (preflight$name_only) {
         # Reject name-only plan errors before acquiring typed metadata. The
@@ -2400,22 +2396,46 @@ expand_grouping_sets <- function(preflight, resolve_selection, emit,
                  witness = witness)
     }
   }
-  unlist(
-    lapply(
-      preflight$args,
-      function(arg) {
-        if (is.null(arg$nested)) {
-          return(emit_grouping_family(
-            list(resolve_selection(grouping_selection_quo(arg))), emit
-          ))
-        }
-        expand_grouping_family(
-          arg$nested, resolve_selection, emit, drop_duplicates, duplicate
-        )
-      }
-    ),
-    recursive = FALSE
-  )
+  limit <- grouping_set_limit()
+  family <- list()
+  seen <- character()
+  remaining <- length(preflight$args)
+  for (arg in preflight$args) {
+    remaining <- remaining - 1L
+    branch <- if (is.null(arg$nested)) {
+      emit_grouping_family(
+        list(resolve_selection(grouping_selection_quo(arg))), emit
+      )
+    } else {
+      expand_grouping_family(
+        arg$nested, resolve_selection, emit, drop_duplicates, duplicate
+      )
+    }
+    # Under "drop" only a branch's new memberships can reach the plan, which
+    # keeps the first occurrence of each, so a repeat is dropped here rather
+    # than carried to the plan's own deduplication.
+    if (drop_duplicates) {
+      keys <- vapply(branch, grouping_membership_key, character(1))
+      fresh <- !duplicated(keys) & !keys %in% seen
+      branch <- branch[fresh]
+      seen <- c(seen, keys[fresh])
+    }
+    family <- c(family, branch)
+    # Later branches add to the count, so only the last one fixes it.
+    if (remaining > 0L && length(family) > limit) {
+      abort_grouping_set_limit(limit, constructor = "grouping_sets")
+    }
+  }
+  check_grouping_set_count(length(family), "grouping_sets")
+  family
+}
+
+# A set's membership as one string, whatever the order or repetition of its
+# columns. Each name is prefixed by its byte length, so no two memberships
+# share a key whatever characters the names hold.
+grouping_membership_key <- function(set) {
+  columns <- sort(unique(set), method = "radix")
+  paste0(nchar(columns, type = "bytes"), ":", columns, collapse = "")
 }
 
 resolve_grouping_units <- function(preflight, resolve_selection) {
