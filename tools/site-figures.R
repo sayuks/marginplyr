@@ -5,6 +5,7 @@
 # image has to exist at that path inside the project. altdoc copies
 # `man/figures/` only to `help/figures/`.
 dir.create("man", showWarnings = FALSE)
-if (!all(file.copy("../man/figures", "man", overwrite = TRUE, recursive = TRUE))) {
+copied <- file.copy("../man/figures", "man", overwrite = TRUE, recursive = TRUE)
+if (!all(copied)) {
   stop("Could not copy man/figures/ into the site project.", call. = FALSE)
 }
