@@ -234,3 +234,30 @@ test_that("sibling families in a union are bounded together", {
     "expands to 4,097 grouping sets", class = "marginplyr_error"
   )
 })
+
+test_that("a union crossed under \"drop\" is bounded across its branches", {
+  withr::local_options(marginplyr.max_grouping_sets = NULL)
+  thirteen <- limit_columns(13L)
+  twelve <- thirteen$syms[1:12]
+  # Repeats of one cube add nothing to the product they are crossed into.
+  repeated <- grouping_spec(
+    grouping_sets(!!!rep(list(cube(!!!twelve)), 3L)), x13
+  )
+  expect_identical(
+    inspect_grouping(thirteen$data, .grouping = repeated,
+                     .duplicates = "drop"),
+    inspect_grouping(thirteen$data, .grouping = grouping_spec(cube(!!!twelve),
+                                                              x13))
+  )
+  # Two overlapping cubes hold 6,144 distinct sets, refused before the
+  # product is formed.
+  fourteen <- limit_columns(14L)
+  shifted <- grouping_spec(
+    grouping_sets(cube(!!!twelve), cube(!!!fourteen$syms[2:13])), x14
+  )
+  expect_error(
+    inspect_grouping(fourteen$data, .grouping = shifted, .duplicates = "drop"),
+    "`grouping_spec()` in the Grouping specification expands to more",
+    fixed = TRUE, class = "marginplyr_error"
+  )
+})

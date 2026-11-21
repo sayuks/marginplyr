@@ -161,7 +161,7 @@ summarizing an expansion again by its grouping columns merges the two.
 
 A Grouping plan holding more than 4,096 grouping sets is refused with a
 \code{"marginplyr_error"}, by every verb and on every backend, before any
-grouping set is built. Only a selection that needs a lazy input's column
+grouping set is computed. Only a selection that needs a lazy input's column
 types, such as \code{where(is.character)}, sends a query first: the metadata
 reads \emph{When marginplyr queries your data} lists. The count is the plan's
 after \code{.duplicates} is applied, the rows \code{\link[=inspect_grouping]{inspect_grouping()}} returns, so a

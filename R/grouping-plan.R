@@ -2925,16 +2925,31 @@ resolve_product_product <- function(preflight, resolve_selection) {
 
 # Enumerate each branch against the columns already supplied by other factors.
 expand_product_branches <- function(branches, covered) {
-  unlist(lapply(branches, function(branch) {
-    if (!is.null(branch$factors)) {
-      return(distinct_resolved_product(branch$factors, covered))
+  limit <- grouping_set_limit()
+  family <- list()
+  seen <- character()
+  for (branch in branches) {
+    sets <- if (!is.null(branch$factors)) {
+      distinct_resolved_product(branch$factors, covered)
+    } else if (is.null(branch$units)) {
+      branch$sets
+    } else {
+      columns <- unique(unlist(branch$units, use.names = FALSE))
+      distinct_cube_sets(branch$units, setdiff(columns, covered))
     }
-    if (is.null(branch$units)) {
-      return(branch$sets)
+    # Sets equal outside `covered` merge in the product step that crosses
+    # them, which keeps the first, so only a branch's new ones are kept.
+    keys <- vapply(sets, function(set) {
+      grouping_membership_key(setdiff(set, covered))
+    }, character(1))
+    fresh <- !duplicated(keys) & !keys %in% seen
+    family <- c(family, sets[fresh])
+    seen <- c(seen, keys[fresh])
+    if (length(family) > limit) {
+      abort_grouping_set_limit(limit, constructor = "grouping_spec")
     }
-    columns <- unique(unlist(branch$units, use.names = FALSE))
-    distinct_cube_sets(branch$units, setdiff(columns, covered))
-  }), recursive = FALSE)
+  }
+  family
 }
 
 # Retain the first occurrence of each product set. Columns required by every

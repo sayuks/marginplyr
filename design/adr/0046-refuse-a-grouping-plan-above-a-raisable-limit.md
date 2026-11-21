@@ -134,11 +134,8 @@ unit above.
 ## Amendment: which refusal comes first (2026-11-22)
 
 A refusal the specification earns before expansion, such as an empty or
-repeated constructor argument, comes before this one, and so does any refusal
-raised before the plan is proved too large. Once it is, the plan is refused
-there, and a refusal a later part of the specification would have raised is
-not reached: reaching it would mean building the family between, which is the
-cost the limit exists to refuse. A `grouping_sets()` union stops before its
-next branch once its count passes the limit, even a bare selection: one that
-needs a lazy input's column types is read by a pass that queries the input
-first.
+repeated constructor argument, comes before this one. A refusal raised during
+expansion can come after it: a `grouping_sets()` union whose branches pass the
+limit stops before its next branch, so that branch's own refusal is not
+reached. Reading it would mean building the branch, or, for a selection that
+needs a lazy input's column types, querying the input first.

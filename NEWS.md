@@ -60,8 +60,8 @@ Initial CRAN release.
 
 * Every Margin verb and `inspect_grouping()` refuse a Grouping plan of more
   than 4,096 grouping sets, counted after `.duplicates` is applied, before a
-  grouping set is built. `options(marginplyr.max_grouping_sets = )` raises the
-  limit or, with `Inf`, removes it.
+  grouping set is computed. `options(marginplyr.max_grouping_sets = )` raises
+  the limit or, with `Inf`, removes it.
 
 * Every error marginplyr raises for a correctable call inherits the
   `"marginplyr_error"` class; see `?marginplyr_conditions`.

@@ -154,7 +154,7 @@
 #' @section Grouping plan size:
 #' A Grouping plan holding more than 4,096 grouping sets is refused with a
 #' `"marginplyr_error"`, by every verb and on every backend, before any
-#' grouping set is built. Only a selection that needs a lazy input's column
+#' grouping set is computed. Only a selection that needs a lazy input's column
 #' types, such as `where(is.character)`, sends a query first: the metadata
 #' reads *When marginplyr queries your data* lists. The count is the plan's
 #' after `.duplicates` is applied, the rows [inspect_grouping()] returns, so a
