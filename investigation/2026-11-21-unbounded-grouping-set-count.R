@@ -12,6 +12,15 @@
 #   Rscript investigation/2026-11-21-unbounded-grouping-set-count.R \
 #     cell <backend> <verb> <D> <N> <out.tsv>
 #
+# The grid's default backends leave out `postgres`, which needs a live server.
+#
+# Three further modes print one line each. They restate the one-off code that
+# produced the note's inspection, time-limit and DuckDB thread figures:
+#
+#   ... inspect <D> <list|text>
+#   ... limit <backend> <summarize|expand|inspect> <D> <N> <seconds>
+#   ... duckdb <D> <threads> <temp-directory>
+#
 # MP_LIB, when set, is prepended to the library path; it names a library
 # holding the marginplyr build being measured. MP_PG_HOST and MP_PG_PORT name
 # the live PostgreSQL socket directory and port for the `postgres` backend.
@@ -46,7 +55,7 @@ timed <- function(f) {
   list(seconds = stats::median(elapsed), value = value)
 }
 
-run_cell <- function(backend, verb, d, n, out) {
+attach_build <- function() {
   if (nzchar(Sys.getenv("MP_LIB"))) {
     .libPaths(c(Sys.getenv("MP_LIB"), .libPaths()))
   }
@@ -54,18 +63,10 @@ run_cell <- function(backend, verb, d, n, out) {
     library(marginplyr)
     library(dplyr, warn.conflicts = FALSE)
   })
-  record <- stats::setNames(as.list(rep(NA_character_, length(phases))), phases)
-  record$status <- "started"
-  put <- function(name, value) {
-    record[[name]] <<- format(value, scientific = FALSE, digits = 4)
-    utils::write.table(
-      as.data.frame(c(
-        list(backend = backend, verb = verb, d = d, n = n), record
-      )),
-      out, sep = "\t", quote = FALSE, row.names = FALSE
-    )
-  }
+}
 
+# D two-valued character columns `k1`..`kD` and a numeric `v`, N rows.
+cube_frame <- function(d, n) {
   set.seed(20261121L)
   keys <- paste0("k", seq_len(d))
   df <- as.data.frame(
@@ -75,8 +76,16 @@ run_cell <- function(backend, verb, d, n, out) {
     )
   )
   df$v <- as.numeric(seq_len(n))
-  grouping <- rlang::expr(cube(!!!rlang::syms(keys)))
+  df
+}
 
+cube_grouping <- function(d) {
+  rlang::expr(cube(!!!rlang::syms(paste0("k", seq_len(d)))))
+}
+
+# The frame as one backend's input, with the connection to close afterwards
+# when there is one.
+open_input <- function(backend, df) {
   con <- NULL
   input <- switch(
     backend,
@@ -105,26 +114,53 @@ run_cell <- function(backend, verb, d, n, out) {
     postgres_sim = dbplyr::tbl_lazy(df, con = dbplyr::simulate_postgres()),
     mssql_sim = dbplyr::tbl_lazy(df, con = dbplyr::simulate_mssql())
   )
+  list(input = input, con = con)
+}
+
+call_verb <- function(verb, input, grouping, format = "list") {
+  switch(
+    verb,
+    summarize = rlang::inject(summarize_with_margins(
+      input, n = dplyr::n(), s = sum(v, na.rm = TRUE), .grouping = !!grouping
+    )),
+    expand = rlang::inject(expand_with_margins(input, .grouping = !!grouping)),
+    inspect = rlang::inject(
+      inspect_grouping(input, .grouping = !!grouping, .format = format)
+    )
+  )
+}
+
+r_peak_mb <- function() {
+  usage <- gc()
+  sum(usage[, ncol(usage)])
+}
+
+run_cell <- function(backend, verb, d, n, out) {
+  attach_build()
+  record <- stats::setNames(as.list(rep(NA_character_, length(phases))), phases)
+  record$status <- "started"
+  put <- function(name, value) {
+    record[[name]] <<- format(value, scientific = FALSE, digits = 4)
+    utils::write.table(
+      as.data.frame(c(
+        list(backend = backend, verb = verb, d = d, n = n), record
+      )),
+      out, sep = "\t", quote = FALSE, row.names = FALSE
+    )
+  }
+
+  grouping <- cube_grouping(d)
+  opened <- open_input(backend, cube_frame(d, n))
+  input <- opened$input
+  con <- opened$con
   on.exit(if (!is.null(con)) DBI::dbDisconnect(con), add = TRUE)
 
   invisible(gc(reset = TRUE))
-  inspected <- timed(function() {
-    rlang::inject(
-      inspect_grouping(input, .grouping = !!grouping, .format = "list")
-    )
-  })
+  inspected <- timed(function() call_verb("inspect", input, grouping))
   put("sets", nrow(inspected$value))
   put("inspect_s", inspected$seconds)
 
-  built <- timed(function() {
-    if (identical(verb, "summarize")) {
-      rlang::inject(summarize_with_margins(
-        input, n = dplyr::n(), s = sum(v, na.rm = TRUE), .grouping = !!grouping
-      ))
-    } else {
-      rlang::inject(expand_with_margins(input, .grouping = !!grouping))
-    }
-  })
+  built <- timed(function() call_verb(verb, input, grouping))
   put("build_s", built$seconds)
   result <- built$value
 
@@ -148,8 +184,7 @@ run_cell <- function(backend, verb, d, n, out) {
     put("collect_s", collected$seconds)
     put("rows", nrow(collected$value))
   }
-  usage <- gc()
-  put("r_peak_mb", sum(usage[, ncol(usage)]))
+  put("r_peak_mb", r_peak_mb())
   put("status", "done")
 }
 
@@ -198,20 +233,93 @@ run_grid <- function(out, timeout, chosen, dims, n, verbs) {
   }
 }
 
-if (identical(args[[1L]], "cell")) {
-  stopifnot(args[[2L]] %in% backends)
-  run_cell(
-    args[[2L]], args[[3L]], as.integer(args[[4L]]), as.integer(args[[5L]]),
-    args[[6L]]
+# `inspect_grouping()` of a D-column cube on a two-row local data frame.
+run_inspect <- function(d, format) {
+  attach_build()
+  df <- cube_frame(d, 2L)
+  invisible(gc(reset = TRUE))
+  t0 <- proc.time()[["elapsed"]]
+  sets <- nrow(call_verb("inspect", df, cube_grouping(d), format))
+  cat(sprintf(
+    "inspect %s d=%d: %d sets in %.2f s, R peak %.0f MB\n",
+    format, d, sets, proc.time()[["elapsed"]] - t0, r_peak_mb()
+  ))
+}
+
+# One call under `setTimeLimit()`: when it ended, with what, holding how much.
+run_limit <- function(backend, verb, d, n, seconds) {
+  attach_build()
+  opened <- open_input(backend, cube_frame(d, n))
+  on.exit(if (!is.null(opened$con)) DBI::dbDisconnect(opened$con), add = TRUE)
+  grouping <- cube_grouping(d)
+  invisible(gc(reset = TRUE))
+  t0 <- proc.time()[["elapsed"]]
+  outcome <- tryCatch(
+    {
+      setTimeLimit(elapsed = seconds, transient = TRUE)
+      call_verb(verb, opened$input, grouping)
+      "finished"
+    },
+    error = function(cnd) conditionMessage(cnd)
   )
-} else {
-  pick <- function(i, default) if (length(args) >= i) args[[i]] else default
-  run_grid(
+  setTimeLimit()
+  cat(sprintf(
+    "limit %s %s d=%d: ended after %.2f s, R peak %.0f MB: %s\n",
+    backend, verb, d, proc.time()[["elapsed"]] - t0, r_peak_mb(),
+    substr(gsub("\\s+", " ", outcome), 1L, 120L)
+  ))
+}
+
+# The native DuckDB summary's statement, executed at a chosen thread count
+# with DuckDB's temporary directory pointed at a writable path.
+run_duckdb <- function(d, threads, temp_directory) {
+  attach_build()
+  opened <- open_input("duckdb", cube_frame(d, 256L))
+  con <- opened$con
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  DBI::dbExecute(con, sprintf("SET temp_directory = '%s'", temp_directory))
+  DBI::dbExecute(con, sprintf("SET threads = %d", threads))
+  sql <- as.character(dbplyr::sql_render(
+    call_verb("summarize", opened$input, cube_grouping(d))
+  ))
+  t0 <- proc.time()[["elapsed"]]
+  outcome <- tryCatch(
+    paste(nrow(DBI::dbGetQuery(con, sql)), "rows"),
+    error = function(cnd) conditionMessage(cnd)
+  )
+  cat(sprintf(
+    "duckdb d=%d threads=%d: %.2f s: %s\n",
+    d, threads, proc.time()[["elapsed"]] - t0,
+    substr(gsub("\\s+", " ", outcome), 1L, 160L)
+  ))
+}
+
+pick <- function(i, default) if (length(args) >= i) args[[i]] else default
+
+switch(
+  args[[1L]],
+  cell = {
+    stopifnot(args[[2L]] %in% backends)
+    run_cell(
+      args[[2L]], args[[3L]], as.integer(args[[4L]]), as.integer(args[[5L]]),
+      args[[6L]]
+    )
+  },
+  grid = run_grid(
     out = args[[2L]],
     timeout = as.numeric(pick(3L, "300")),
-    chosen = strsplit(pick(4L, paste(backends[-8L], collapse = ",")), ",")[[1L]],
+    chosen = strsplit(
+      pick(4L, paste(setdiff(backends, "postgres"), collapse = ",")), ","
+    )[[1L]],
     dims = as.integer(strsplit(pick(5L, "2,4,6,8,10,12,14,16"), ",")[[1L]]),
     n = as.integer(pick(6L, "256")),
     verbs = strsplit(pick(7L, "summarize,expand"), ",")[[1L]]
-  )
-}
+  ),
+  inspect = run_inspect(as.integer(args[[2L]]), args[[3L]]),
+  limit = run_limit(
+    args[[2L]], args[[3L]], as.integer(args[[4L]]), as.integer(args[[5L]]),
+    as.numeric(args[[6L]])
+  ),
+  duckdb = run_duckdb(as.integer(args[[2L]]), as.integer(args[[3L]]), args[[4L]]),
+  stop("Unknown mode: ", args[[1L]], call. = FALSE)
+)

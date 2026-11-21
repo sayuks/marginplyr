@@ -9,8 +9,14 @@ n columns resolves to 2^n grouping sets and the package neither caps nor warns.
 The note holds evidence only.
 
 The measurements were taken from main `dcbacefa`, installed into a private
-library, by
+library. The grid tables came from the `grid` mode of
 [`2026-11-21-unbounded-grouping-set-count.R`](2026-11-21-unbounded-grouping-set-count.R).
+The inspection series, the time-limit probes and the DuckDB thread table came
+from one-off code, which that script's `inspect`, `limit` and `duckdb` modes
+restate; a sample of each, rerun through them on 2026-11-21, agreed with the
+figures below except where a rerun is quoted. The
+profile, the `SIGINT` probe and the selection-helper check were run from
+one-off code that was not kept.
 
 ## Summary
 
@@ -27,10 +33,12 @@ library, by
   `collect()`, 11.7 min together, for a 61 MB statement the database ran in
   19 s.
 - Three engine answers arrived before any client-side limit did. PostgreSQL
-  refused a native summary above 4,096 sets. PostgreSQL refused a 16,383-arm
+  refused a native summary above 4,096 sets. PostgreSQL refused a 16,384-set
   expansion with `stack depth limit exceeded`, after the client had spent 422 s
   constructing it. DuckDB ran out of memory on a native summary of 8,192 sets
-  or more of a 256-row table, far below its parser's 65,535-set cap.
+  of a 256-row table at one and at ten threads, though not at four, and of
+  16,384 sets at both thread counts tried, far below its parser's 65,535-set
+  cap.
 - `inspect_grouping()` returned the set count in 0.09 s at 4,096 sets and
   1.6 s at 65,536; at 2^20 sets it took 39 s and 1.3 GB.
 - A build responded to an interrupt within 0.1 s on all four backends tried,
@@ -54,8 +62,8 @@ Three statements in the audit finding were checked first.
    SQLite 3.35 or later read it once into a common table expression that every
    branch then read; an expansion on any other connection read it once per
    set; and a native summary was one statement with no branches at all.
-2. *"Ten columns: 1,024 branches, 2.4 MB of SQL, 28 s."* Reproduced, and
-   split: 13.0 s constructing the lazy query, 16.9 s rendering 2,484,019 bytes,
+2. *"Ten columns: 1,024 branches, 2.4 MB of SQL, 28 s."* Reproduced at
+   30.2 s, and split: 13.0 s constructing the lazy query, 16.9 s rendering 2,484,019 bytes,
    0.31 s executing. `collect()` rendered again, so a caller who built the
    query and collected it waited 13.0 s + 17.4 s = 30.4 s, of which the
    database's share was 1%.
@@ -81,7 +89,7 @@ recorded; a longer one was run once. Up to three cells ran concurrently, so a
 figure is good to its first two digits at best.
 
 The phases were: *construct*, the Margin verb's call, which on a data frame
-also computes the result; *render*, `dbplyr::sql_render()` on the result;
+also computed the result; *render*, `dbplyr::sql_render()` on the result;
 *execute*, `DBI::dbGetQuery()` on the rendered text; and *collect*,
 `dplyr::collect()` on the result, which on a dbplyr table renders again before
 executing. "Simulated" means a `dbplyr::tbl_lazy()` on a simulated connection,
@@ -276,7 +284,8 @@ rendering 4.82-fold for a 4-fold increase in sets.
 | 22 (4,194,304) | 154 s, 4,722 MB | 208 s, 5,229 MB |
 
 At 65,536 sets the figure was within 0.1 s of 1.6 s on every backend that
-reached that size.
+reached that size. The series above ran beside other cells; the script's
+`inspect` mode, run alone, gave 6.3 s and 376 MB at 18 columns.
 
 A selection helper reached a wide cube without naming a column: on a frame
 with six `flag_*` character columns, `cube(starts_with("flag_"))` and
@@ -288,10 +297,12 @@ an Arrow table and SQLite.
 
 `setTimeLimit(elapsed = 3, transient = TRUE)` around the construction of a
 16,384-set cube ended `summarize_with_margins()` and `expand_with_margins()`
-with an error between 3.01 s and 3.05 s on the same four inputs. On the local
-data frame the expansion's error was "missing value where TRUE/FALSE needed"
-rather than the time-limit message; the other seven calls reported the time
-limit.
+with an error between 3.01 s and 3.05 s on the same four inputs. Seven of the
+eight calls reported the time limit. The expansion on the local data frame
+did not, and repeated at other limits it ended with the time-limit message,
+with an error dplyr's `mutate()` raised around the interrupted step, or with
+"missing value where TRUE/FALSE needed", depending on where the limit
+struck. Which handler produced the last was not traced.
 
 The same limit around `inspect_grouping()` of a 24-column cube (16,777,216
 sets) on a two-row local data frame ended it at 3.15 s, by which time R's peak
@@ -655,9 +666,9 @@ the engine has no limit.
 [mysql-lex]: https://github.com/mysql/mysql-server/blob/bf5a74e48423ac51200987edcd72a678772cb2ee/sql/sql_lex.h
 [mysql-query-term]: https://github.com/mysql/mysql-server/blob/bf5a74e48423ac51200987edcd72a678772cb2ee/sql/query_term.cc
 
-For the engines that take marginplyr's portable `UNION ALL` path, column (c)
-is not a limit on that path: it is the engine's own choice of cap, recorded
-as precedent. Columns (a) and (b) are the ones the portable statement meets.
+For the engines that took marginplyr's portable `UNION ALL` path on
+2026-11-21, column (c) was not a limit on that path: it is the engine's own
+choice of cap. Columns (a) and (b) were the ones the portable statement met.
 The MySQL source was read at `trunk` commit `bf5a74e4`, not at an 8.4 tag.
 
 

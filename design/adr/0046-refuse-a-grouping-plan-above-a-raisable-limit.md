@@ -3,7 +3,7 @@
 A Margin verb and `inspect_grouping()` refuse a Grouping plan holding more than
 4,096 grouping-set occurrences. The refusal is a Package condition raised while
 the plan is prepared, before a query is sent or a branch is built, and
-`options(marginplyr.max_grouping_sets = )` raises or removes the limit. #1745
+`options(marginplyr.max_grouping_sets = )` moves or removes the limit. #1745
 implements it.
 
 The limit is one number for every backend and every verb, and it exists for one
@@ -22,7 +22,8 @@ prepared, which is after the plan and the statement exist.
 A caller does not have to write 24 names to get there. `cube(where(is.character))`
 on a wide table does it, and so does an application that passes its user's column
 choice to `cube(all_of())`. The limit turns that from a session that stops
-answering into a condition that names the count.
+answering into a condition, which is only true if refusing is cheap: the
+refusal is decided without building the plan it refuses.
 
 ## What the limit is not
 
@@ -38,6 +39,11 @@ It is not a cost policy either. ADR 0020 and ADR 0025 decide when the caller's
 data is read and by whom, and neither is extended here; the limit is on the
 plan's size, which is known before any data is involved.
 
+Nor does it stand in for a fix to how plans are composed. The audit's 14-column
+SQLite case finished, and construction grew close to linearly in the number of
+occurrences on every path, so there was no complexity defect for a limit to
+hide.
+
 ## Why 4,096
 
 The number is borrowed, not derived. PostgreSQL, SQL Server, BigQuery and
@@ -48,13 +54,14 @@ up to 65,536 occurrences and passed a gigabyte at 2^20.
 
 Within that range 4,096 is the one value with a reason attached. PostgreSQL is
 one of the two backends marginplyr sends native `GROUPING SETS` to, and its cap
-is fixed in source; taking the same number means a plan marginplyr accepts is a
-plan that native path accepts. A higher default would leave a band where the
+is fixed in source; taking the same number means a plan marginplyr accepts is
+within that path's cap. A higher default would leave a band where the
 same call passes on a local data frame and fails on PostgreSQL.
 
 The cost of the lower choice is small because little above it was cheap. Past
 4,096 occurrences PostgreSQL refused, DuckDB's native summary ran out of memory
-at 8,192, and at 16,384 every other path took 81 seconds or more.
+at 8,192 at two of the three thread counts tried, and no branch-building path
+finished 16,384 in under 44 seconds.
 
 ## Why one limit, applied to the plan
 
@@ -67,8 +74,9 @@ Leaving lazy backends to their engines was considered and does not reach the
 problem. An engine's cap acts on execution; the plan and, on every path except a
 native summary, one branch per occurrence are built in R first. PostgreSQL
 refused a 16,384-occurrence expansion only after seven minutes of client-side
-construction, and dtplyr, Arrow, SQLite and DuckDB's expansion have no cap of
-their own to defer to.
+construction, and nothing refused on dtplyr, Arrow, SQLite or DuckDB's
+expansion at any size reached. For a caller who raises the option, an engine's
+own refusal stays an External condition and propagates unchanged.
 
 A table of limits per backend was rejected: the figures belong to dbplyr's,
 Arrow's and each engine's version, and would be this package's to keep current.
@@ -76,8 +84,9 @@ Arrow's and each engine's version, and would be this package's to keep current.
 ## The unit
 
 The count is of the occurrences the plan holds, which is what
-`inspect_grouping()` returns one row for, and not of the occurrences the caller
-wrote. #1245, #1274 and #1321 made a plan with few distinct grouping sets
+`inspect_grouping()` returns one row for. Branches and SQL bytes were the other
+candidates; each exists on some paths only, and only once the cost it would
+bound has been paid. Nor is it a count of the occurrences the caller wrote. #1245, #1274 and #1321 made a plan with few distinct grouping sets
 complete under `.duplicates = "drop"` however many repeats were written, and a
 count taken before that would refuse what they made work.
 
@@ -100,11 +109,11 @@ once.
 a session, not one call's result, and an option changes only whether a condition
 is raised, never what a successful call returns.
 
-## Why now
+## Why the default refuses
 
 Adding a refusal after release breaks calls that worked; removing or raising one
-breaks nothing. The limit therefore goes in before the first CRAN release, where
-both directions stay open.
+breaks nothing. Starting with the refusal is the choice that leaves both
+directions open.
 
 Evidence: `investigation/2026-11-21-unbounded-grouping-set-count.md` records the
 measurements across backends and the engines' own limits from primary sources.
