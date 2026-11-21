@@ -117,3 +117,16 @@ directions open.
 
 Evidence: `investigation/2026-11-21-unbounded-grouping-set-count.md` records the
 measurements across backends and the engines' own limits from primary sources.
+
+## Amendment: a product under `.duplicates = "drop"` (2026-11-21)
+
+Under `"drop"` a Cartesian product is deduplicated one factor at a time, and a
+later factor can merge sets an earlier prefix kept apart:
+`grouping_spec(cube(a1, ..., a13), grouping_sets(grouping_set(a1, ..., a7),
+grouping_set(a8, ..., a13)))` holds 191 sets after a prefix of 8,192. Counting
+the plan exactly there means building the prefix, which is the cost the limit
+exists to refuse, so #1745 refuses a product whose deduplicated prefix passes
+the limit, and such a plan is refused although it would be within it. The
+message names the family that passed the limit, a `cube()` or a Cartesian
+product, rather than a count of the plan. Every other refusal holds to the
+unit above.

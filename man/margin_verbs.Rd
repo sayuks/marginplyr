@@ -157,6 +157,33 @@ margin row indistinguishable from a source row whose dimension is missing, so
 summarizing an expansion again by its grouping columns merges the two.
 }
 
+\section{Grouping plan size}{
+
+A Grouping plan holding more than 4,096 grouping sets is refused with a
+\code{"marginplyr_error"}, by every verb and on every backend, before any
+grouping set is built. Only a selection that needs a lazy input's column
+types, such as \code{where(is.character)}, sends a query first: the metadata
+reads \emph{When marginplyr queries your data} lists. The count is the plan's
+after \code{.duplicates} is applied, the rows \code{\link[=inspect_grouping]{inspect_grouping()}} returns, so a
+specification that writes many repeats of a few sets passes under
+\code{.duplicates = "drop"}. A \code{\link[=cube]{cube()}} of n dimensions is 2^n grouping sets, so
+a \code{cube()} of 13 columns is refused; a selection such as
+\code{cube(where(is.character))} reaches that on a wide table without naming a
+column. Use fewer Margin dimensions or a narrower Grouping specification,
+or set \code{options(marginplyr.max_grouping_sets = )} to a larger whole number,
+or to \code{Inf} for no limit.
+
+The limit keeps a plan from exhausting memory in your R session; it does
+not make a large plan cheap. At 4,096 grouping sets a summary can still
+take minutes to build on the backends that build one branch per grouping
+set, an expansion returns one copy of each input row per grouping set, and
+a portable summary reads its source once per grouping set. A database's own
+limits, such as PostgreSQL's refusal of more than 4,096 native grouping
+sets, still apply to a plan the raised option admits. \emph{Grouping
+specifications from user input} in \href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html#grouping-specifications-from-user-input}{Database and lazy backends}
+says what bounds an application's call.
+}
+
 \section{Option arguments}{
 
 An argument documented as taking one of a listed set of strings —

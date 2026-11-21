@@ -426,7 +426,8 @@ Config/testthat/start-first:
     grouping-spec-as-summary,
     list-grouping,
     dtplyr-row-call-metadata,
-    suggest-guard-scan
+    suggest-guard-scan,
+    grouping-set-limit
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool

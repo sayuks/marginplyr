@@ -459,10 +459,15 @@ backend:
 A branch that reads the source repeats the input's whole lazy pipeline: on
 SQLite, a filtered and joined input under a `cube()` of two dimensions renders
 its join five times. The number of branches grows with the plan, and a
-`cube()` of n dimensions is 2^n grouping sets with no limit; on the SQLite
-simulator a `cube()` of eight dimensions takes seconds to build and renders
-about 450 KB of SQL. Inspect the database's query plan for large workloads;
-marginplyr does not claim that either translation is universally faster.
+`cube()` of n dimensions is 2^n grouping sets. Every path except a native
+summary builds one branch per grouping set in your R session before the
+database sees the query: a summary of 4,096 grouping sets on a near-empty
+SQLite table took over two minutes to build and collect. A Grouping plan of
+more than 4,096 grouping sets is therefore refused on every backend unless
+`options(marginplyr.max_grouping_sets = )` raises the limit; see
+[Grouping specifications from user input](#grouping-specifications-from-user-input).
+Inspect the database's query plan for large workloads; marginplyr does not
+claim that either translation is universally faster.
 
 ```{r}
 #| eval: !expr has_sqlite_simulator
@@ -493,6 +498,60 @@ the row-expansion branches explicit. On the SQLite simulator,
 two zero-row branches that fix the column types, then one branch per grouping
 set, each reading `` `df` `` and writing `'Total'` into the dimensions its set
 omits, all joined by `UNION ALL`.
+
+## Grouping specifications from user input
+
+A `cube()` doubles with each column it selects, so a selection helper reaches
+a large plan without naming a column. On a table with 13 flag columns,
+`cube(starts_with("flag_"))` asks for 8,192 grouping sets, more than the
+limit of 4,096, and is refused before a branch is built:
+
+```{r}
+#| label: grouping-plan-limit-rejected
+#| error: true
+#| purl: false
+
+flags <- as.data.frame(
+  stats::setNames(as.list(rep("y", 13)), paste0("flag_", 1:13))
+)
+inspect_grouping(flags, .grouping = cube(starts_with("flag_")))
+```
+
+An application that passes its user's column choice into a Grouping
+specification, as in `cube(all_of(chosen))`, cannot rely on the limit to make
+that safe. At 4,096 grouping sets a summary still takes minutes to build on
+the backends that build one branch per set, an expansion returns one copy of
+every input row per set, and a portable summary reads its source once per
+set. What bounds the call is the application limiting how many columns can be
+chosen, the database's own limits, such as a statement timeout, a memory limit
+or a billing cap, and `setTimeLimit()` around the call. A time limit ends the
+call with an error, but not always with the time-limit message: where it
+strikes inside dplyr, dplyr's own error can arrive instead. Handle any error
+from the call rather than matching the message:
+
+```{r}
+#| eval: false
+
+# `expr` is evaluated after the limit is set, and the limit is lifted
+# however the call ends.
+within_time_limit <- function(expr, seconds) {
+  setTimeLimit(elapsed = seconds, transient = TRUE)
+  on.exit(setTimeLimit(elapsed = Inf))
+  expr
+}
+
+report <- tryCatch(
+  within_time_limit(
+    summarize_with_margins(
+      sales,
+      revenue = sum(revenue),
+      .grouping = cube(all_of(chosen))
+    ),
+    seconds = 30
+  ),
+  error = function(cnd) NULL
+)
+```
 
 ## Record the SQL marginplyr prepares
 

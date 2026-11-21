@@ -381,6 +381,9 @@ prepare_grouping_plan <- function(.data,
 
   with_margin_error_call(
     {
+      # Read here only to refuse an invalid value whatever the plan; expansion
+      # reads it again where it materializes occurrences (ADR 0046).
+      grouping_set_limit()
       # An empty `.grouping` is the argument left absent, which is what
       # `.grouping = ` already means: R matches a named formal's empty argument
       # to that formal's default. Only injection carries the missing marker
@@ -2168,6 +2171,9 @@ compile_grouping_spec_impl <- function(preflight,
     keep <- !duplicated(keys)
     normalized <- normalized[keep]
   }
+  # Expansion refused every family it could prove too large without building
+  # it; this is the count of the plan itself, after the duplicate policy.
+  check_grouping_set_count(length(normalized))
 
   masks <- matrix(
     0L,
@@ -2503,6 +2509,7 @@ check_repeated_grouping_units <- function(units, constructor) {
 # Enumerate resolved cube units in descending subset size and combination order.
 cube_grouping_family <- function(units) {
   n <- length(units)
+  check_grouping_set_count(2^n, cube_family_label)
   indices <- unlist(
     lapply(
       rev(seq.int(0L, n)),
@@ -2538,6 +2545,7 @@ distinct_cube_sets <- function(
   units,
   dimensions = unique(unlist(units, use.names = FALSE))
 ) {
+  limit <- grouping_set_limit()
   sets <- list(character())
   sizes <- 0L
   for (unit in rev(units)) {
@@ -2551,6 +2559,11 @@ distinct_cube_sets <- function(
     retained <- ordered[!duplicated(keys)]
     sets <- candidates[retained]
     sizes <- candidate_sizes[retained]
+    # The retained sets never shrink from one unit to the next, though a
+    # later factor of an enclosing product can merge them (ADR 0046).
+    if (length(sets) > limit) {
+      abort_grouping_set_limit(limit, family = cube_family_label)
+    }
   }
   sets
 }
@@ -2588,6 +2601,7 @@ expand_grouping_product <- function(preflight, resolve_selection, emit,
       witness_family %||% cross_grouping_families(families), emit
     ))
   }
+  check_grouping_set_count(prod(lengths(families)), product_family_label)
   n <- length(args)
   left <- cross_grouping_families(families[-n])
   right <- families[[n]]
@@ -2658,8 +2672,13 @@ product_duplicate_witness <- function(families, family) {
   widths <- lengths(families)
   choices <- rep(1L, length(widths))
   seen <- new.env(parent = emptyenv())
+  limit <- grouping_set_limit()
   position <- 1
   repeat {
+    # Every position walked so far holds a distinct membership.
+    if (position > limit + 1) {
+      abort_grouping_set_limit(limit, family = product_family_label)
+    }
     sets <- Map(`[[`, families, choices)
     key <- grouping_set_key(unlist(sets, use.names = FALSE), dimensions)
     # Compare keys inside the hash bucket, as in distinct_product_step().
@@ -2771,6 +2790,7 @@ observe_product_factor <- function(arg, prefix, suffix,
 
 # Cross the factor families in left-major order.
 cross_grouping_families <- function(families) {
+  check_grouping_set_count(prod(lengths(families)), product_family_label)
   Reduce(combine_grouping_factors, families, init = list(character()))
 }
 
@@ -2924,6 +2944,7 @@ distinct_product_step <- function(product, factor, required) {
     union(unique(unlist(product, use.names = FALSE)), factor_columns), required
   )
   varying <- setdiff(factor_columns, required)
+  limit <- grouping_set_limit()
   previous_covered <- NULL
   seen <- new.env(parent = emptyenv())
   sets <- list()
@@ -2944,6 +2965,11 @@ distinct_product_step <- function(product, factor, required) {
       if (!key %in% previous) {
         seen[[bucket]] <- c(previous, key)
         sets[[length(sets) + 1L]] <- set
+        # A later factor can still merge these sets, so this bounds the
+        # expansion rather than proving the plan's count (ADR 0046).
+        if (length(sets) > limit) {
+          abort_grouping_set_limit(limit, family = product_family_label)
+        }
       }
     }
   }

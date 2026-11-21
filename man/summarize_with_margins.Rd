@@ -320,6 +320,7 @@ These rules are stated once, in \link{margin_verbs}, for every Margin verb:
 \itemize{
 \item \link[=margin_verbs]{Fixed columns and Margin dimensions}
 \item \link[=margin_verbs]{Grouped and row-wise inputs}
+\item \link[=margin_verbs]{Grouping plan size}
 \item \link[=margin_verbs]{Display labels and grouping identity}
 \item \link[=margin_verbs]{Margin order}
 \item \link[=margin_verbs]{Grouping set identifiers}

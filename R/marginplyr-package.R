@@ -67,6 +67,16 @@
 #'
 #' [last_sent_queries()] states what the record holds and promises.
 #'
+#' @section Limiting the size of a Grouping plan:
+#' A Margin verb or [inspect_grouping()] refuses a Grouping plan holding more
+#' than 4,096 grouping sets, counted after `.duplicates` is applied, with a
+#' `"marginplyr_error"` raised before any grouping set is built.
+#' `options(marginplyr.max_grouping_sets = )` replaces the limit: a whole
+#' number of at least 1, or `Inf` for none. Unset or `NULL` means 4,096, and
+#' any other value is refused naming the option. The option is read on each
+#' call. *Behavior shared by the Margin verbs* ([margin_verbs]) states what the
+#' limit does not protect against.
+#'
 #' @examples
 #' # A Margin verb raises the class directly, so `tryCatch()` catches it.
 #' tryCatch(

@@ -58,6 +58,13 @@ Initial CRAN release.
 * `last_sent_queries()`, with `options(marginplyr.audit_sql = TRUE)`, records
   the SQL a Margin verb prepares or sends.
 
+* A Grouping plan of more than 4,096 grouping sets, counted after
+  `.duplicates` is applied, is refused by every Margin verb and
+  `inspect_grouping()` before a grouping set is built, so a `cube()` of many
+  columns ends with an error instead of exhausting the session's memory.
+  `options(marginplyr.max_grouping_sets = )` raises the limit or, with `Inf`,
+  removes it.
+
 * Every error marginplyr raises for a correctable call inherits the
   `"marginplyr_error"` class; see `?marginplyr_conditions`.
 
