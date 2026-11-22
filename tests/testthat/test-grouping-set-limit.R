@@ -316,13 +316,19 @@ test_that("a cube crossed under \"drop\" names the family that passed", {
     "`cube()` in the Grouping specification", fixed = TRUE,
     class = "marginplyr_error"
   )
-  # Crossed with two, the cube is built only as part of the product.
-  crossed <- grouping_spec(grouping_sets(x, grouping_set()), cube(a, b, c, d))
-  expect_error(
-    inspect_grouping(data, .grouping = crossed, .duplicates = "drop"),
-    "`grouping_spec()` in the Grouping specification", fixed = TRUE,
-    class = "marginplyr_error"
+  # Crossed with two, the cube is built only as part of the product, as is a
+  # family resolved in full.
+  crossed <- list(
+    grouping_spec(grouping_sets(x, grouping_set()), cube(a, b, c, d)),
+    grouping_spec(grouping_sets(x, grouping_set()), rollup(a, b, c, d))
   )
+  for (spec in crossed) {
+    expect_error(
+      inspect_grouping(data, .grouping = spec, .duplicates = "drop"),
+      "`grouping_spec()` in the Grouping specification", fixed = TRUE,
+      class = "marginplyr_error"
+    )
+  }
   # A union past the limit stops before its cube branch.
   withr::local_options(marginplyr.max_grouping_sets = 1L)
   union <- grouping_spec(grouping_sets(b, x, cube(a, d)), c)
