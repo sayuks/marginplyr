@@ -2931,17 +2931,17 @@ cross_product_sets <- function(product, family, dimensions) {
   limit <- grouping_set_limit()
   words <- membership_words(product, dimensions)
   family_words <- membership_words(family, dimensions)
-  width <- length(family)
+  family_size <- length(family)
   seen <- words[0L, , drop = FALSE]
   parent <- integer()
   choice <- integer()
   # About 65,536 candidates at a time, so a refusal comes before every
   # candidate exists.
-  block <- max(1L, 65536L %/% width)
+  block <- max(1L, 65536L %/% family_size)
   for (start in seq.int(1L, length(product), by = block)) {
     left <- rep(seq.int(start, min(length(product), start + block - 1L)),
-                each = width)
-    right <- rep(seq_len(width), length.out = length(left))
+                each = family_size)
+    right <- rep(seq_len(family_size), length.out = length(left))
     candidates <- union_words(words[left, , drop = FALSE],
                               family_words[right, , drop = FALSE])
     first <- vctrs::vec_unique_loc(candidates)
@@ -2965,7 +2965,6 @@ cross_product_sets <- function(product, family, dimensions) {
 # which sorts before "1" for omitting it. Answers as `cross_product_sets()`.
 cross_product_cube <- function(product, units, dimensions) {
   limit <- grouping_set_limit()
-  # With one prefix set, the cube's own family is what passes the limit.
   constructor <- if (length(product) == 1L) "cube" else "grouping_spec"
   words <- membership_words(product, dimensions)
   parent <- seq_along(product)
@@ -3046,6 +3045,9 @@ distinct_product_step <- function(product, factor, required) {
     } else {
       cross_product_cube(product, branch$units, dimensions)
     }
+    if (length(branches) == 1L) {
+      return(crossed[[i]])
+    }
     # A union past the limit stops before its next branch.
     seen <- vctrs::vec_unique(rbind(
       seen, membership_words(crossed[[i]]$sets, dimensions)
@@ -3053,9 +3055,6 @@ distinct_product_step <- function(product, factor, required) {
     if (nrow(seen) > limit) {
       abort_grouping_set_limit(limit, constructor = "grouping_spec")
     }
-  }
-  if (length(crossed) == 1L) {
-    return(crossed[[1L]])
   }
   # A union's choices follow the prefix set, then the branch, then the
   # branch's own order, which each crossing already answers in.
