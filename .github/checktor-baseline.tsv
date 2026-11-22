@@ -51,4 +51,4 @@ documentation	value_tags	marginplyr_conditions.Rd			The topic documents a concep
 documentation	commented_examples	expand_with_margins.Rd: commented-out call in \examples{}			The example comments explain executable calls; they do not replace the example.
 documentation	commented_examples	marginplyr_conditions.Rd: commented-out call in \examples{}			The example comments explain executable calls; they do not replace the example.
 documentation	commented_examples	marginplyr-package.Rd: commented-out call in \examples{}			The example comments explain executable calls; they do not replace the example.
-general	package_size	Package size 6.5 MB exceeds 5 MB			checktor sums the unpacked sources, mostly test files; the built tarball is about 1.4 MB and R CMD check's installed package size check passes.
+general	package_size	Package size exceeds 5 MB			checktor sums the unpacked sources, mostly test files, which are not installed; R CMD check's tarball-size and installed-size NOTEs, which the preflight blocks, are the size gates.

@@ -518,6 +518,33 @@ expect_identical(
   "a removed reviewed checktor finding"
 )
 
+grown_package_size <- checktor_baseline_match(
+  data.frame(
+    category = "general",
+    check = "package_size",
+    location = "Package size exceeds 5 MB",
+    scope = "",
+    source = "",
+    reason = "The fixture size is reviewed.",
+    stringsAsFactors = FALSE
+  ),
+  data.frame(
+    category = "general",
+    check = "package_size",
+    file = NA_character_,
+    line = NA_integer_,
+    location = "Package size 6.56 MB exceeds 5 MB",
+    message = "Package size check",
+    stringsAsFactors = FALSE
+  ),
+  checktor_fixture_root
+)
+expect_identical(
+  c(grown_package_size$unexpected, grown_package_size$stale),
+  c(FALSE, FALSE),
+  "a reviewed package-size finding at a different size"
+)
+
 writeLines(
   c(
     "fixture <- function(value) {",

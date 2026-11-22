@@ -1,7 +1,8 @@
 # Line numbers locate a checktor finding for a reviewer, but they are not its
 # identity: unrelated edits move them. Code findings are instead anchored to
-# their file and the detected source line; all other findings retain their
-# checktor location because it is already line-independent.
+# their file and the detected source line, and the package-size finding to its
+# threshold; all other findings retain their checktor location because it is
+# already line-independent.
 
 checktor_baseline_columns <- c(
   "category", "check", "location", "scope", "source", "reason"
@@ -82,12 +83,13 @@ checktor_finding_expression <- function(parsed, source_lines, line) {
   )
 }
 
-# Gives code findings a file-and-source anchor and leaves other checktor
-# locations unchanged. The caller supplies checktor's file, line, and location
-# columns and a package root containing every named source; code anchors also
-# record their lexical scope so one identical line cannot change owners unseen.
+# Gives code findings a file-and-source anchor, removes the measured size from
+# the package-size finding, and leaves other checktor locations unchanged. The
+# caller supplies checktor's category, check, file, line, and location columns
+# and a package root containing every named source; code anchors also record
+# their lexical scope so one identical line cannot change owners unseen.
 checktor_finding_anchors <- function(findings, package_path) {
-  required_columns <- c("file", "line", "location")
+  required_columns <- c("category", "check", "file", "line", "location")
   missing_columns <- setdiff(required_columns, names(findings))
   if (length(missing_columns) > 0L) {
     stop(
@@ -101,6 +103,16 @@ checktor_finding_anchors <- function(findings, package_path) {
     scope = rep("", nrow(findings)),
     source = rep("", nrow(findings)),
     stringsAsFactors = FALSE
+  )
+  # checktor spells the measured size into this location, so its identity would
+  # change whenever the size does. The size is left to R CMD check's
+  # tarball-size and installed-size NOTEs.
+  size_findings <- findings$category == "general" &
+    findings$check == "package_size"
+  anchors$location[size_findings] <- sub(
+    "^Package size [0-9.]+ MB ",
+    "Package size ",
+    anchors$location[size_findings]
   )
   source_findings <- !is.na(findings$file) & !is.na(findings$line)
   source_findings <- source_findings & nzchar(findings$file)
