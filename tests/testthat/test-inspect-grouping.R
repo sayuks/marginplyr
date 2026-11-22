@@ -322,6 +322,72 @@ test_that("cube products retain first occurrence order and Grouping bits", {
   }
 })
 
+test_that("duplicate-drop products keep the first occurrence of every shape", {
+  data <- data.frame(a = 1L, b = 2L, c = 3L, d = 4L, e = 5L)
+  withr::local_options(marginplyr.max_grouping_sets = Inf)
+  specs <- list(
+    grouping_spec(cube(a, b, c), cube(a, b, c)),
+    grouping_spec(cube(a, b, c), cube(b, c, d)),
+    grouping_spec(cube(b, c, d), cube(a, b, c)),
+    grouping_spec(cube(c(a, b), c(b, c), d), cube(b, grouping_set(c, a))),
+    grouping_spec(cube(a, b, c), rollup(c, b, d)),
+    grouping_spec(rollup(c, b, d), cube(a, b, c)),
+    grouping_spec(
+      cube(a, b),
+      grouping_sets(c, grouping_spec(cube(b, c), cube(a, d)),
+                    grouping_set(a, b))
+    ),
+    grouping_spec(grouping_set(b), cube(a, b, c), cube(b, c, d)),
+    grouping_spec(cube(a, b, c), cube(b, c, d), grouping_set(b, d)),
+    grouping_spec(
+      cube(a, b),
+      grouping_sets(grouping_spec(cube(a, c), cube(b, c)), d),
+      grouping_set(c)
+    ),
+    grouping_spec(
+      cube(a, b, c),
+      grouping_sets(
+        grouping_spec(cube(a, d), grouping_sets(grouping_spec(cube(b, e), c))),
+        cube(c, d)
+      )
+    )
+  )
+
+  # The written occurrences, each membership kept where it first occurs.
+  expect_first_occurrences <- function(data, spec) {
+    kept <- inspect_grouping(data, .grouping = spec, .duplicates = "keep",
+                             .format = "list")
+    membership <- vapply(kept$included, function(set) {
+      paste(sort(set), collapse = ",")
+    }, character(1))
+    first <- !duplicated(membership)
+    plan <- inspect_grouping(data, .grouping = spec, .duplicates = "drop",
+                             .format = "list")
+
+    expect_identical(plan$included, kept$included[first])
+    expect_identical(plan$grouping_bits, kept$grouping_bits[first])
+    expect_identical(plan$grouping_id, kept$grouping_id[first])
+    expect_identical(plan$set_id, seq_len(sum(first)))
+  }
+  for (spec in specs) {
+    expect_first_occurrences(data, spec)
+  }
+
+  # Memberships of more than thirty columns.
+  wide <- paste0("w", seq_len(40L))
+  data <- as.data.frame(stats::setNames(as.list(seq_along(wide)), wide))
+  columns <- rlang::syms(wide)
+  expect_first_occurrences(data, grouping_spec(
+    grouping_set(!!!columns[1:33]), cube(!!!columns[29:36]),
+    cube(!!!columns[31:38])
+  ))
+  expect_first_occurrences(data, grouping_spec(
+    cube(w1, w31, w39),
+    grouping_sets(grouping_spec(cube(w31, w40, w2), cube(w35, w1)),
+                  grouping_set(!!!columns[25:38]))
+  ))
+})
+
 test_that("cube products preserve all occurrences for keep and error", {
   data <- data.frame(a = 1L, b = 2L)
   specs <- list(

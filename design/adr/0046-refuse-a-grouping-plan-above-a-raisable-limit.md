@@ -128,7 +128,9 @@ the plan exactly there means building the prefix, which is the cost the limit
 exists to refuse, so #1745 refuses a product whose deduplicated prefix passes
 the limit, and such a plan is refused although it would be within it. The
 message names the constructor whose family passed the limit, `cube()` or
-`grouping_spec()`, rather than a count of the plan. Every other refusal holds to the
+`grouping_spec()`, rather than a count of the plan. A `cube()` crossed with
+more than one prefix set is built only as part of the product (#1749), so there
+the product is named. Every other refusal holds to the
 unit above.
 
 ## Amendment: which refusal comes first (2026-11-22)
