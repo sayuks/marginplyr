@@ -3032,22 +3032,25 @@ distinct_product_step <- function(product, factor, required) {
     union(unique(unlist(product, use.names = FALSE)), factor_columns), required
   )
   limit <- grouping_set_limit()
-  crossed <- vector("list", length(branches))
-  seen <- membership_words(list(), dimensions)
-  for (i in seq_along(branches)) {
-    branch <- branches[[i]]
+  cross <- function(branch) {
     # A nested product's prefix is crossed with these prefix sets too, so it
     # counts toward the limit as it would written flat (ADR 0046).
-    crossed[[i]] <- if (!is.null(branch$factors)) {
+    if (!is.null(branch$factors)) {
       cross_resolved_product(product, branch$factors, required)
     } else if (is.null(branch$units)) {
       cross_product_sets(product, branch$sets, dimensions)
     } else {
       cross_product_cube(product, branch$units, dimensions)
     }
-    if (length(branches) == 1L) {
-      return(crossed[[i]])
-    }
+  }
+  # Each crossing refuses once its own kept sets pass the limit.
+  if (length(branches) == 1L) {
+    return(cross(branches[[1L]]))
+  }
+  crossed <- vector("list", length(branches))
+  seen <- membership_words(list(), dimensions)
+  for (i in seq_along(branches)) {
+    crossed[[i]] <- cross(branches[[i]])
     # A union past the limit stops before its next branch.
     seen <- vctrs::vec_unique(rbind(
       seen, membership_words(crossed[[i]]$sets, dimensions)

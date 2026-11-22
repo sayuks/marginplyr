@@ -162,7 +162,7 @@ branch is crossed with the enclosing prefix sets factor by factor, so its
 prefix counts toward the limit as it would if the product were written flat:
 such a plan is refused once that prefix passes the limit, although a later
 factor would merge it back within it. With the limit raised past that prefix,
-it costs what its flat form costs: `grouping_spec(cube(a1, ..., a8),
+such a plan costs what its flat form costs: `grouping_spec(cube(a1, ..., a8),
 grouping_sets(grouping_spec(cube(b1, ..., b12), grouping_sets(...))))`, whose
 inner union holds the twelve sets of eleven `b` columns, keeps 3,328 sets
 after a prefix of 2^20 and took about a minute nested or flat.
