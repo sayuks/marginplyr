@@ -117,3 +117,29 @@ directions open.
 
 Evidence: `investigation/2026-11-21-unbounded-grouping-set-count.md` records the
 measurements across backends and the engines' own limits from primary sources.
+
+## Amendment: a product under `.duplicates = "drop"` (2026-11-21)
+
+Under `"drop"` a Cartesian product is deduplicated one factor at a time, and a
+later factor can merge sets an earlier prefix kept apart:
+`grouping_spec(cube(a1, ..., a13), grouping_sets(grouping_set(a1, ..., a7),
+grouping_set(a8, ..., a13)))` holds 191 sets after a prefix of 8,192. Counting
+the plan exactly there means building the prefix, which is the cost the limit
+exists to refuse, so #1745 refuses a product whose deduplicated prefix passes
+the limit, and such a plan is refused although it would be within it. The
+message names the constructor whose family passed the limit, `cube()` or
+`grouping_spec()`, rather than a count of the plan. Every other refusal holds to the
+unit above.
+
+## Amendment: which refusal comes first (2026-11-22)
+
+A refusal preflight raises, such as an empty or named constructor argument,
+comes before this one, and so does one a family raises about itself before it
+is built, such as a column one `cube()` selects in more than one argument.
+Under `"keep"` and `"error"`, expansion reads families in the order written
+and builds each before reading the next, so a later family's own refusal comes after an earlier family's
+refusal for size: `grouping_spec(cube(a, b, c, d), cube(x, x))` over a limit
+of 8 is refused for the first cube. A `grouping_sets()` union whose branches
+pass the limit likewise stops before its next branch, since reading it would
+mean building it, or, for a selection that needs a lazy input's column types,
+querying the input first.

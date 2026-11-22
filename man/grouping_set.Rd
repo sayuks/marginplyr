@@ -94,6 +94,12 @@ product of its arguments' counts:\tabular{ll}{
 }
 
 
+Because a \code{\link[=cube]{cube()}} doubles with each dimension, a Grouping plan holding
+more than 4,096 grouping sets -- a \code{cube()} of 13 columns -- is refused
+unless \code{options(marginplyr.max_grouping_sets = )} raises the limit;
+\emph{\link[=margin_verbs]{Grouping plan size}} in \link{margin_verbs} states how the sets
+are counted and what the limit does not protect against.
+
 A \code{\link[=cube]{cube()}} lists its sets from the most dimensions to the fewest.
 \code{\link[=inspect_grouping]{inspect_grouping()}} lists the sets any specification expands to, in the
 order \code{.id} numbers them, and \emph{Choose the grouping operation} in

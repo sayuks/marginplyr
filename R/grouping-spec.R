@@ -55,6 +55,12 @@
 #' | `grouping_spec(rollup(a), b)` | (a, b), (b) |
 #' | `cube(grouping_set(a, b), c)` | (a, b, c), (a, b), (c), () |
 #'
+#' Because a [cube()] doubles with each dimension, a Grouping plan holding
+#' more than 4,096 grouping sets -- a `cube()` of 13 columns -- is refused
+#' unless `options(marginplyr.max_grouping_sets = )` raises the limit;
+#' *[Grouping plan size][margin_verbs]* in [margin_verbs] states how the sets
+#' are counted and what the limit does not protect against.
+#'
 #' A [cube()] lists its sets from the most dimensions to the fewest.
 #' [inspect_grouping()] lists the sets any specification expands to, in the
 #' order `.id` numbers them, and *Choose the grouping operation* in

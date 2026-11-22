@@ -180,6 +180,7 @@ These rules are stated once, in \link{margin_verbs}, for every Margin verb:
 \itemize{
 \item \link[=margin_verbs]{Fixed columns and Margin dimensions}
 \item \link[=margin_verbs]{Grouped and row-wise inputs}
+\item \link[=margin_verbs]{Grouping plan size}
 \item \link[=margin_verbs]{Option arguments}
 \item \link[=margin_verbs]{Result metadata}
 \item \link[=margin_verbs]{Grouping set identifiers}

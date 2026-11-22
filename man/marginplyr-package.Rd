@@ -80,6 +80,17 @@ row is what your own \code{\link[dplyr:collect]{dplyr::collect()}} will send.
 \code{\link[=last_sent_queries]{last_sent_queries()}} states what the record holds and promises.
 }
 
+\section{Limiting the size of a Grouping plan}{
+
+\code{options(marginplyr.max_grouping_sets = )} sets the number of grouping sets
+a Grouping plan may hold before a Margin verb or \code{\link[=inspect_grouping]{inspect_grouping()}}
+refuses it: a whole number of at least 1, or \code{Inf} for none. Unset or
+\code{NULL} means 4,096, and any other value is refused naming the option. The
+option is read on each call. \emph{\link[=margin_verbs]{Grouping plan size}} in
+\link{margin_verbs} states how the sets are counted and what the limit does not
+protect against.
+}
+
 \examples{
 # A Margin verb raises the class directly, so `tryCatch()` catches it.
 tryCatch(

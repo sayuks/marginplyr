@@ -266,6 +266,7 @@
 #'
 #' - [Fixed columns and Margin dimensions][margin_verbs]
 #' - [Grouped and row-wise inputs][margin_verbs]
+#' - [Grouping plan size][margin_verbs]
 #' - [Display labels and grouping identity][margin_verbs]
 #' - [Margin order][margin_verbs]
 #' - [Grouping set identifiers][margin_verbs]

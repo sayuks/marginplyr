@@ -41,6 +41,7 @@
 #'
 #' - [Fixed columns and Margin dimensions][margin_verbs]
 #' - [Grouped and row-wise inputs][margin_verbs]
+#' - [Grouping plan size][margin_verbs]
 #' - [Option arguments][margin_verbs]
 #' - [Result metadata][margin_verbs]
 #' - [Grouping set identifiers][margin_verbs]
