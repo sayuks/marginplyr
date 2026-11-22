@@ -2496,7 +2496,9 @@ expand_cube <- function(preflight, resolve_selection, emit, drop_duplicates,
     check_repeated_grouping_units(units, "cube")
   }
   if (drop_duplicates) {
-    return(emit_grouping_family(distinct_cube_sets(units), emit))
+    dimensions <- unique(unlist(units, use.names = FALSE))
+    family <- cross_product_cube(list(character()), units, dimensions)$sets
+    return(emit_grouping_family(family, emit))
   }
   n <- length(units)
   if (!is.null(duplicate) && 2^n > duplicate_report_limit) {
@@ -2559,35 +2561,6 @@ cube_duplicate_witness <- function(units, family = "a cube") {
   }
   omitted <- length(units) - max(redundant) + 2L
   list(family = family, positions = c(1L, omitted))
-}
-
-# Retain the earliest full set per membership on `dimensions`, in descending
-# subset size and combination order. Prepending the same choices preserves rank.
-distinct_cube_sets <- function(
-  units,
-  dimensions = unique(unlist(units, use.names = FALSE))
-) {
-  limit <- grouping_set_limit()
-  sets <- list(character())
-  sizes <- 0L
-  for (unit in rev(units)) {
-    included <- lapply(sets, function(set) union(unit, set))
-    candidates <- c(included, sets)
-    candidate_sizes <- c(sizes + 1L, sizes)
-    # At equal sizes, including this earlier unit precedes skipping it. Stable
-    # ordering keeps the inherited combination order within each branch.
-    ordered <- order(candidate_sizes, decreasing = TRUE, method = "radix")
-    keys <- grouping_set_keys(candidates[ordered], dimensions)
-    retained <- ordered[!duplicated(keys)]
-    sets <- candidates[retained]
-    sizes <- candidate_sizes[retained]
-    # The retained sets never shrink from one unit to the next, though a
-    # later factor of an enclosing product can merge them (ADR 0046).
-    if (length(sets) > limit) {
-      abort_grouping_set_limit(limit, constructor = "cube")
-    }
-  }
-  sets
 }
 
 # Resolve factors in order. Keep their families separate until the last
@@ -2703,7 +2676,8 @@ product_duplicate_witness <- function(families, family) {
     }
     sets <- Map(`[[`, families, choices)
     key <- grouping_set_key(unlist(sets, use.names = FALSE), dimensions)
-    # Compare keys inside the hash bucket, as in distinct_product_step().
+    # Environment names have a byte limit. Compare exact keys within each
+    # short bucket so a hash collision cannot discard a distinct set.
     bucket <- rlang::hash(key)
     previous <- seen[[bucket]]
     original <- match(key, names(previous))
@@ -2923,94 +2897,178 @@ resolve_product_product <- function(preflight, resolve_selection) {
   )
 }
 
-# Enumerate each branch against the columns already supplied by other factors.
-expand_product_branches <- function(branches, covered) {
+# Each set's membership on `dimensions` as one row of 30-bit words, so two sets
+# share a row exactly when they hold the same columns of `dimensions`.
+membership_words <- function(sets, dimensions) {
+  width <- max(1L, (length(dimensions) + 29L) %/% 30L)
+  words <- matrix(0L, length(sets), width)
+  row <- rep(seq_along(sets), lengths(sets))
+  position <- match(unlist(sets, use.names = FALSE), dimensions) - 1L
+  present <- !is.na(position)
+  row <- row[present]
+  position <- position[present]
+  distinct <- !duplicated(row + position * length(sets))
+  row <- row[distinct]
+  position <- position[distinct]
+  if (length(row) > 0L) {
+    # A word's bits are distinct powers of two, so their sum is their union.
+    sums <- rowsum(2^(position %% 30L), row + (position %/% 30L) *
+                     length(sets))
+    words[as.numeric(rownames(sums))] <- as.integer(sums)
+  }
+  words
+}
+
+# The union of two equally shaped word matrices, row by row.
+union_words <- function(words, other) {
+  matrix(bitwOr(words, other), nrow(words), ncol(words))
+}
+
+# Cross the ordered prefix sets with a family resolved in full, in Cartesian
+# order, keeping the first of each membership on `dimensions`. Answers the kept
+# sets and the prefix set each extends.
+cross_product_sets <- function(product, family, dimensions) {
   limit <- grouping_set_limit()
-  family <- list()
-  seen <- character()
-  for (branch in branches) {
-    sets <- if (!is.null(branch$factors)) {
-      distinct_resolved_product(branch$factors, covered)
-    } else if (is.null(branch$units)) {
-      branch$sets
-    } else {
-      columns <- unique(unlist(branch$units, use.names = FALSE))
-      distinct_cube_sets(branch$units, setdiff(columns, covered))
-    }
-    # Sets equal outside `covered` merge in the product step that crosses
-    # them, which keeps the first, so only a branch's new ones are kept.
-    keys <- vapply(sets, function(set) {
-      grouping_membership_key(setdiff(set, covered))
-    }, character(1))
-    fresh <- !duplicated(keys) & !keys %in% seen
-    family <- c(family, sets[fresh])
-    seen <- c(seen, keys[fresh])
-    if (length(family) > limit) {
+  words <- membership_words(product, dimensions)
+  family_words <- membership_words(family, dimensions)
+  family_size <- length(family)
+  seen <- words[0L, , drop = FALSE]
+  parent <- integer()
+  choice <- integer()
+  # About 65,536 candidates at a time, so a refusal comes before every
+  # candidate exists.
+  block <- max(1L, 65536L %/% family_size)
+  for (start in seq.int(1L, length(product), by = block)) {
+    left <- rep(seq.int(start, min(length(product), start + block - 1L)),
+                each = family_size)
+    right <- rep(seq_len(family_size), length.out = length(left))
+    candidates <- union_words(words[left, , drop = FALSE],
+                              family_words[right, , drop = FALSE])
+    first <- vctrs::vec_unique_loc(candidates)
+    fresh <- first[!vctrs::vec_in(candidates[first, , drop = FALSE], seen)]
+    seen <- rbind(seen, candidates[fresh, , drop = FALSE])
+    parent <- c(parent, left[fresh])
+    choice <- c(choice, right[fresh])
+    if (length(parent) > limit) {
       abort_grouping_set_limit(limit, constructor = "grouping_spec")
     }
   }
-  family
+  sets <- Map(function(i, j) union(product[[i]], family[[j]]), parent, choice)
+  list(sets = unname(sets), parent = parent)
+}
+
+# Cross the ordered prefix sets with a cube one unit at a time. A candidate's
+# place in Cartesian order is its prefix set's position, then the cube's own
+# order: more units first, then the earliest units. Two candidates with one
+# membership gain the same later units, so the one placed first stays first,
+# and only it is kept. A unit's choices are recorded as "0" for including it,
+# which sorts before "1" for omitting it. Answers as `cross_product_sets()`.
+cross_product_cube <- function(product, units, dimensions) {
+  limit <- grouping_set_limit()
+  constructor <- if (length(product) == 1L) "cube" else "grouping_spec"
+  words <- membership_words(product, dimensions)
+  parent <- seq_along(product)
+  size <- integer(length(parent))
+  choices <- character(length(parent))
+  for (unit in units) {
+    unit_words <- membership_words(list(unit), dimensions)
+    included <- union_words(words, unit_words[rep(1L, nrow(words)), ,
+                                              drop = FALSE])
+    candidates <- rbind(included, words)
+    parent <- c(parent, parent)
+    size <- c(size + 1L, size)
+    choices <- c(paste0(choices, "0"), paste0(choices, "1"))
+    ordered <- order(parent, -size, choices, method = "radix")
+    first <- ordered[vctrs::vec_unique_loc(candidates[ordered, , drop = FALSE])]
+    words <- candidates[first, , drop = FALSE]
+    parent <- parent[first]
+    size <- size[first]
+    choices <- choices[first]
+    # The kept sets never shrink from one unit to the next, though a later
+    # factor of the product can merge them (ADR 0046).
+    if (length(first) > limit) {
+      abort_grouping_set_limit(limit, constructor = constructor)
+    }
+  }
+  sets <- Map(function(i, chosen) {
+    chosen <- units[strsplit(chosen, "", fixed = TRUE)[[1L]] == "0"]
+    union(product[[i]], unique(unlist(chosen, use.names = FALSE)))
+  }, parent, choices)
+  list(sets = unname(sets), parent = parent)
 }
 
 # Retain the first occurrence of each product set. Columns required by every
 # choice of a later factor cannot distinguish two prefixes in the final plan.
 distinct_grouping_product <- function(preflight, resolve_selection) {
   factors <- resolve_product_factors(preflight, resolve_selection)
-  distinct_resolved_product(factors)
+  cross_resolved_product(list(character()), factors)$sets
 }
 
-# Cross resolved factors with columns guaranteed by an enclosing product.
-distinct_resolved_product <- function(factors, covered = character()) {
-  required <- lapply(factors, function(factor) factor$required)
-  remaining <- rev(Reduce(union, rev(required), init = character(),
+# Cross the ordered prefix sets with resolved factors in turn. `required` holds
+# the columns every choice of the enclosing product's later factors supplies.
+# Answers the kept sets in Cartesian order and the prefix set each extends.
+cross_resolved_product <- function(product, factors, required = character()) {
+  factor_required <- lapply(factors, function(factor) factor$required)
+  remaining <- rev(Reduce(union, rev(factor_required), init = character(),
                           accumulate = TRUE))[-1L]
-  remaining <- lapply(remaining, union, y = covered)
-  product <- list(character())
+  remaining <- lapply(remaining, union, y = required)
+  parent <- seq_along(product)
   for (i in seq_along(factors)) {
-    product <- distinct_product_step(product, factors[[i]], remaining[[i]])
+    step <- distinct_product_step(product, factors[[i]], remaining[[i]])
+    product <- step$sets
+    parent <- parent[step$parent]
   }
-  product
+  list(sets = product, parent = parent)
 }
 
-# Keep the first union of each membership in Cartesian order. Omit required
-# suffix columns from the keys and retain the selected columns as written.
+# Keep the first union of each membership in Cartesian order, crossing every
+# prefix set with each branch of the factor at once. Omit required suffix
+# columns from the memberships and retain the selected columns as written.
+# Answers the kept sets and the prefix set each extends.
 distinct_product_step <- function(product, factor, required) {
   branches <- factor$branches
   factor_columns <- as.character(unique(unlist(branches, use.names = FALSE)))
   dimensions <- setdiff(
     union(unique(unlist(product, use.names = FALSE)), factor_columns), required
   )
-  varying <- setdiff(factor_columns, required)
   limit <- grouping_set_limit()
-  previous_covered <- NULL
-  seen <- new.env(parent = emptyenv())
-  sets <- list()
-  for (left in product) {
-    # Prefix and suffix columns cannot distinguish choices inside this factor.
-    covered <- intersect(varying, left)
-    if (!identical(covered, previous_covered)) {
-      family <- expand_product_branches(branches, union(covered, required))
-      previous_covered <- covered
-    }
-    for (right in family) {
-      set <- union(left, right)
-      key <- grouping_set_key(set, dimensions)
-      # Environment names have a byte limit. Compare exact keys within each
-      # short bucket so a hash collision cannot discard a distinct set.
-      bucket <- rlang::hash(key)
-      previous <- seen[[bucket]]
-      if (!key %in% previous) {
-        seen[[bucket]] <- c(previous, key)
-        sets[[length(sets) + 1L]] <- set
-        # A later factor can still merge these sets, so this bounds the
-        # expansion rather than proving the plan's count (ADR 0046).
-        if (length(sets) > limit) {
-          abort_grouping_set_limit(limit, constructor = "grouping_spec")
-        }
-      }
+  cross <- function(branch) {
+    # A nested product's prefix is crossed with these prefix sets too, so it
+    # counts toward the limit as it would written flat (ADR 0046).
+    if (!is.null(branch$factors)) {
+      cross_resolved_product(product, branch$factors, required)
+    } else if (is.null(branch$units)) {
+      cross_product_sets(product, branch$sets, dimensions)
+    } else {
+      cross_product_cube(product, branch$units, dimensions)
     }
   }
-  sets
+  # Each crossing refuses once its own kept sets pass the limit.
+  if (length(branches) == 1L) {
+    return(cross(branches[[1L]]))
+  }
+  crossed <- vector("list", length(branches))
+  seen <- membership_words(list(), dimensions)
+  for (i in seq_along(branches)) {
+    crossed[[i]] <- cross(branches[[i]])
+    # A union past the limit stops before its next branch.
+    seen <- vctrs::vec_unique(rbind(
+      seen, membership_words(crossed[[i]]$sets, dimensions)
+    ))
+    if (nrow(seen) > limit) {
+      abort_grouping_set_limit(limit, constructor = "grouping_spec")
+    }
+  }
+  # A union's choices follow the prefix set, then the branch, then the
+  # branch's own order, which each crossing already answers in.
+  sets <- unlist(lapply(crossed, `[[`, "sets"), recursive = FALSE)
+  parent <- unlist(lapply(crossed, `[[`, "parent"))
+  branch <- rep(seq_along(crossed), lengths(lapply(crossed, `[[`, "parent")))
+  ordered <- order(parent, branch, method = "radix")
+  first <- ordered[vctrs::vec_unique_loc(
+    membership_words(sets[ordered], dimensions)
+  )]
+  list(sets = sets[first], parent = parent[first])
 }
 
 grouping_kind_rules <- local({

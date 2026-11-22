@@ -281,3 +281,60 @@ test_that("a product walked for a duplicate stops at the limit", {
     "257, 513", fixed = TRUE, class = "marginplyr_error"
   )
 })
+
+test_that("a product nested in a union counts its prefix as written flat", {
+  # Crossed with two prefix sets, the nested product's first factor keeps
+  # four sets, which its second factor would merge back to three (#1749).
+  withr::local_options(marginplyr.max_grouping_sets = 3L)
+  data <- data.frame(a = 1L, b = 2L)
+  inner <- list(grouping_sets(b, grouping_set()), grouping_sets(a, b))
+  nested <- grouping_spec(
+    grouping_sets(a, grouping_set()),
+    grouping_sets(grouping_spec(!!!inner))
+  )
+  flat <- grouping_spec(grouping_sets(a, grouping_set()), !!!inner)
+  for (spec in list(nested, flat)) {
+    expect_error(
+      inspect_grouping(data, .grouping = spec, .duplicates = "drop"),
+      "`grouping_spec()` in the Grouping specification", fixed = TRUE,
+      class = "marginplyr_error"
+    )
+  }
+  withr::local_options(marginplyr.max_grouping_sets = 4L)
+  plan <- inspect_grouping(data, .grouping = nested, .duplicates = "drop",
+                           .format = "list")
+  expect_identical(plan$included, list(c("a", "b"), "a", "b"))
+})
+
+test_that("a cube crossed under \"drop\" names the family that passed", {
+  withr::local_options(marginplyr.max_grouping_sets = 8L)
+  data <- data.frame(a = 1L, b = 2L, c = 3L, d = 4L, x = 5L)
+  # Crossed with one prefix set, the cube's own family passes the limit.
+  expect_error(
+    inspect_grouping(data, .grouping = grouping_spec(x, cube(a, b, c, d)),
+                     .duplicates = "drop"),
+    "`cube()` in the Grouping specification", fixed = TRUE,
+    class = "marginplyr_error"
+  )
+  # Crossed with two, the cube is built only as part of the product, as is a
+  # family resolved in full.
+  crossed <- list(
+    grouping_spec(grouping_sets(x, grouping_set()), cube(a, b, c, d)),
+    grouping_spec(grouping_sets(x, grouping_set()), rollup(a, b, c, d))
+  )
+  for (spec in crossed) {
+    expect_error(
+      inspect_grouping(data, .grouping = spec, .duplicates = "drop"),
+      "`grouping_spec()` in the Grouping specification", fixed = TRUE,
+      class = "marginplyr_error"
+    )
+  }
+  # A union past the limit stops before its cube branch.
+  withr::local_options(marginplyr.max_grouping_sets = 1L)
+  union <- grouping_spec(grouping_sets(b, x, cube(a, d)), c)
+  expect_error(
+    inspect_grouping(data, .grouping = union, .duplicates = "drop"),
+    "`grouping_spec()` in the Grouping specification", fixed = TRUE,
+    class = "marginplyr_error"
+  )
+})
