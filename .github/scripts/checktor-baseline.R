@@ -83,12 +83,13 @@ checktor_finding_expression <- function(parsed, source_lines, line) {
   )
 }
 
-# Gives code findings a file-and-source anchor and leaves other checktor
-# locations unchanged. The caller supplies checktor's file, line, and location
-# columns and a package root containing every named source; code anchors also
-# record their lexical scope so one identical line cannot change owners unseen.
+# Gives code findings a file-and-source anchor, removes the measured size from
+# the package-size finding, and leaves other checktor locations unchanged. The
+# caller supplies checktor's category, check, file, line, and location columns
+# and a package root containing every named source; code anchors also record
+# their lexical scope so one identical line cannot change owners unseen.
 checktor_finding_anchors <- function(findings, package_path) {
-  required_columns <- c("file", "line", "location")
+  required_columns <- c("category", "check", "file", "line", "location")
   missing_columns <- setdiff(required_columns, names(findings))
   if (length(missing_columns) > 0L) {
     stop(
@@ -103,9 +104,9 @@ checktor_finding_anchors <- function(findings, package_path) {
     source = rep("", nrow(findings)),
     stringsAsFactors = FALSE
   )
-  # checktor spells the measured size into this location, so every added
-  # source file would change its identity. R CMD check --as-cran bounds the
-  # size itself, through its tarball and installed-size NOTEs.
+  # checktor spells the measured size into this location, so its identity would
+  # change whenever the size does. The size is left to R CMD check's
+  # tarball-size and installed-size NOTEs.
   size_findings <- findings$category == "general" &
     findings$check == "package_size"
   anchors$location[size_findings] <- sub(
