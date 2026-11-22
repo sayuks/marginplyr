@@ -128,9 +128,7 @@ the plan exactly there means building the prefix, which is the cost the limit
 exists to refuse, so #1745 refuses a product whose deduplicated prefix passes
 the limit, and such a plan is refused although it would be within it. The
 message names the constructor whose family passed the limit, `cube()` or
-`grouping_spec()`, rather than a count of the plan. A `cube()` crossed with
-more than one prefix set is built only as part of the product (#1749), so there
-the product is named. Every other refusal holds to the
+`grouping_spec()`, rather than a count of the plan. Every other refusal holds to the
 unit above.
 
 ## Amendment: which refusal comes first (2026-11-22)
@@ -145,3 +143,21 @@ of 8 is refused for the first cube. A `grouping_sets()` union whose branches
 pass the limit likewise stops before its next branch, since reading it would
 mean building it, or, for a selection that needs a lazy input's column types,
 querying the input first.
+
+## Amendment: what a `"drop"` product costs (2026-11-22)
+
+Under `.duplicates = "drop"` a product crosses every prefix set with a factor
+at once (#1749). A `cube()` is crossed one unit at a time, so its cost follows
+the sets kept. A family resolved in full, such as a `rollup()` or the written
+sets of a `grouping_sets()`, is crossed pair by pair, so its cost follows the
+occurrences `"keep"` would write, while the limit bounds only the sets kept:
+`grouping_spec(rollup(a1, ..., a1000), rollup(a1, ..., a1000))` keeps 1,001
+sets and took about four seconds. For `"drop"`, construction is close to linear
+in the occurrences written, not in those kept.
+
+Crossing every prefix set at once decides two refusals. A `cube()` crossed
+with more than one prefix set is built only as part of the product, so a
+refusal there names `grouping_spec()`. A product nested in a `grouping_sets()`
+branch may hold up to the limit for each prefix set it is crossed with until
+its last factor, since a later factor can merge what an earlier one kept apart.
+The sets it finally keeps count toward the enclosing product's limit.
