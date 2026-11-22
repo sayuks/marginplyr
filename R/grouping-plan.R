@@ -2497,11 +2497,7 @@ expand_cube <- function(preflight, resolve_selection, emit, drop_duplicates,
   }
   if (drop_duplicates) {
     dimensions <- unique(unlist(units, use.names = FALSE))
-    empty <- list(character())
-    family <- cross_product_cube(
-      empty, membership_words(empty, dimensions), units, dimensions,
-      grouping_set_limit()
-    )$sets
+    family <- cross_product_cube(list(character()), units, dimensions)$sets
     return(emit_grouping_family(family, emit))
   }
   n <- length(units)
@@ -2929,11 +2925,11 @@ union_words <- function(words, other) {
 }
 
 # Cross the ordered prefix sets with a family resolved in full, in Cartesian
-# order, keeping the first of each membership on `dimensions`. `words` is
-# `membership_words(product, dimensions)`, and `bound` is how many kept sets
-# the crossing may hold before it is refused. Answers the kept sets and the
-# prefix set each extends.
-cross_product_sets <- function(product, words, family, dimensions, bound) {
+# order, keeping the first of each membership on `dimensions`. Answers the kept
+# sets and the prefix set each extends.
+cross_product_sets <- function(product, family, dimensions) {
+  limit <- grouping_set_limit()
+  words <- membership_words(product, dimensions)
   family_words <- membership_words(family, dimensions)
   width <- length(family)
   seen <- words[0L, , drop = FALSE]
@@ -2953,9 +2949,8 @@ cross_product_sets <- function(product, words, family, dimensions, bound) {
     seen <- rbind(seen, candidates[fresh, , drop = FALSE])
     parent <- c(parent, left[fresh])
     choice <- c(choice, right[fresh])
-    if (length(parent) > bound) {
-      abort_grouping_set_limit(grouping_set_limit(),
-                               constructor = "grouping_spec")
+    if (length(parent) > limit) {
+      abort_grouping_set_limit(limit, constructor = "grouping_spec")
     }
   }
   sets <- Map(function(i, j) union(product[[i]], family[[j]]), parent, choice)
@@ -2967,11 +2962,12 @@ cross_product_sets <- function(product, words, family, dimensions, bound) {
 # order: more units first, then the earliest units. Two candidates with one
 # membership gain the same later units, so the one placed first stays first,
 # and only it is kept. A unit's choices are recorded as "0" for including it,
-# which sorts before "1" for omitting it. `words` and `bound` are as for
-# `cross_product_sets()`, and so is the answer.
-cross_product_cube <- function(product, words, units, dimensions, bound) {
+# which sorts before "1" for omitting it. Answers as `cross_product_sets()`.
+cross_product_cube <- function(product, units, dimensions) {
+  limit <- grouping_set_limit()
   # With one prefix set, the cube's own family is what passes the limit.
   constructor <- if (length(product) == 1L) "cube" else "grouping_spec"
+  words <- membership_words(product, dimensions)
   parent <- seq_along(product)
   size <- integer(length(parent))
   choices <- character(length(parent))
@@ -2991,8 +2987,8 @@ cross_product_cube <- function(product, words, units, dimensions, bound) {
     choices <- choices[first]
     # The kept sets never shrink from one unit to the next, though a later
     # factor of the product can merge them (ADR 0046).
-    if (length(first) > bound) {
-      abort_grouping_set_limit(grouping_set_limit(), constructor = constructor)
+    if (length(first) > limit) {
+      abort_grouping_set_limit(limit, constructor = constructor)
     }
   }
   sets <- Map(function(i, chosen) {
@@ -3010,19 +3006,16 @@ distinct_grouping_product <- function(preflight, resolve_selection) {
 }
 
 # Cross the ordered prefix sets with resolved factors in turn. `required` holds
-# the columns every choice of the enclosing product's later factors supplies,
-# and `bound` is as for `cross_product_sets()`. Answers the kept sets in
-# Cartesian order and the prefix set each extends.
-cross_resolved_product <- function(product, factors, required = character(),
-                                   bound = grouping_set_limit()) {
+# the columns every choice of the enclosing product's later factors supplies.
+# Answers the kept sets in Cartesian order and the prefix set each extends.
+cross_resolved_product <- function(product, factors, required = character()) {
   factor_required <- lapply(factors, function(factor) factor$required)
   remaining <- rev(Reduce(union, rev(factor_required), init = character(),
                           accumulate = TRUE))[-1L]
   remaining <- lapply(remaining, union, y = required)
   parent <- seq_along(product)
   for (i in seq_along(factors)) {
-    step <- distinct_product_step(product, factors[[i]], remaining[[i]],
-                                  bound)
+    step <- distinct_product_step(product, factors[[i]], remaining[[i]])
     product <- step$sets
     parent <- parent[step$parent]
   }
@@ -3032,28 +3025,38 @@ cross_resolved_product <- function(product, factors, required = character(),
 # Keep the first union of each membership in Cartesian order, crossing every
 # prefix set with each branch of the factor at once. Omit required suffix
 # columns from the memberships and retain the selected columns as written.
-# `bound` is as for `cross_product_sets()`. Answers the kept sets and the
-# prefix set each extends.
-distinct_product_step <- function(product, factor, required, bound) {
+# Answers the kept sets and the prefix set each extends.
+distinct_product_step <- function(product, factor, required) {
   branches <- factor$branches
   factor_columns <- as.character(unique(unlist(branches, use.names = FALSE)))
   dimensions <- setdiff(
     union(unique(unlist(product, use.names = FALSE)), factor_columns), required
   )
-  words <- membership_words(product, dimensions)
-  crossed <- lapply(branches, function(branch) {
-    if (!is.null(branch$factors)) {
-      # A later factor of the nested product can merge what an earlier one
-      # kept apart, so each prefix set may carry up to the limit until the
-      # nested product is complete (ADR 0046).
-      nested_bound <- grouping_set_limit() * length(product)
-      cross_resolved_product(product, branch$factors, required, nested_bound)
+  limit <- grouping_set_limit()
+  crossed <- vector("list", length(branches))
+  seen <- membership_words(list(), dimensions)
+  for (i in seq_along(branches)) {
+    branch <- branches[[i]]
+    # A nested product's prefix is crossed with these prefix sets too, so it
+    # counts toward the limit as it would written flat (ADR 0046).
+    crossed[[i]] <- if (!is.null(branch$factors)) {
+      cross_resolved_product(product, branch$factors, required)
     } else if (is.null(branch$units)) {
-      cross_product_sets(product, words, branch$sets, dimensions, bound)
+      cross_product_sets(product, branch$sets, dimensions)
     } else {
-      cross_product_cube(product, words, branch$units, dimensions, bound)
+      cross_product_cube(product, branch$units, dimensions)
     }
-  })
+    # A union past the limit stops before its next branch.
+    seen <- vctrs::vec_unique(rbind(
+      seen, membership_words(crossed[[i]]$sets, dimensions)
+    ))
+    if (nrow(seen) > limit) {
+      abort_grouping_set_limit(limit, constructor = "grouping_spec")
+    }
+  }
+  if (length(crossed) == 1L) {
+    return(crossed[[1L]])
+  }
   # A union's choices follow the prefix set, then the branch, then the
   # branch's own order, which each crossing already answers in.
   sets <- unlist(lapply(crossed, `[[`, "sets"), recursive = FALSE)
@@ -3063,10 +3066,6 @@ distinct_product_step <- function(product, factor, required, bound) {
   first <- ordered[vctrs::vec_unique_loc(
     membership_words(sets[ordered], dimensions)
   )]
-  if (length(first) > bound) {
-    abort_grouping_set_limit(grouping_set_limit(),
-                             constructor = "grouping_spec")
-  }
   list(sets = sets[first], parent = parent[first])
 }
 

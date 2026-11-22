@@ -152,12 +152,13 @@ the sets kept. A family resolved in full, such as a `rollup()` or the written
 sets of a `grouping_sets()`, is crossed pair by pair, so its cost follows the
 occurrences `"keep"` would write, while the limit bounds only the sets kept:
 `grouping_spec(rollup(a1, ..., a1000), rollup(a1, ..., a1000))` keeps 1,001
-sets and took about four seconds. For `"drop"`, construction is close to linear
-in the occurrences written, not in those kept.
+sets and took about four seconds. For such a family, construction is close to
+linear in the occurrences written, not in those kept.
 
 Crossing every prefix set at once decides two refusals. A `cube()` crossed
 with more than one prefix set is built only as part of the product, so a
 refusal there names `grouping_spec()`. A product nested in a `grouping_sets()`
-branch may hold up to the limit for each prefix set it is crossed with until
-its last factor, since a later factor can merge what an earlier one kept apart.
-The sets it finally keeps count toward the enclosing product's limit.
+branch is crossed with the enclosing prefix sets factor by factor, so its
+prefix counts toward the limit as it would if the product were written flat:
+such a plan is refused once that prefix passes the limit, although a later
+factor would merge it back within it.
