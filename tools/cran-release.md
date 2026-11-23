@@ -64,11 +64,10 @@ The publication-only initial edits never run merely because CRAN accepted an
 upload. They run only after the public CRAN source index contains the expected
 version.
 
-Commands and names below write each release's own values as placeholders:
-`<version>` is the version this release publishes, `<dev-version>` is the
-development version that follows it, `<version>.9000`, and `<issue-number>` is
-the release issue's number from stage 2. Substitute them before running a
-command.
+The stages below write each release's own values as placeholders: `<version>`
+is the version this release publishes, `<dev-version>` is the development
+version that follows it (`<version>.9000`), and `<issue-number>` is the release
+issue's number from stage 2. Substitute them before running a command.
 
 ## Helper interface
 
@@ -763,9 +762,9 @@ git diff
 For either kind, verify that version is `<dev-version>` and NEWS begins with
 that heading. For the initial release, also verify that status is `published`
 and the CRAN badge/link and install call appear once. For an update, status and
-CRAN documentation must remain unchanged. Run documentation and relevant tests, then obtain
-separate approvals for commit/push and PR creation. Put all of these changes in
-one PR:
+CRAN documentation must remain unchanged. Run documentation and relevant tests,
+then obtain separate approvals for commit/push and PR creation. Put all of these
+changes in one PR:
 
 ```sh
 Rscript .github/scripts/verify-context-budget.R
