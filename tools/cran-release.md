@@ -59,24 +59,28 @@ genuinely different work:
 | CRAN comments | Explain `New submission` | Give the update rationale and all current NOTE dispositions |
 | External evidence | No existing CRAN results or reverse dependencies | Inspect current CRAN flavors; run reverse-dependency checks when applicable and record downstream communication |
 | Publication-only edit | Change status to `published`; add CRAN install text and badge | Preserve the already-published status and CRAN text |
-| Follow-up version | `<release>.9000` | Corresponding `<release>.9000` development version |
 
 The publication-only initial edits never run merely because CRAN accepted an
 upload. They run only after the public CRAN source index contains the expected
 version.
+
+The stages below write each release's own values as placeholders: `<version>`
+is the version this release publishes, `<dev-version>` is the development
+version that follows it (`<version>.9000`), and `<issue-number>` is the release
+issue's number from stage 2. Substitute them before running a command.
 
 ## Helper interface
 
 All mutating operations preview first:
 
 ```sh
-Rscript tools/cran-release.R prepare --version 0.1.0
-Rscript tools/cran-release.R prepare --version 0.1.0 --apply
+Rscript tools/cran-release.R prepare --version <version>
+Rscript tools/cran-release.R prepare --version <version> --apply
 
-Rscript tools/cran-release.R verify-publication --version 0.1.0
+Rscript tools/cran-release.R verify-publication --version <version>
 
-Rscript tools/cran-release.R post-release --version 0.1.0
-Rscript tools/cran-release.R post-release --version 0.1.0 --apply
+Rscript tools/cran-release.R post-release --version <version>
+Rscript tools/cran-release.R post-release --version <version> --apply
 ```
 
 `prepare` changes only deterministic version and NEWS headings. The maintainer
@@ -146,7 +150,7 @@ body, create it with:
 release_issue_body=$(mktemp)
 # Copy the ledger template below into "$release_issue_body" and adapt it.
 gh issue create \
-  --title "Release marginplyr 0.1.0 to CRAN" \
+  --title "Release marginplyr <version> to CRAN" \
   --body-file "$release_issue_body"
 ```
 
@@ -184,9 +188,9 @@ the review produces a tracked diff:
 
 ```sh
 git fetch origin
-git worktree add --detach ../marginplyr-release-0.1.0 origin/main
-cd ../marginplyr-release-0.1.0
-Rscript tools/cran-release.R prepare --version 0.1.0
+git worktree add --detach ../marginplyr-release-<version> origin/main
+cd ../marginplyr-release-<version>
+Rscript tools/cran-release.R prepare --version <version>
 ```
 
 #### Dependency-metadata advisory audit
@@ -212,7 +216,7 @@ test -z "$(git status --short)" || {
   echo "The preparation worktree must be clean." >&2
   exit 1
 }
-audit_root=/absolute/external/path/marginplyr-0.1.0-dependency-audit
+audit_root=/absolute/external/path/marginplyr-<version>-dependency-audit
 test ! -e "$audit_root"
 mkdir "$audit_root"
 printf '%s\n' "$preparation_sha" > "$audit_root/preparation-sha.txt"
@@ -257,7 +261,7 @@ the preparation has a diff. When tracked edits are required, obtain approval
 for the exact edits, then run:
 
 ```sh
-Rscript tools/cran-release.R prepare --version 0.1.0 --apply
+Rscript tools/cran-release.R prepare --version <version> --apply
 ```
 
 Write/review NEWS, `cran-comments.md`, DESCRIPTION metadata, examples, and any
@@ -280,14 +284,14 @@ After the review and required regeneration, inspect `git status --short` and
 `git diff`. Follow exactly one of these paths:
 
 - **Tracked-diff path.** Show the detached `HEAD` and exact
-  `release/0.1.0` branch to be created, then obtain approval before creating
+  `release/<version>` branch to be created, then obtain approval before creating
   it. Obtain separate approvals before commit, push, and PR creation:
 
 ```sh
-git switch -c release/0.1.0
+git switch -c release/<version>
 git add <reviewed-paths>
-git commit -m "Prepare marginplyr 0.1.0 for CRAN (#507)"
-git push -u origin release/0.1.0
+git commit -m "Prepare marginplyr <version> for CRAN (#<issue-number>)"
+git push -u origin release/<version>
 gh pr create --fill
 ```
 
@@ -616,7 +620,7 @@ intact.
 Verify identity first:
 
 ```sh
-shasum -a 256 /absolute/path/marginplyr_0.1.0.tar.gz
+shasum -a 256 /absolute/path/marginplyr_<version>.tar.gz
 cat /absolute/path/SHA256SUMS
 ```
 
@@ -679,7 +683,7 @@ data before publication-only edits.
 Automatic, read-only command:
 
 ```sh
-Rscript tools/cran-release.R verify-publication --version 0.1.0
+Rscript tools/cran-release.R verify-publication --version <version>
 ```
 
 Success evidence is the exact requested version. A missing package, different
@@ -698,7 +702,7 @@ manifest for the retained tarball:
 ```sh
 release_manifest=$(mktemp)
 release_notes=$(mktemp)
-shasum -a 256 /absolute/path/marginplyr_0.1.0.tar.gz > "$release_manifest"
+shasum -a 256 /absolute/path/marginplyr_<version>.tar.gz > "$release_manifest"
 # Copy the reviewed NEWS-derived notes into "$release_notes".
 ```
 
@@ -706,19 +710,19 @@ Show tag name, candidate SHA, notes, tarball path, and manifest. Obtain approval
 before creating/pushing the tag, then verify it:
 
 ```sh
-git tag -a v0.1.0 "$candidate_sha" -m "marginplyr 0.1.0"
-git push origin v0.1.0
-git rev-list -n 1 v0.1.0
+git tag -a v<version> "$candidate_sha" -m "marginplyr <version>"
+git push origin v<version>
+git rev-list -n 1 v<version>
 ```
 
 Obtain a separate approval before publication:
 
 ```sh
-gh release create v0.1.0 \
-  /absolute/path/marginplyr_0.1.0.tar.gz \
+gh release create v<version> \
+  /absolute/path/marginplyr_<version>.tar.gz \
   "$release_manifest" \
   --verify-tag \
-  --title "marginplyr 0.1.0" \
+  --title "marginplyr <version>" \
   --notes-file "$release_notes"
 ```
 
@@ -740,27 +744,27 @@ main and preview:
 
 ```sh
 git fetch origin
-git worktree add ../marginplyr-post-release-0.1.0 \
-  -b post-release/0.1.0 origin/main
-cd ../marginplyr-post-release-0.1.0
-Rscript tools/cran-release.R post-release --version 0.1.0
+git worktree add ../marginplyr-post-release-<version> \
+  -b post-release/<version> origin/main
+cd ../marginplyr-post-release-<version>
+Rscript tools/cran-release.R post-release --version <version>
 ```
 
 The preview repeats publication verification without editing. Show the diff and
 obtain approval before:
 
 ```sh
-Rscript tools/cran-release.R post-release --version 0.1.0 --apply
+Rscript tools/cran-release.R post-release --version <version> --apply
 git diff --check
 git diff
 ```
 
-For the initial release, verify that status is `published`, the CRAN badge/link
-and install call appear once, version is `0.1.0.9000`, and NEWS begins with that
-heading. For an update, status and CRAN documentation must remain unchanged
-while version/NEWS advance. Run documentation and relevant tests, then obtain
-separate approvals for commit/push and PR creation. Put all of these changes in
-one PR:
+For either kind, verify that version is `<dev-version>` and NEWS begins with
+that heading. For the initial release, also verify that status is `published`
+and the CRAN badge/link and install call appear once. For an update, status and
+CRAN documentation must remain unchanged. Run documentation and relevant tests,
+then obtain separate approvals for commit/push and PR creation. Put all of these
+changes in one PR:
 
 ```sh
 Rscript .github/scripts/verify-context-budget.R
@@ -772,8 +776,8 @@ Rscript -e 'pkgload::load_all(".", quiet = TRUE); testthat::test_dir("tests/test
 git diff --check
 
 git add DESCRIPTION NEWS.md README.qmd README.md
-git commit -m "Start marginplyr 0.1.0.9000"
-git push -u origin post-release/0.1.0
+git commit -m "Start marginplyr <dev-version>"
+git push -u origin post-release/<version>
 gh pr create --fill
 ```
 

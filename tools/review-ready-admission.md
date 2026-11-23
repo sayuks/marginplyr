@@ -14,7 +14,7 @@ manager locks after acquiring them without waiting, and held the new stable
 heavy lock through the mutations. No waiting or running check was cancelled.
 
 The operation removed only the installed
-`/Users/sayuks/.local/bin/marginplyr-review-ready`, the obsolete checker-owned
+`~/.local/bin/marginplyr-review-ready`, the obsolete checker-owned
 `~/.local/state/marginplyr/review-ready/`, and the old checker's
 `review-ready-failures` directory under `tools::R_user_dir("marginplyr", "cache")`.
 The new `~/.local/state/marginplyr/review-ready-heavy.lock` remains in place.
