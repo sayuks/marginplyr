@@ -5,7 +5,8 @@
 #   R CMD build .
 #   Rscript .github/scripts/check-cran-readiness.R marginplyr_*.tar.gz
 #
-# checktor 0.1.0 has no suppression interface. The baseline records each
+# checktor's `Config/checktor/allow` mutes a whole check or a substring and
+# never reports a mute that stopped matching. The baseline records each
 # reviewed finding's durable anchor, and this script fails for either a new
 # finding or a stale baseline entry. The latter makes a checktor upgrade or a
 # resolved false positive remove its exception instead of leaving it able to
