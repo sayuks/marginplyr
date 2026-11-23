@@ -17,7 +17,7 @@ the first unchecked stage whose evidence still belongs to that candidate.
 | Kind | Meaning | Examples |
 |---|---|---|
 | Automatic | A command computes or checks deterministic local state. It may run without approval when read-only. | helper preview, release-readiness audit, publication lookup |
-| Agent-operated | Codex runs a documented command, reads its result, and summarizes it. A human can run the same command instead. | CI inspection, semantic review, R-hub inspection |
+| Agent-operated | Codex runs a documented command, reads its result, and summarizes it. A human can run the same command instead. | CI inspection, semantic review, R-hub inspection, stage 4 release-dependency update |
 | Agent-prepared | Codex makes a bounded remediation PR from one audit; a human reviews and approves its result before it becomes a candidate. | spelling/source corrections, checktor remediations, generated-file repairs |
 | Approval-gated | Codex stops immediately before an external release action or a change to the approved candidate, and states the exact target and action. | merge, workflow dispatch, issue update, win-builder send, tag/Release, CRAN upload |
 | Human-only | Codex may prepare evidence but cannot perform the action. | CRAN upload, confirmation/rejection/follow-up email |
@@ -332,6 +332,28 @@ audit SHA, then make a **formal preflight attempt**. An argument-free
 `Rscript tools/cran-preflight.R` run writes only a diagnostic cache bundle and
 is not part of this ledger.
 
+Before every formal attempt, bring the release library up to the newest R
+release and the newest repository version of every release dependency, so the
+audit sees what CRAN and the hosted checks will install rather than whatever a
+local library last received. The release library is a repository-external
+library used only for release evidence; the operator's everyday library is
+never changed:
+
+```sh
+Rscript tools/update-release-dependencies.R
+Rscript tools/update-release-dependencies.R --apply
+```
+
+The first command is a read-only preview. It stops when R is older than the
+current R release, which only the operator can install, and otherwise lists
+each package the release library lacks or holds at an older version. After
+reading that list, the agent may run `--apply` without a separate approval;
+this is the one local mutation stage 4 pre-authorizes. When the agent's
+permissions cannot write the release library or reach the repository, it
+shows the user the `--apply` command instead, and continues once the user
+reports its output. An `--apply` that ends with packages still missing or
+outdated blocks the attempt until they install.
+
 First derive the public attempt ID and the standard private bundle location.
 The candidate SHA is the full 40-character value. Use the path-safe basic UTC
 timestamp required by [`tools/cran-preflight.md`](cran-preflight.md):
@@ -362,10 +384,13 @@ command stops before candidate build or check as invocation unavailable with
 exit `2`, without relocating the bundle.
 
 After approval, run the command once and retain its start and finish times in
-UTC. Let it reach a terminal exit before preparing any GitHub update:
+UTC. `R_LIBS_USER` puts the release library in place of the everyday one for
+the preflight and every R process it starts. Let it reach a terminal exit
+before preparing any GitHub update:
 
 ```sh
-Rscript tools/cran-preflight.R --output "$attempt_output"
+release_library=$(Rscript tools/update-release-dependencies.R --library)
+R_LIBS_USER="$release_library" Rscript tools/cran-preflight.R --output "$attempt_output"
 attempt_exit=$?
 attempt_finished_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 printf '%s\n' "$attempt_exit"
