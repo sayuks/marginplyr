@@ -1023,20 +1023,75 @@ run_local_cran_preflight <- function(args, repository_root,
   as.integer(result$status)
 }
 
+# Answers whether a path can appear unescaped in a URI. R CMD check validates
+# the package HTML page, where `tools::pkg2HTML()` embeds the installed logo by
+# its absolute file path, so a space there becomes an HTML Tidy NOTE.
+uri_safe_path <- function(path) {
+  grepl("^[A-Za-z0-9/._~:-]+$", path)
+}
+
+# Creates the check directory R CMD check runs in, away from the evidence
+# bundle, whose standard macOS location contains a space.
+create_rcmdcheck_staging <- function(tmpdir = tempdir()) {
+  root <- normalizePath(
+    tempfile("marginplyr-check-", tmpdir = tmpdir),
+    winslash = "/",
+    mustWork = FALSE
+  )
+  if (!uri_safe_path(root)) {
+    stop(
+      "R CMD check needs a temporary directory whose path has no ",
+      "characters a URI must escape; got '", root, "'.",
+      call. = FALSE
+    )
+  }
+  if (!dir.create(root)) {
+    stop("Cannot create the R CMD check staging directory.", call. = FALSE)
+  }
+  check_dir <- file.path(root, "check")
+  dir.create(check_dir)
+  list(root = root, check_dir = check_dir)
+}
+
+# Copies the staged check directory into the bundle as `check/` and removes
+# the staging directory. It runs on every exit, so an interrupted or failed
+# check still leaves its partial directory in the bundle.
+retain_rcmdcheck_staging <- function(staging, evidence_path) {
+  on.exit(unlink(staging$root, recursive = TRUE), add = TRUE)
+  if (!all(file.copy(staging$check_dir, evidence_path, recursive = TRUE))) {
+    stop(
+      "Cannot retain the R CMD check directory in the evidence bundle.",
+      call. = FALSE
+    )
+  }
+  invisible(file.path(evidence_path, "check"))
+}
+
 # Runs the sole full R CMD check against an already-built candidate tarball.
 # The last three settings make its tests the run CRAN performs whatever the
 # caller's environment holds: the CRAN tier, in one process (ADR 0045).
-run_rcmdcheck <- function(tarball, evidence_path) {
+# The check runs in a URI-safe staging directory, then moves into the bundle,
+# so its result does not depend on where the bundle lives.
+run_rcmdcheck <- function(
+  tarball,
+  evidence_path,
+  checker = rcmdcheck::rcmdcheck,
+  tmpdir = tempdir()
+) {
+  staging <- create_rcmdcheck_staging(tmpdir)
   check_dir <- file.path(evidence_path, "check")
-  dir.create(check_dir)
   console <- file.path(evidence_path, "rcmdcheck-console.log")
+  retained <- FALSE
+  on.exit(if (!retained) {
+    try(retain_rcmdcheck_staging(staging, evidence_path), silent = TRUE)
+  }, add = TRUE)
   result <- capture_console(
     console,
-    rcmdcheck::rcmdcheck(
+    checker(
       tarball,
       args = "--as-cran",
       build_args = NULL,
-      check_dir = check_dir,
+      check_dir = staging$check_dir,
       error_on = "never",
       env = c(
         `_R_CHECK_CRAN_INCOMING_REMOTE_` = "true",
@@ -1048,6 +1103,8 @@ run_rcmdcheck <- function(tarball, evidence_path) {
       )
     )
   )
+  retained <- TRUE
+  retain_rcmdcheck_staging(staging, evidence_path)
   list(result = result, check_dir = check_dir, console = console)
 }
 

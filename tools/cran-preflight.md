@@ -165,6 +165,12 @@ candidate finding or a passing check. Every nonzero result blocks release. The
 printed external bundle path contains the tarball, hash manifest, machine-readable
 results and step table, human summary, full check directory and logs, checktor
 report, candidate-library identity record, and the conditional URL diagnostic.
+R CMD check runs in a temporary staging directory whose path needs no URI
+escaping, then its check directory is copied into the bundle as `check/`, even
+when the check stops early. The standard macOS bundle location contains a
+space, and `tools::pkg2HTML()` embeds the installed logo by its absolute path,
+so checking inside the bundle would add an HTML-manual NOTE that CRAN does not
+see. A temporary directory that needs escaping makes the check unavailable.
 The canonical final evidence files are `results.dcf` for machine-readable
 terminal evidence, `summary.md` for the human-readable summary, `steps.tsv` for
 per-stage evidence, and `candidate-library-identity.dcf` for the completed
