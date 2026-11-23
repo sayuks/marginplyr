@@ -53,7 +53,7 @@ Suggests:
     withr
 Config/marginplyr/cran-status: unpublished
 Config/Needs/preflight:
-    checktor (== 0.1.0),
+    checktor (>= 0.2.0),
     filelock,
     lintr,
     pkgload,
