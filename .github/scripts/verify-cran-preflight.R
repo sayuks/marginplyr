@@ -149,12 +149,12 @@ checktor_requirement <- preflight_requirements[
 expect_identical(
   checktor_requirement$operator,
   ">=",
-  "the checktor baseline operator"
+  "the minimum checktor version operator"
 )
 expect_identical(
   checktor_requirement$version,
   "0.2.0",
-  "the checktor baseline version"
+  "the minimum checktor version"
 )
 package_requirements <- rbind(
   dependency_requirements(description_value(description, "Imports")),
