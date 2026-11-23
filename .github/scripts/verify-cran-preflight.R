@@ -1069,6 +1069,72 @@ expect_identical(
   NULL,
   "a failing check reports its failure, not an unfinished test log's time"
 )
+expect_true(
+  uri_safe_path("/tmp/RtmpAb12/marginplyr-check-1f2e/check"),
+  "a temporary check path needs no URI escaping"
+)
+expect_identical(
+  uri_safe_path("/Users/x/Library/Application Support/marginplyr"),
+  FALSE,
+  "a path with a space needs URI escaping"
+)
+spaced_tmpdir <- file.path(tempfile("cran-preflight-"), "with space")
+dir.create(spaced_tmpdir, recursive = TRUE)
+expect_identical(
+  tryCatch(create_rcmdcheck_staging(spaced_tmpdir), error = function(cnd) {
+    "refused"
+  }),
+  "refused",
+  "R CMD check refuses a staging directory that needs URI escaping"
+)
+staged_evidence <- file.path(tempfile("cran-preflight-"), "bundle with space")
+dir.create(staged_evidence, recursive = TRUE)
+staged_check_dirs <- character()
+staged_check <- run_rcmdcheck(
+  "marginplyr_0.1.0.tar.gz",
+  staged_evidence,
+  checker = function(tarball, ..., check_dir) {
+    staged_check_dirs <<- c(staged_check_dirs, check_dir)
+    dir.create(file.path(check_dir, "marginplyr.Rcheck"))
+    writeLines("Status: OK", file.path(check_dir, "marginplyr.Rcheck", "00check.log"))
+    list(status = 0L)
+  }
+)
+expect_true(
+  uri_safe_path(staged_check_dirs) && !startsWith(staged_check_dirs, staged_evidence),
+  "R CMD check runs outside a bundle whose path has a space"
+)
+expect_identical(
+  staged_check$check_dir,
+  file.path(staged_evidence, "check"),
+  "the check directory is retained in the bundle"
+)
+expect_true(
+  file.exists(file.path(staged_check$check_dir, "marginplyr.Rcheck", "00check.log")),
+  "the retained check directory holds the check's files"
+)
+expect_identical(
+  dir.exists(dirname(staged_check_dirs)),
+  FALSE,
+  "the staging directory is removed once the check is retained"
+)
+interrupted_evidence <- tempfile("cran-preflight-")
+dir.create(interrupted_evidence)
+tryCatch(
+  run_rcmdcheck(
+    "marginplyr_0.1.0.tar.gz",
+    interrupted_evidence,
+    checker = function(tarball, ..., check_dir) {
+      writeLines("partial", file.path(check_dir, "partial.log"))
+      stop("fixture check failure")
+    }
+  ),
+  error = function(cnd) NULL
+)
+expect_true(
+  file.exists(file.path(interrupted_evidence, "check", "partial.log")),
+  "a check that stops still leaves its partial directory in the bundle"
+)
 check_environment <- paste(deparse(run_rcmdcheck), collapse = "\n")
 for (setting in c(
   "NOT_CRAN = \"false\"",
