@@ -17,7 +17,7 @@ the first unchecked stage whose evidence still belongs to that candidate.
 | Kind | Meaning | Examples |
 |---|---|---|
 | Automatic | A command computes or checks deterministic local state. It may run without approval when read-only. | helper preview, release-readiness audit, publication lookup |
-| Agent-operated | Codex runs a documented command, reads its result, and summarizes it. A human can run the same command instead. | CI inspection, semantic review, R-hub inspection |
+| Agent-operated | Codex runs a documented command, reads its result, and summarizes it. A human can run the same command instead. | CI inspection, semantic review, R-hub inspection, stage 4 release-dependency update |
 | Agent-prepared | Codex makes a bounded remediation PR from one audit; a human reviews and approves its result before it becomes a candidate. | spelling/source corrections, checktor remediations, generated-file repairs |
 | Approval-gated | Codex stops immediately before an external release action or a change to the approved candidate, and states the exact target and action. | merge, workflow dispatch, issue update, win-builder send, tag/Release, CRAN upload |
 | Human-only | Codex may prepare evidence but cannot perform the action. | CRAN upload, confirmation/rejection/follow-up email |
@@ -349,6 +349,30 @@ printf '%s\n' "$attempt_id"
 printf '%s\n' "$attempt_output"
 ```
 
+Then, on that synchronized tree, bring the release library up to date. It is a
+repository-external library used only for the formal preflight, holding the
+newest repository version of every preflight dependency and marginplyr
+installed from the candidate, so the audit sees what CRAN and the hosted checks
+will install rather than whatever a local library last received. The
+operator's everyday library is never changed. DuckDB JSON support is prepared
+per duckdb version, so it is prepared again against the release library:
+
+```sh
+Rscript tools/update-release-dependencies.R
+Rscript tools/update-release-dependencies.R --apply
+release_library=$(Rscript tools/update-release-dependencies.R --library)
+R_LIBS_USER="$release_library" Rscript tools/setup-duckdb-json.R
+```
+
+The first command is a read-only preview. It stops when R is older than the
+current R release, which only the operator can install, and otherwise lists
+each package the release library lacks or holds at an older version. After
+reading that list, the agent may run the remaining commands without a separate
+approval; they are the local mutation stage 4 pre-authorizes. When the agent's
+permissions cannot write the release library or reach the network, it shows
+the user the commands it could not run, and continues once the user reports
+their output. A command that ends with an error blocks the attempt.
+
 Show that resolved absolute path and state its retention purpose: it is the
 release operator's private raw-evidence bundle for this attempt. Obtain explicit
 approval before creating it. An agent cannot select another path. If the
@@ -362,10 +386,12 @@ command stops before candidate build or check as invocation unavailable with
 exit `2`, without relocating the bundle.
 
 After approval, run the command once and retain its start and finish times in
-UTC. Let it reach a terminal exit before preparing any GitHub update:
+UTC. `R_LIBS_USER` puts the release library in place of the everyday one for
+the preflight and every R process it starts. Let it reach a terminal exit
+before preparing any GitHub update:
 
 ```sh
-Rscript tools/cran-preflight.R --output "$attempt_output"
+R_LIBS_USER="$release_library" Rscript tools/cran-preflight.R --output "$attempt_output"
 attempt_exit=$?
 attempt_finished_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 printf '%s\n' "$attempt_exit"
