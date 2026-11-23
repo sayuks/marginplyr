@@ -1,6 +1,6 @@
 bibentry(
   bibtype = "Manual",
-  title = "marginplyr: SQL-Style Grouping Sets, Rollups, and Cubes for 'dplyr'",
+  title = "marginplyr: 'SQL'-Style Grouping Sets, Rollups, and Cubes for 'dplyr'",
   author = person(
     "Yusuke", "Sasaki",
     email = "sayuks.dev@gmail.com",
