@@ -52,12 +52,13 @@ the tier runs with every Suggested package installed, as on CRAN — the
 CRAN applies a ten-minute threshold to a submission's check, and the number is
 sized to keep Win-Builder's R-devel check, which a candidate passes before it
 is submitted, inside that. It is stated for the hosted Windows runner, the
-slowest machine that enforces it: Win-Builder took about 2.75 times as long as
-that runner over the same tests, and about 285 seconds over the rest of its
-check. A run that just meets the budget is therefore a whole check of about
-560 seconds there.
+slowest machine that enforces it. That runner's time over one tier varied by a
+factor of about 1.8 between runs, so Win-Builder took between 1.6 and 2.85
+times as long over the same tests, and about 285 seconds over the rest of its
+check. A run that just meets the budget is therefore a whole check of at most
+about 570 seconds there.
 
-Until #1760 the budget was 300 seconds and the tier held six more files. The
+Until #1760 the budget was 300 seconds and the tier held eight more files. The
 [measurements](../../investigation/cran-tier-test-time-2026-11-19.md)' dated
 revision holds the times these figures come from and what CRAN has said about
 the threshold.

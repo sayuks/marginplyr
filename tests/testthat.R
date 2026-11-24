@@ -19,7 +19,6 @@ cran_tier <- c(
   "expand-operation",
   "factor",
   "get-col-names",
-  "grouping-backends",
   "grouping-interface",
   "grouping-patterns",
   "margin-display",
@@ -34,7 +33,6 @@ cran_tier <- c(
   "sent-query-details",
   "sf-summary",
   "suggest-guard-scan",
-  "summarize-operation",
   "utils"
 )
 
