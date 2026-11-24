@@ -18,6 +18,8 @@ for (path in routine) {
   expect(identical(concurrency$`cancel-in-progress`,
     "${{ github.event_name != 'workflow_dispatch' }}"), path)
 }
+expect(identical(names(Filter(function(workflow) "schedule" %in% names(workflow$on), workflows)),
+  "R-CMD-check.yaml"), "Only R-CMD-check.yaml runs on a schedule")
 cat("Routine concurrency and manual isolation contracts passed.\n")
 hygiene <- workflows[["lint.yaml"]]$jobs$`repository-hygiene`
 expect(!is.null(hygiene), "Base-R hygiene checks must share one job")
@@ -62,7 +64,7 @@ script <- file.path(workspace, "handler.js")
 lifetimes <- file.path(workspace, "lifetimes.json")
 writeLines(close$jobs$retire$steps[[1L]]$with$script, script)
 jsonlite::write_json(lapply(workflows[routine], function(workflow)
-  list(name = workflow$name, concurrency = if (workflow$name == "altdoc")
+  list(name = workflow$name, events = I(names(workflow$on)), concurrency = if (workflow$name == "altdoc")
     workflow$jobs$altdoc$concurrency else workflow$concurrency)), lifetimes, auto_unbox = TRUE)
 result <- processx::run("node", c("tools/fixtures/ci-queue-api.cjs", script, lifetimes),
   error_on_status = FALSE, timeout = 60000, cleanup_tree = TRUE)

@@ -2,8 +2,11 @@
 
 The policy is [CI queue efficiency](../design/specs/ci-queue-efficiency.md).
 Automatic concurrency groups use workflow/ref identities. Manual dispatches
-use a separate per-run namespace. The Pages deployment job retains its `pages`
-serialization group; altdoc cancellation remains scoped to the build job.
+use a separate per-run namespace. `R-CMD-check.yaml`'s weekly scheduled run
+uses a `scheduled-<ref>` namespace, so it and a push to main do not cancel each
+other; its trigger's comment says what the run is for. The Pages deployment
+job retains its `pages` serialization group; altdoc cancellation remains scoped
+to the build job.
 
 Dispatch-enabled workflows use a new `auto-<ref>` namespace so new automatic
 runs cannot cancel pre-change manual runs sharing the former workflow/ref

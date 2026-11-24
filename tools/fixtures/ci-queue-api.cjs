@@ -30,10 +30,18 @@ for (const [path, workflow] of Object.entries(lifetimes)) {
     // A pre-change manual run used the bare workflow/ref group.
     assert.notEqual(group('refs/heads/main', 'push'), `${prefix}-refs/heads/main`);
   }
+  if (workflow.events.includes('schedule')) {
+    // A scheduled run has main's ref, as a push to main does.
+    const scheduled = group('refs/heads/main', 'schedule', 1);
+    assert.equal(scheduled, group('refs/heads/main', 'schedule', 2));
+    assert.notEqual(scheduled, group('refs/heads/main', 'push'));
+    assert.notEqual(scheduled, group('refs/heads/main', 'workflow_dispatch'));
+    assert.notEqual(scheduled, pr);
+  }
   assert.equal(evaluate(workflow.concurrency['cancel-in-progress'], {event_name: 'pull_request'}), 'true');
   assert.equal(evaluate(workflow.concurrency['cancel-in-progress'], {event_name: 'workflow_dispatch'}), 'false');
 }
-console.log('Same-PR and main updates share groups; different PRs and legacy/manual runs remain independent.');
+console.log('Same-PR and main updates share groups; different PRs and legacy/manual/scheduled runs remain independent.');
 const closed = {
   number: 42, state: 'closed', closed_at: '2026-11-09T05:00:00Z',
   head: { ref: 'topic', repo: { id: 20, owner: {login: 'forker'} } }, base: { repo: { id: 10 } }
