@@ -26,7 +26,7 @@ Keep the newest revision for each open PR and the newest revision of main.
 A newer update supersedes the older automatic run for that same PR or branch;
 it does not supersede another open PR's newest run. Close or merge retires
 the corresponding PR's automatic runs, including queued work. Manual release
-verification and scheduled runs remain outside this routine cancellation policy.
+verification remains outside this routine cancellation policy.
 
 ## Initial change set
 

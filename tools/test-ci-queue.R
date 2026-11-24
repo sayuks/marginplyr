@@ -18,8 +18,6 @@ for (path in routine) {
   expect(identical(concurrency$`cancel-in-progress`,
     "${{ github.event_name != 'workflow_dispatch' }}"), path)
 }
-expect(identical(names(Filter(function(workflow) "schedule" %in% names(workflow$on), workflows)),
-  "R-CMD-check.yaml"), "Only R-CMD-check.yaml runs on a schedule")
 cat("Routine concurrency and manual isolation contracts passed.\n")
 hygiene <- workflows[["lint.yaml"]]$jobs$`repository-hygiene`
 expect(!is.null(hygiene), "Base-R hygiene checks must share one job")

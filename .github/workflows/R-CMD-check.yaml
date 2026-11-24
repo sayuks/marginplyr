@@ -20,8 +20,6 @@ name: R-CMD-check.yaml
 permissions:
   contents: read
 
-# A scheduled run's `github.ref` is main's, so without a namespace of its own it
-# and a push to main would cancel each other.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && format('manual-{0}', github.run_id) || github.event_name == 'schedule' && format('scheduled-{0}', github.ref) || github.ref }}
   cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
