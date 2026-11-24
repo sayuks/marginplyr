@@ -1,6 +1,7 @@
 # Test time under CRAN semantics and a candidate CRAN tier
 
 Investigated: 2026-11-19
+Revised: 2026-11-24 — `tests/testthat.R` and ADR 0045's *The budget* (#1760)
 
 ## Inputs and environment
 
@@ -170,3 +171,115 @@ time of 64.823 s. `test-grouping-backends.R`, `test-sent-queries.R` and
 `test-metamorphic-margin-semantics.R`, all still registered, held 4, 3 and 2
 calls of `share_of_parent()` or `share_of_total()`. The 27 files were not
 timed on Windows before that commit was pushed.
+
+## Revisions (2026-11-24)
+
+Issue #1760 took six files out of the tier and lowered its budget from 300 s
+to 100 s; `tests/testthat.R` and ADR 0045's *The budget* hold both. Nothing
+above measured the tier on a machine CRAN checks with, and the budget above
+was met by a tier that took 416 s there. The measurements behind the change
+follow.
+
+### The 28-file tier on Win-Builder
+
+At `967c574ba0ecbb0587a3c6c5b6757ed6ae8a8bd2` the tier registered 28 files:
+the 27 above and `suggest-guard-scan`, which commit `3663567e` added.
+Win-Builder checked that revision's source tarball twice on R-devel
+(2026-11-17 r90926 ucrt), Windows Server 2022 x64 (build 20348). Both checks
+ended `Status: 1 NOTE`, and their `00check.log` files held:
+
+| Check started (UTC) | `testthat.R` | R code for possible problems | Vignette rebuild | PDF manual | Examples |
+|---|---|---|---|---|---|
+| 2026-11-24 01:46:50 | 402 s | 81 s | 79 s | 29 s | 14 s |
+| 2026-11-24 03:46:02 | 416 s | 78 s | 77 s | 29 s | 14 s |
+
+The second check's `testthat.Rout` ended
+`[ FAIL 0 | WARN 0 | SKIP 4 | PASS 9657 ]` and
+
+```text
+   user  system elapsed 
+ 393.64   22.93  416.09 
+```
+
+so the tests spent that time on the CPU. The first check's test log was not
+retained. Issue #1760 recorded the whole checks at 692 s and 701 s, the
+installs at 26 s and 27 s, and the tarball's SHA-256 as
+`e2d453aecba35ab0e34e1ed37e7401cc6424875c70ecd750e61cb06b0bde275e`; the two
+logs read here held none of those. By those figures everything but the tests
+took 290 s and 285 s.
+
+### The 28-file tier on hosted runners
+
+At the same SHA, `verify-cran-test-budget.R` and `check-tarball.R` reported
+these times for `testthat.R`:
+
+| Workflow run | Job | Seconds |
+|---|---|---|
+| `R-CMD-check.yaml` 45190228623 | `windows-latest (release, CRAN tier)` | 158 |
+| `release-matrix.yaml` 45211186226 | `Tarball windows-latest (release)` | 151 |
+| | `Tarball macos-latest (release)` | 131 |
+| | `Minimal dependencies (depends-only)` | 113 |
+| | `Tarball ubuntu-latest (release)` | 99 |
+| | `Tarball ubuntu-latest (oldrel-1)` | 99 |
+| | `Tarball ubuntu-latest (devel)` | 85 |
+
+Win-Builder's 416 s was 2.75 times the 151 s and 2.63 times the 158 s. The
+`depends-only` log held
+`[ FAIL 0 | WARN 0 | SKIP 232 | PASS 5816 ]`.
+
+### The tier with and without the six files
+
+The six were `share`, `inspect-grouping`, `margin-label`, `grouping-plan`,
+`nest-operation` and `sent-queries`. A copy of `967c574b` carrying #1760's
+edits to `tests/` was built with
+`R CMD build --no-build-vignettes --no-manual` and installed, and the
+extracted tarball's tests were run by `testthat::test_dir()` with
+`load_package = "installed"` and the filter `tests/testthat.R` builds, in
+one process with `NOT_CRAN` and `MARGINPLYR_COMPLETE_SUITE` unset and
+`TESTTHAT_PARALLEL=false`, on R 4.6.2 (2026-10-29), testthat 3.3.2 and
+Darwin 25.6.0 arm64. The 28-file rows added the six names back to the filter.
+
+| Files | Optional backends | Seconds | Expectations | Skips |
+|---|---|---|---|---|
+| 28 | installed | 68.2 | 9,663 | 4 |
+| 22 | installed | 33.2, 33.3 | 4,531 | 1 |
+| 28 | all nine named in `MARGINPLYR_HIDE_SUGGESTS` | 40.1 | 6,050 | 232 |
+| 22 | all nine named in `MARGINPLYR_HIDE_SUGGESTS` | 16.5 | 2,499 | 146 |
+
+No run had a failure or an error. The expectation counts are
+`ListReporter`'s and include the skips. Issue #1760 recorded 63.6 s for the
+28 files and 31.3 s and 31.5 s for the 22, from earlier runs of the same
+kind on that date.
+
+In the 28-file run with the backends installed, the six files took 7.5 s,
+6.3 s, 5.9 s, 5.7 s, 5.3 s and 4.1 s in the order named above, 34.6 s
+together. `test-grouping-backends.R` took 8.3 s, more than any other file,
+and stayed registered: it called 14 of the 16 exports, every one but
+`last_sent_queries()` and `summarise_with_margins()`. Across the 22 files
+every export was called in at least two, and every member of
+`optional_backends()` was named by a `skip_if_suggest_absent()` or
+`suggest_available()` call in at least one. `Rscript tools/test-cran-tier.R`
+printed `CRAN tier fixtures passed.`
+
+The 22 files were not run on Windows or on Win-Builder before the change was
+committed. Scaling the hosted and Win-Builder times above by the local ratios,
+33.2 / 68.2 with the backends installed and 16.5 / 40.1 with them hidden,
+gives about 77 s and 74 s for the two hosted Windows jobs, about 46 s for
+`depends-only`, and about 203 s for Win-Builder's tests in a whole check of
+about 490 s. Those four figures are estimates.
+
+### What CRAN said about check time
+
+The CRAN Repository Policy, revision 6985 as read on this date, asked that
+checking take "as little CPU time as possible" and gave no number for a
+whole check.
+
+On R-package-devel, Daniel Kelley wrote on 2026-07-13 that an update of `oce`
+submitted on 30 June "was rejected on the same day because the build time
+exceeded 10 minutes"
+(<https://stat.ethz.ch/pipermail/r-package-devel/2026q3/012450.html>). Uwe
+Ligges replied on 2026-07-14 that it was "hard to improve the timing as a lot
+comes from documentation and offline code checks", and that this was why
+"CRAN overruled the 10 min threshold" for that package
+(<https://stat.ethz.ch/pipermail/r-package-devel/2026q3/012458.html>).
+Neither post named the check machine or gave its times.

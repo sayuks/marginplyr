@@ -43,11 +43,26 @@ from the tier's own run.
 
 ## The budget
 
-`.github/scripts/cran-test-budget.R` holds the tier's run to 300 seconds, read
+`.github/scripts/cran-test-budget.R` holds the tier's run to 100 seconds, read
 from the `proc.time()` trailer of the check's test log. It is enforced where
 the tier runs with every Suggested package installed, as on CRAN — the
 *CRAN tier* row of `R-CMD-check.yaml` and the local CRAN preflight — and by
 `check-tarball.R` in the release matrix's `depends-only` and `tarball` jobs.
+
+CRAN applies a ten-minute threshold to a submission's check, and the number is
+sized to keep Win-Builder's R-devel check, which a candidate passes before it
+is submitted, inside that. It is stated for the hosted Windows runner, the
+slowest machine that enforces it: Win-Builder took about 2.75 times as long as
+that runner over the same tests, and about 285 seconds over the rest of its
+check. A run that just meets the budget is therefore a whole check of about
+560 seconds there.
+
+The budget was 300 seconds until #1760, sized against the maintainer's machine
+with the remainder left as room for slower ones. A tier inside it took
+Win-Builder 416 seconds of a 701-second check, so six files left the tier when
+the number changed. The
+[measurements](../../investigation/cran-tier-test-time-2026-11-19.md)' dated
+revision holds those runs and what CRAN has said about the threshold.
 
 ## Who runs which
 
