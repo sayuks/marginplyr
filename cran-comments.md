@@ -21,17 +21,15 @@ development tree.
 * Locally, on R 4.6.2, aarch64-apple-darwin23, macOS Tahoe 26.6.2, with
   Quarto 1.11.9: `R CMD check --as-cran`, every Suggested package installed.
   Installation, examples, tests, vignette re-building, and the PDF and HTML
-  manuals all pass. Every skipped test is an `expect_snapshot()` diagnostic,
-  which testthat skips on CRAN by default.
+  manuals all pass, and no test is skipped.
 * On GitHub Actions, on `ubuntu-latest` with the current R release:
   `_R_CHECK_DEPENDS_ONLY_=true _R_CHECK_FORCE_SUGGESTS_=false R CMD check
   --as-cran --no-manual`, without the remote incoming checks, against a
   library holding only marginplyr's hard dependencies, testthat, the declared
   `VignetteBuilder`, the package that drives the check, and what those
   require; every other Suggested package is absent. Examples, tests, and
-  vignettes all complete. Every skipped test is either one of those same
-  snapshot diagnostics or a test whose optional backend is absent, and the
-  testthat output names the missing package for each of the latter.
+  vignettes all complete. Every skipped test is one whose optional backend is
+  absent, and the testthat output names the missing package for each.
   `_R_CHECK_FORCE_SUGGESTS_=false` is what stops the check from treating the
   absent packages as a failure.
 

@@ -41,6 +41,11 @@ both from the sources, and the second is also what lets `depends-only` go on
 proving absence, since `verify-depends-only.R` needs each backend's skip line
 from the tier's own run.
 
+No registered file holds a test CRAN skips, a snapshot expectation or a
+`skip_on_cran()`, so `cran-comments.md` tells CRAN that a check with every
+Suggested package installed skips nothing. `tools/test-cran-tier.R` asserts
+that as well.
+
 ## The budget
 
 `.github/scripts/cran-test-budget.R` holds the tier's run to 100 seconds, read
