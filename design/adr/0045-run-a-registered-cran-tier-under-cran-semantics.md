@@ -57,12 +57,10 @@ that runner over the same tests, and about 285 seconds over the rest of its
 check. A run that just meets the budget is therefore a whole check of about
 560 seconds there.
 
-The budget was 300 seconds until #1760, sized against the maintainer's machine
-with the remainder left as room for slower ones. A tier inside it took
-Win-Builder 416 seconds of a 701-second check, so six files left the tier when
-the number changed. The
+Until #1760 the budget was 300 seconds and the tier held six more files. The
 [measurements](../../investigation/cran-tier-test-time-2026-11-19.md)' dated
-revision holds those runs and what CRAN has said about the threshold.
+revision holds the times these figures come from and what CRAN has said about
+the threshold.
 
 ## Who runs which
 

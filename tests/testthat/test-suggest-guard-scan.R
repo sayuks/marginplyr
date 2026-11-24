@@ -312,15 +312,14 @@ unguarded_reference <- c(
 )
 
 test_that("an unguarded reference is reported in any test file", {
-  # One file the CRAN tier registers and one it does not: the scan reads both.
   paths <- fixture_sources(list(
-    "test-utils.R" = unguarded_reference,
+    "test-share.R" = unguarded_reference,
     "test-share-integer64-keys.R" = unguarded_reference
   ))
 
   expect_identical(
     unguarded_suggest_references(paths, "bit64"),
-    c("test-utils.R:3 {bit64}", "test-share-integer64-keys.R:3 {bit64}")
+    c("test-share.R:3 {bit64}", "test-share-integer64-keys.R:3 {bit64}")
   )
 })
 

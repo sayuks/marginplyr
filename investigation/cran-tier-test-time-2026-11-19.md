@@ -251,9 +251,9 @@ No run had a failure or an error. The expectation counts are
 28 files and 31.3 s and 31.5 s for the 22, from earlier runs of the same
 kind on that date.
 
-In the 28-file run with the backends installed, the six files took 7.5 s,
-6.3 s, 5.9 s, 5.7 s, 5.3 s and 4.1 s in the order named above, 34.6 s
-together. `test-grouping-backends.R` took 8.3 s, more than any other file,
+In the 28-file run with the backends installed, the six files took 7.46 s,
+6.25 s, 5.89 s, 5.68 s, 5.30 s and 4.05 s in the order named above, 34.63 s
+together. `test-grouping-backends.R` took 8.25 s, more than any other file,
 and stayed registered: it called 14 of the 16 exports, every one but
 `last_sent_queries()` and `summarise_with_margins()`. Across the 22 files
 every export was called in at least two, and every member of
@@ -266,7 +266,7 @@ committed. Scaling the hosted and Win-Builder times above by the local ratios,
 33.2 / 68.2 with the backends installed and 16.5 / 40.1 with them hidden,
 gives about 77 s and 74 s for the two hosted Windows jobs, about 46 s for
 `depends-only`, and about 203 s for Win-Builder's tests in a whole check of
-about 490 s. Those four figures are estimates.
+about 490 s. Those figures are estimates.
 
 ### What CRAN said about check time
 

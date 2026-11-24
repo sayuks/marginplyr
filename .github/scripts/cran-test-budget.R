@@ -5,9 +5,8 @@
 
 # The elapsed seconds `tests/testthat.R` may take when it runs the CRAN tier.
 # The number is for the hosted Windows runner, the slowest machine that
-# enforces it. Win-Builder, whose whole check has to stay inside CRAN's ten
-# minutes, takes more than twice as long over the same tests; ADR 0045's
-# *The budget* holds the conversion.
+# enforces it; ADR 0045's *The budget* holds how it is sized against CRAN's
+# check time.
 cran_test_budget_seconds <- 100
 
 # Whether a check started from this environment runs the CRAN tier rather than
