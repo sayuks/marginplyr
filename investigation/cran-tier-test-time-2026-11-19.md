@@ -280,11 +280,12 @@ every export was called in at least two, and every member of
 printed `CRAN tier fixtures passed.`
 
 The 22 files were not run on Windows or on Win-Builder before that change was
-committed. Scaling the 158 s and the 151 s above by the local ratios, 33.2 /
-68.2 with the backends installed and 16.5 / 40.1 with them hidden, gave about
-77 s for the *CRAN tier* row and about 62 s for `Tarball windows-latest`.
-Those figures were estimates, and the first rested on the 158 s of a fast
-runner.
+committed. Scaling the hosted and Win-Builder times above by the local ratios,
+33.2 / 68.2 with the backends installed and 16.5 / 40.1 with them hidden,
+gave about 77 s and 74 s for the two hosted Windows jobs, about 46 s for
+`depends-only`, and about 203 s for Win-Builder's tests in a whole check of
+about 490 s. Those figures were estimates, and the 77 s rested on the 158 s
+of a fast runner.
 
 ### The 22-file tier on hosted runners
 
