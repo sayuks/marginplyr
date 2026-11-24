@@ -43,8 +43,8 @@ from the tier's own run.
 
 No registered file holds a test CRAN skips, a snapshot expectation or a
 `skip_on_cran()`, so `cran-comments.md` tells CRAN that a check with every
-Suggested package installed skips nothing. `tools/test-cran-tier.R` asserts
-that as well.
+Suggested package installed skips nothing (#1760). `tools/test-cran-tier.R`
+asserts that as well.
 
 ## The budget
 

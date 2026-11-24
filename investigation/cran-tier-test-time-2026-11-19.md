@@ -353,7 +353,7 @@ Every one met the 100 s budget. Both *CRAN tier* rows ended
 
 Neither *CRAN tier* row drew a runner as slow as the 37 s one above. For each
 second of the R code check the 22 files had taken 3.8 s and 3.7 s and the 20
-files took 2.7 s and 2.5 s, between 0.64 and 0.73 times as long, against the
+files took 2.7 s and 2.5 s, between 0.65 and 0.73 times as long, against the
 local ratio of 0.58. At 37 s for the R code check those two rates give about
 100 s and 93 s. Those figures are estimates.
 
@@ -375,8 +375,8 @@ data.table 3, RSQLite 11, RPostgres 8, sf 2, hms 2 and S7 1.
 
 Five of the 17 were the only registered file to carry something
 `tools/test-cran-tier.R` requires: `grouping-interface` the calls of
-`grouping_bit()` and `grouping_id()`, `native-classes` the guards on
-data.table and S7, `postgres-share-probe` the guard on RPostgres,
+`grouping_bit()`, `grouping_id()` and `grouping_spec()`, `native-classes` the
+guards on data.table and S7, `postgres-share-probe` the guard on RPostgres,
 `sf-summary` the guard on sf, and `margin-display` the guard on hms. In the
 first local run of the 20 those five took 3.10 s, 2.04 s, 0.64 s, 2.17 s and
 0.89 s, 8.84 s together.
