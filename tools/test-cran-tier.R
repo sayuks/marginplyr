@@ -104,6 +104,18 @@ main <- function() {
     paste(unguarded, collapse = ", "), ". Register a test file that is in ",
     "tests/testthat.R."))
 
+  # cran-comments.md tells CRAN that the check skips no test when every
+  # Suggested package is installed, and testthat skips a snapshot expectation
+  # there.
+  cran_skipped <- c("expect_snapshot", "expect_snapshot_output",
+    "expect_snapshot_error", "expect_snapshot_warning", "expect_snapshot_value",
+    "expect_snapshot_file", "skip_on_cran")
+  skipped <- vapply(paths, function(path) any(called_in(path, cran_skipped)),
+    logical(1))
+  expect(!any(skipped), paste0("CRAN skips a test in: ",
+    paste(tier[skipped], collapse = ", "), ". Take the file out of `cran_tier` ",
+    "in tests/testthat.R."))
+
   # The budget reads the proc.time() trailer R CMD BATCH ends a test log with.
   source(file.path(source_root, ".github", "scripts", "cran-test-budget.R"),
     local = TRUE)

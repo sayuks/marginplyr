@@ -41,13 +41,31 @@ both from the sources, and the second is also what lets `depends-only` go on
 proving absence, since `verify-depends-only.R` needs each backend's skip line
 from the tier's own run.
 
+No registered file holds a test CRAN skips, a snapshot expectation or a
+`skip_on_cran()`, so `cran-comments.md` tells CRAN that a check with every
+Suggested package installed skips nothing (#1760). `tools/test-cran-tier.R`
+asserts that as well.
+
 ## The budget
 
-`.github/scripts/cran-test-budget.R` holds the tier's run to 300 seconds, read
+`.github/scripts/cran-test-budget.R` holds the tier's run to 100 seconds, read
 from the `proc.time()` trailer of the check's test log. It is enforced where
 the tier runs with every Suggested package installed, as on CRAN — the
 *CRAN tier* row of `R-CMD-check.yaml` and the local CRAN preflight — and by
 `check-tarball.R` in the release matrix's `depends-only` and `tarball` jobs.
+
+CRAN applies a ten-minute threshold to a submission's check, and the number is
+sized to keep Win-Builder's R-devel check, which a candidate passes before it
+is submitted, inside that. It is stated for the hosted Windows runner, the
+slowest machine that enforces it: Win-Builder took between 1.6 and 2.85 times
+as long as that runner over the same tests, and about 285 seconds over the
+rest of its check. A run that just meets the budget is therefore a whole check
+of at most about 570 seconds there.
+
+Until #1760 the budget was 300 seconds and the tier held 28 files. The
+[measurements](../../investigation/cran-tier-test-time-2026-11-19.md)' dated
+revision holds the times these figures come from and what CRAN has said about
+the threshold.
 
 ## Who runs which
 

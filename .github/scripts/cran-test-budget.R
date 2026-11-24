@@ -4,10 +4,10 @@
 # `cran-note-policy.R`, because one of those readers is not a workflow step.
 
 # The elapsed seconds `tests/testthat.R` may take when it runs the CRAN tier.
-# The tier is sized against the maintainer's machine, where it takes well under
-# half of this; the rest is room for a hosted runner and for CRAN's slower
-# check machines, whose whole check has to stay within minutes.
-cran_test_budget_seconds <- 300
+# The number is for the hosted Windows runner, the slowest machine that
+# enforces it; ADR 0045's *The budget* holds how it is sized against CRAN's
+# check time.
+cran_test_budget_seconds <- 100
 
 # Whether a check started from this environment runs the CRAN tier rather than
 # the complete suite. `tests/testthat.R` decides that for the check itself and,
