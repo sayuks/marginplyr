@@ -7,14 +7,19 @@
           "master"
         ]
       },
-      "pull_request": null
+      "pull_request": null,
+      "schedule": [
+        {
+          "cron": "23 4 * * 1"
+        }
+      ]
     },
     "name": "R-CMD-check.yaml",
     "permissions": {
       "contents": "read"
     },
     "concurrency": {
-      "group": "${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && format('manual-{0}', github.run_id) || github.ref }}",
+      "group": "${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && format('manual-{0}', github.run_id) || github.event_name == 'schedule' && format('scheduled-{0}', github.ref) || github.ref }}",
       "cancel-in-progress": "${{ github.event_name != 'workflow_dispatch' }}"
     },
     "jobs": {

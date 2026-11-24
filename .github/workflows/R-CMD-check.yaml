@@ -4,6 +4,16 @@ on:
   push:
     branches: [main, master]
   pull_request:
+  # Weekly, for what changes without a commit here: a dependency's release or
+  # R-devel can break marginplyr while nothing is pushed, and CRAN's own
+  # re-checks of a published package run the CRAN tier alone (ADR 0045). The
+  # minute is off the hour because GitHub may delay or drop scheduled runs
+  # under high load, which includes the start of every hour. GitHub disables a
+  # scheduled workflow after 60 days without repository activity; the answer is
+  # to re-enable it by hand (`gh workflow enable R-CMD-check.yaml`), not a
+  # keep-alive.
+  schedule:
+    - cron: '23 4 * * 1'
 
 name: R-CMD-check.yaml
 
@@ -11,7 +21,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && format('manual-{0}', github.run_id) || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && format('manual-{0}', github.run_id) || github.event_name == 'schedule' && format('scheduled-{0}', github.ref) || github.ref }}
   cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 
 jobs:
