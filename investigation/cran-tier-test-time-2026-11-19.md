@@ -174,7 +174,7 @@ timed on Windows before that commit was pushed.
 
 ## Revisions (2026-11-24)
 
-Issue #1760 took eight files out of the tier and lowered its budget from 300 s
+Issue #1760 took eleven files out of the tier and lowered its budget from 300 s
 to 100 s; `tests/testthat.R` and ADR 0045's *The budget* hold both. Nothing
 above measured the tier on a machine CRAN checks with, and the budget above
 was met by a tier that took 416 s there. The measurements behind the change
@@ -333,6 +333,60 @@ committed. Scaling by the local ratios, 19.35 / 33.25 of the 137 s gives about
 80 s for the *CRAN tier* row on a runner of that speed, and 19.35 / 68.2 of
 the 416 s gives about 118 s for Win-Builder's tests, in a whole check of about
 403 s. Those figures are estimates.
+
+### The 20-file tier on hosted runners
+
+The pull request ran the 20 files at `b352e5c7` and `6cb586d6`:
+
+| Workflow run | Job | `testthat.R` | R code for possible problems |
+|---|---|---|---|
+| `R-CMD-check.yaml` 45389353772 | `windows-latest (release, CRAN tier)` | 70 s | 26 s |
+| `R-CMD-check.yaml` 45401698988 | `windows-latest (release, CRAN tier)` | 50 s | 20 s |
+| `release-matrix.yaml` 45389353768 | `Tarball windows-latest (release)` | 43 s | 34 s |
+| | `Minimal dependencies (depends-only)` | 27 s | |
+| `release-matrix.yaml` 45401699060 | `Tarball windows-latest (release)` | 44 s | 37 s |
+
+Every one met the 100 s budget. Both *CRAN tier* rows ended
+`[ FAIL 0 | WARN 0 | SKIP 0 | PASS 3361 ]`, with `proc.time()` trailers of
+69.73 s and 49.35 s elapsed, and the `depends-only` log held
+`[ FAIL 0 | WARN 0 | SKIP 68 | PASS 1935 ]`.
+
+Neither *CRAN tier* row drew a runner as slow as the 37 s one above. For each
+second of the R code check the 22 files had taken 3.8 s and 3.7 s and the 20
+files took 2.7 s and 2.5 s, between 0.64 and 0.73 times as long, against the
+local ratio of 0.58. At 37 s for the R code check those two rates give about
+100 s and 93 s. Those figures are estimates.
+
+### The tier without three more files
+
+`metamorphic-margin-semantics`, `nest-rows` and `margin-id` then left the
+tier, which held 17 files. In the first local run of the 20 they took 3.41 s,
+1.89 s and 1.34 s. The same procedure gave:
+
+| Files | Optional backends | Seconds | Expectations | Skips |
+|---|---|---|---|---|
+| 17 | installed | 13.7 | 2,558 | 0 |
+| 17 | all nine named in `MARGINPLYR_HIDE_SUGGESTS` | 7.2 | 1,457 | 51 |
+
+No run had a failure or an error. With the backends hidden, each of the nine
+produced a `{<package>} is not installed` skip: arrow 6, duckdb 6, dtplyr 12,
+data.table 3, RSQLite 11, RPostgres 8, sf 2, hms 2 and S7 1.
+`Rscript tools/test-cran-tier.R` printed `CRAN tier fixtures passed.`
+
+Five of the 17 were the only registered file to carry something
+`tools/test-cran-tier.R` requires: `grouping-interface` the calls of
+`grouping_bit()` and `grouping_id()`, `native-classes` the guards on
+data.table and S7, `postgres-share-probe` the guard on RPostgres,
+`sf-summary` the guard on sf, and `margin-display` the guard on hms. In the
+first local run of the 20 those five took 3.10 s, 2.04 s, 0.64 s, 2.17 s and
+0.89 s, 8.84 s together.
+
+The 17 files were not run on Windows or on Win-Builder before the change was
+committed. Scaling by the local ratio, 13.7 / 19.5 of the 100 s and 93 s above
+gives about 70 s and 65 s for the *CRAN tier* row at 37 s for the R code
+check, and 13.7 / 68.2 of the 416 s gives about 84 s for Win-Builder's tests,
+in a whole check of about 369 s. Those figures are estimates, and the hosted
+times from 22 files to 20 fell by less than the local ratio.
 
 ### What CRAN said about check time
 
