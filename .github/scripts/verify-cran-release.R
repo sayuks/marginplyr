@@ -281,19 +281,16 @@ expect_release_error(
 )
 
 package_index <- tempfile("cran-packages-fixture-", fileext = ".rds")
-package_index_url <- function() {
-  path <- normalizePath(package_index, winslash = "/")
-  paste0("file://", if (startsWith(path, "/")) "" else "/", path)
-}
+package_index_url <- paste0("file://", package_index)
 saveRDS(packages, package_index, compress = "xz")
 expect_identical(
-  read_cran_source_packages(package_index_url()),
+  read_cran_source_packages(package_index_url),
   packages,
   "an XZ-compressed CRAN package index"
 )
 writeLines("<html></html>", package_index)
 expect_release_error(
-  suppressWarnings(read_cran_source_packages(package_index_url())),
+  read_cran_source_packages(package_index_url),
   2L,
   "an unreadable CRAN package index"
 )
