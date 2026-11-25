@@ -140,8 +140,8 @@ submit_win_builder <- function(args, run = run_submission_curl) {
     if (!win_builder_accepted(status, tarball)) {
       stop("The response does not name this tarball and size.")
     }
+    cat("Accepted.\n")
   })
-  cat("Accepted.\n")
   invisible("accepted")
 }
 

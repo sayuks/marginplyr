@@ -935,8 +935,9 @@ win_builder_status <- function(name, size) {
 }
 
 # Answers each curl call from `pages` in turn and records its arguments. A
-# number stands for a curl that failed with that status, and a page's
-# `redirect` attribute for the redirect target curl reports.
+# number stands for a curl that failed with that status. A page's `redirect`
+# attribute is the redirect target curl reports, and its `status` attribute a
+# failure that came with an answer.
 submission_stub <- function(...) {
   pages <- list(...)
   calls <- list()
@@ -951,7 +952,8 @@ submission_stub <- function(...) {
       output <- args[[which(args == "--output") + 1L]]
       writeLines(page, file.path(directory, output), useBytes = TRUE)
       redirect <- attr(page, "redirect")
-      list(status = 0L, stdout = if (is.null(redirect)) "" else redirect,
+      status <- attr(page, "status")
+      list(status = if (is.null(status)) 0L else status, stdout = if (is.null(redirect)) "" else redirect,
            stderr = "")
     },
     calls = function() calls
@@ -1135,7 +1137,9 @@ cran_tarball <- file.path(cran_directory, "marginplyr_0.1.0.tar.gz")
 cran_args <- c(
   "--tarball", cran_tarball,
   "--sha256", unname(tools::sha256sum(cran_tarball)),
-  "--comments", file.path(cran_directory, "comments.md")
+  "--comments", file.path(cran_directory, "comments.md"),
+  "--comments-sha256",
+  unname(tools::sha256sum(file.path(cran_directory, "comments.md")))
 )
 
 cran_form_page <- c(
@@ -1232,12 +1236,32 @@ for (args in stub$calls()) {
   expect_identical(
     any(c("-k", "--insecure") %in% args), FALSE, "the CRAN certificate check"
   )
+  expect_true(
+    all(c("--fail", "--cookie", "--cookie-jar") %in% args),
+    "the CRAN call's failure and session options"
+  )
 }
+expect_identical(
+  vapply(stub$calls(), function(args) basename(args[[length(args)]]), ""),
+  c(
+    "cransubmit", "index2.php", "index.php?strErr=99&edit=1&pkg_id=77",
+    "index2.php"
+  ),
+  "the CRAN pages"
+)
+for (args in stub$calls()[c(2L, 4L)]) {
+  expect_identical(
+    args[[which(args == "--write-out") + 1L]], "%{redirect_url}",
+    "the CRAN redirect report"
+  )
+}
+cran_failed <- function(page) structure(page, status = 22L)
 
 cran_refusals <- list(
   "a wrong CRAN digest" = replace(cran_args, 4L, strrep("0", 64L)),
   "missing CRAN comments" = replace(cran_args, 6L, "absent.md"),
-  "absent CRAN comments" = cran_args[1:4]
+  "absent CRAN comments" = cran_args[-(5:6)],
+  "unapproved CRAN comments" = replace(cran_args, 8L, strrep("0", 64L))
 )
 for (label in names(cran_refusals)) {
   stub <- submission_stub()
@@ -1266,7 +1290,29 @@ cran_uploads <- list(
       "wu.ac.at", "ex.am.pl", attr(cran_uploaded, "redirect"), fixed = TRUE
     ))
   ),
-  "a lost CRAN review page" = list(cran_uploaded, 28)
+  "a CRAN upload with another error" = list(
+    cran_answer("index.php?strErr=1&edit=1&pkg_id=77")
+  ),
+  "a failed CRAN upload" = list(cran_failed(cran_uploaded)),
+  "a lost CRAN review page" = list(cran_uploaded, 28),
+  "a failed CRAN review page" = list(
+    cran_uploaded, cran_failed(cran_review_page)
+  ),
+  "another submission's CRAN review page" = list(
+    cran_uploaded, sub('value="77"', 'value="78"', cran_review_page, fixed = TRUE)
+  ),
+  "another maintainer's CRAN review page" = list(
+    cran_uploaded,
+    sub('"a@example.org" readonly', '"b@example.org" readonly',
+        cran_review_page, fixed = TRUE)
+  ),
+  "a CRAN review page with two versions" = list(
+    cran_uploaded,
+    append(
+      cran_review_page,
+      grep("Version:", cran_review_page, fixed = TRUE, value = TRUE)
+    )
+  )
 )
 for (line in grep("readonly|Please|Submit package|pkg_id|None", cran_review_page)) {
   label <- paste("a CRAN review page without", cran_review_page[[line]])
@@ -1285,7 +1331,8 @@ for (label in names(cran_uploads)) {
 
 cran_outcomes <- list(
   "a lost CRAN submission" = 28,
-  "a refused CRAN submission" = cran_answer("index.php?strErr=5&submit=1")
+  "a refused CRAN submission" = cran_answer("index.php?strErr=5&submit=1"),
+  "a failed CRAN submission" = cran_failed(cran_submitted)
 )
 for (label in names(cran_outcomes)) {
   stub <- submission_stub(

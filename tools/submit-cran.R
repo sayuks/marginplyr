@@ -5,7 +5,8 @@
 # confirmation that only the maintainer can give.
 #
 #   Rscript tools/submit-cran.R --tarball PATH --sha256 DIGEST \
-#     --comments cran-comments.md [--ca-bundle PATH] [--send]
+#     --comments cran-comments.md --comments-sha256 DIGEST \
+#     [--ca-bundle PATH] [--send]
 #
 # Without --send it verifies the tarball, fetches the form, and sends nothing.
 # With it, it uploads, compares CRAN's review page with the tarball and the
@@ -114,7 +115,9 @@ cran_post_args <- function(common, fields, file) {
 }
 
 submit_cran <- function(args, run = run_submission_curl) {
-  options <- parse_submission_args(args, c("--tarball", "--sha256", "--comments"))
+  options <- parse_submission_args(
+    args, c("--tarball", "--sha256", "--comments", "--comments-sha256")
+  )
   directory <- tempfile("cran-submit-")
   dir.create(directory)
   on.exit(unlink(directory, recursive = TRUE), add = TRUE)
@@ -126,6 +129,7 @@ submit_cran <- function(args, run = run_submission_curl) {
         !file.copy(options$comments, staged_comments)) {
     stop_submission("The comments cannot be read: ", options$comments)
   }
+  check_submission_digest(staged_comments, options$comments_sha256)
   comments <- paste(
     readLines(staged_comments, warn = FALSE, encoding = "UTF-8"),
     collapse = "\n"
@@ -166,8 +170,8 @@ submit_cran <- function(args, run = run_submission_curl) {
     "Tarball: ", normalizePath(options$tarball), "\n",
     "Size: ", tarball$size, " bytes\n",
     "SHA-256: ", options$sha256, " (verified)\n",
-    "Comments: ", normalizePath(options$comments), " (SHA-256 ",
-    unname(tools::sha256sum(staged_comments)), ")\n",
+    "Comments: ", normalizePath(options$comments), "\n",
+    "Comments SHA-256: ", options$comments_sha256, " (verified)\n",
     sep = ""
   )
   if (!options$send) {
@@ -216,8 +220,8 @@ submit_cran <- function(args, run = run_submission_curl) {
     if (!identical(outcome, "index.php?strErr=0&submit=1")) {
       stop("CRAN did not answer the submission as accepted: ", outcome)
     }
+    cat("Submitted. CRAN has sent the maintainer its confirmation e-mail.\n")
   })
-  cat("Submitted. CRAN has sent the maintainer its confirmation e-mail.\n")
   invisible("submitted")
 }
 

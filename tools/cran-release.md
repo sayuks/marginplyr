@@ -670,7 +670,7 @@ Rscript tools/submit-win-builder.R \
 
 Show its output, which names the destination, path, size, and digest, and obtain
 approval. Then run the same command once with `--send`, under a command timeout
-above the four minutes its requests may take. Retain its printed UTC time,
+above the ten minutes its two requests may take. Retain its printed UTC time,
 response, and exit status:
 
 | Exit | Meaning | Next action |
@@ -730,19 +730,22 @@ CRAN asks the maintainer for them.
 `https://cran.r-project.org/submit.html` embeds. Do not use
 `devtools::submit_cran()`, which rebuilds the package instead of submitting the
 retained archive. From the candidate worktree, the preview verifies the digest,
-fetches the form, and sends nothing:
+fetches the form, and sends nothing. `shasum -a 256 cran-comments.md` gives the
+comments' digest:
 
 ```sh
 Rscript tools/submit-cran.R \
   --tarball "/absolute/path/marginplyr_<version>.tar.gz" --sha256 <digest> \
-  --comments cran-comments.md
+  --comments cran-comments.md --comments-sha256 <comments-digest>
 ```
 
 Require stage 10's `READY` for this digest. Show the preview's output and the
 comments, and obtain approval that names them, the irreversible submission, and
-the maintainer's own agreement to the CRAN policies, which a submission implies.
-Then run the same command once with `--send`, under a command timeout above the
-eight minutes its requests may take. It uploads, compares CRAN's review page with the tarball's
+the maintainer's own agreement to the
+[CRAN Repository Policy](https://cran.r-project.org/web/packages/policies.html),
+which says that submitting indicates it. Then run the same command once with
+`--send`, under a command timeout above the twenty minutes its four requests may
+take, in the background where a foreground command cannot wait that long. It uploads, compares CRAN's review page with the tarball's
 DESCRIPTION and the comments, and submits only when they agree. Retain its
 printed UTC times, review-page address, and exit status:
 
@@ -977,7 +980,7 @@ before freezing the Candidate SHA.”
 - [ ] R-hub platform, candidate SHA, date, result: <durable url>
 - [ ] win-builder environment, date, digest, archived result summary
 
-## Human submission and publication
+## Submission and publication
 
 - [ ] Final decision is READY
 - [ ] Retained tarball submitted to CRAN with approval

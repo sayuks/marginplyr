@@ -52,8 +52,18 @@ parse_submission_args <- function(args, required) {
   options
 }
 
-# Copies the tarball into `directory` and answers its name and size. The digest
-# is taken from the copy, so the bytes verified are the bytes sent.
+# Stops unless `path` has the approved digest. The caller passes the staged copy,
+# so the bytes verified are the bytes sent.
+check_submission_digest <- function(path, sha256) {
+  actual <- unname(tools::sha256sum(path))
+  if (!identical(actual, sha256)) {
+    stop_submission(
+      "SHA-256 of ", basename(path), " is ", actual, ", not ", sha256, "."
+    )
+  }
+}
+
+# Copies the tarball into `directory` and answers its name and size.
 stage_submission_tarball <- function(path, sha256, directory) {
   name <- basename(path)
   if (!grepl("^marginplyr_[0-9]+([.][0-9]+)+[.]tar[.]gz$", name)) {
@@ -63,10 +73,7 @@ stage_submission_tarball <- function(path, sha256, directory) {
   if (!file.exists(path) || !file.copy(path, staged)) {
     stop_submission("The tarball cannot be read: ", path)
   }
-  actual <- unname(tools::sha256sum(staged))
-  if (!identical(actual, sha256)) {
-    stop_submission("SHA-256 is ", actual, ", not ", sha256, ".")
-  }
+  check_submission_digest(staged, sha256)
   list(name = name, size = format(file.size(staged), scientific = FALSE))
 }
 
@@ -86,7 +93,7 @@ read_submission_page <- function(path) {
 submission_curl_options <- function(ca_bundle) {
   c(
     "--disable", "--silent", "--show-error", "--fail", "--proto", "=https",
-    "--max-time", "120",
+    "--max-time", "300",
     if (!is.null(ca_bundle)) c("--cacert", ca_bundle)
   )
 }
@@ -103,19 +110,18 @@ submission_curl_failure <- function(result) {
   )
 }
 
-# Evaluates what follows the first sent byte. Every condition there leaves the
-# outcome unknown, so it takes exit 2 and not the exit that invites a rerun.
+# Evaluates everything from the first sent byte to the last printed line. A
+# condition there takes exit 2, and not the exit that invites a rerun.
 after_sending <- function(expr) {
-  unknown <- function(condition) {
+  attempted <- function(condition) {
     reason <- conditionMessage(condition)
     stop_submission(
-      "A send was attempted and its outcome is unknown; do not repeat it ",
-      "without a new approval. ",
+      "A send was attempted; do not repeat it without a new approval. ",
       if (nzchar(reason)) reason else class(condition)[[1L]],
       status = 2L
     )
   }
-  tryCatch(expr, error = unknown, interrupt = unknown)
+  tryCatch(expr, error = attempted, interrupt = attempted)
 }
 
 utc_now <- function() format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
