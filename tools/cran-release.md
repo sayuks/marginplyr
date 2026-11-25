@@ -35,6 +35,8 @@ There is no global `--yes` setting or approval database.
 - [`tools/cran-preflight.R`](cran-preflight.R) remains the directly invoked,
   non-mutating release-readiness audit. It neither calls the release helper nor
   performs an external release action.
+- [`tools/submit-win-builder.R`](submit-win-builder.R) sends one retained tarball
+  to Win-Builder R-devel, and only with `--send`. Stage 9 owns its use.
 - One release issue is the current checklist and evidence ledger. It records
   durable summaries and URLs, never credentials, authentication material, raw
   local logs, or an unexpired private win-builder result URL.
@@ -650,11 +652,45 @@ shasum -a 256 /absolute/path/marginplyr_<version>.tar.gz
 cat /absolute/path/SHA256SUMS
 ```
 
-Show the exact path and matching digest and obtain approval before the external
-send. A human or approved agent browser then opens
-`https://win-builder.r-project.org/upload.aspx`, chooses R-devel, and selects
-that exact retained tarball. Add release/oldrelease only for a concrete
-Windows-specific risk or missing CI coverage.
+Approval-gated external action: send that archive over HTTPS, through the form at
+`https://win-builder.r-project.org/upload.aspx`. Do not use FTP, which has
+failed for this maintainer, or `devtools::check_win_devel()`, which rebuilds the
+package instead of sending the retained archive and sends by FTP by default. Add
+release/oldrelease only for a concrete Windows-specific risk or missing CI
+coverage.
+
+[`tools/submit-win-builder.R`](submit-win-builder.R) is the agent's route to that
+form. Its preview verifies the digest, fetches the form, and sends nothing:
+
+```sh
+Rscript tools/submit-win-builder.R \
+  --tarball "/absolute/path/marginplyr_<version>.tar.gz" --sha256 <digest>
+```
+
+Show its output, which names the destination, path, size, and digest, and obtain
+approval. Then run the same command once with `--send`, under a command timeout
+above the five minutes the upload may take. Retain its printed UTC time,
+response, and exit status:
+
+| Exit | Meaning | Next action |
+|---|---|---|
+| `0` | Win-Builder named this tarball and its exact size. | Wait for the e-mail. |
+| `1` | Nothing was sent. | Repair the named cause and rerun the preview. |
+| `2`, or killed after printing `Sending:` | An upload was attempted and its acceptance is unknown. | Report it; send again only after a new approval. |
+
+When the preview stops at curl status 60 with `unable to get local issuer
+certificate`, as macOS's curl does, add `--ca-bundle` with a current CA bundle to
+both commands, such as `cert.pem` in the directory a Homebrew OpenSSL's
+`openssl version -d` prints. Never turn certificate verification off.
+
+The tracked agent network allowlist does not name this host, and
+[`tools/cran-preflight.md`](cran-preflight.md) owns that list, so do not add it.
+Claude Code in auto mode requests `win-builder.r-project.org` for each of the
+two commands through the Bash tool's `allowed_domains`. An agent whose sandbox
+denies the host, as the tracked Codex allowlist does, gives the maintainer the
+preview command and then the approved send command to run, and reads their
+output. The result e-mail reaches only the maintainer, so ask for the downloaded
+`00check.log` and `00install.out`.
 
 Success evidence: matching digest, environment/date, and a passing emailed
 result. Archive the result into the external evidence bundle before it expires;
@@ -662,7 +698,8 @@ record a durable summary in the issue, not the unexpired private URL. Block on a
 digest mismatch, unexpected archive, send failure, or check finding. Recovery:
 never rebuild silently—locate the retained archive or restart at stage 4; retry
 transient service failure only after approval. Human fallback is the same web
-form and email handling.
+form in a browser, choosing R-devel and that exact retained tarball, and email
+handling.
 
 ### 10. Present the final readiness decision
 

@@ -896,8 +896,218 @@ expect_error(
   "a duplicate release-playbook stage"
 )
 
+# The Win-Builder sender runs against a stand-in for curl, so nothing is sent.
+source("tools/submit-win-builder.R")
+
+win_builder_page <- function(status = "", viewstate = "a+/=",
+                             release_file = "FileUpload1") {
+  c(
+    "<form>",
+    paste0(
+      '<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="',
+      viewstate, '" />'
+    ),
+    '<input type="hidden" name="__VIEWSTATEGENERATOR" value="69164837" />',
+    '<input type="hidden" name="__EVENTVALIDATION" value="b+/=" />',
+    "<h2>R-release</h2>",
+    paste0('<input type="file" name="', release_file, '" />'),
+    '<input type="submit" name="Button1" value="Upload File" />',
+    '<span id="Label1"></span>',
+    "<h2>R-devel</h2>",
+    "<!-- Currently unavailable-->",
+    '<input type="file" name="FileUpload2" />',
+    '<input type="submit" name="Button2" value="Upload File" />&nbsp;<br />',
+    paste0('<span id="Label2">', status, "</span></div>"),
+    "<!-- <h2>R-devel UCRT (new toolchain)</h2>",
+    '<input type="file" name="FileUpload4" /> -->',
+    "<h2>R-oldrelease</h2>",
+    '<input type="file" name="FileUpload3" />',
+    '<input type="submit" name="Button3" value="Upload File" />',
+    "</form>"
+  )
+}
+
+win_builder_status <- function(name, size) {
+  paste0(
+    "File name: ", name, "<br>File Size: ", size,
+    " bytes<br>Content type: application/x-gzip"
+  )
+}
+
+# Answers each curl call from `pages` in turn and records its arguments. A
+# number stands for a curl that failed with that status.
+win_builder_stub <- function(...) {
+  pages <- list(...)
+  calls <- list()
+  list(
+    run = function(args, directory) {
+      calls[[length(calls) + 1L]] <<- args
+      page <- pages[[length(calls)]]
+      if (inherits(page, "interrupt")) stop(page)
+      if (is.numeric(page)) {
+        return(list(status = as.integer(page), stdout = "", stderr = "failed"))
+      }
+      output <- args[[which(args == "--output") + 1L]]
+      writeLines(page, file.path(directory, output))
+      list(status = 0L, stdout = "", stderr = "")
+    },
+    calls = function() calls
+  )
+}
+
+expect_win_builder_error <- function(expr, status, calls, stub, label) {
+  error <- tryCatch(
+    {
+      output <- utils::capture.output(force(expr))
+      NULL
+    },
+    marginplyr_win_builder_error = identity
+  )
+  expect_true(inherits(error, "marginplyr_win_builder_error"), label)
+  expect_identical(error$status, status, paste(label, "status"))
+  expect_identical(length(stub$calls()), calls, paste(label, "curl calls"))
+}
+
+win_builder_directory <- tempfile("win builder, fixture;")
+dir.create(win_builder_directory)
+win_builder_tarball <- file.path(win_builder_directory, "marginplyr_0.1.0.tar.gz")
+writeBin(charToRaw("fixture"), win_builder_tarball)
+win_builder_digest <- unname(tools::sha256sum(win_builder_tarball))
+win_builder_args <- c(
+  "--tarball", win_builder_tarball, "--sha256", win_builder_digest
+)
+
+stub <- win_builder_stub(win_builder_page())
+output <- utils::capture.output(
+  outcome <- submit_win_builder(win_builder_args, stub$run)
+)
+expect_identical(outcome, "preview", "the Win-Builder preview")
+expect_identical(length(stub$calls()), 1L, "the preview's one curl call")
+expect_true(
+  any(grepl("nothing was sent", output, fixed = TRUE)), "the preview notice"
+)
+
+stub <- win_builder_stub(
+  win_builder_page(),
+  win_builder_page(win_builder_status("marginplyr_0.1.0.tar.gz", 7))
+)
+output <- utils::capture.output(
+  outcome <- submit_win_builder(c(win_builder_args, "--send"), stub$run)
+)
+expect_identical(outcome, "accepted", "the accepted Win-Builder upload")
+win_builder_sent <- stub$calls()[[2L]]
+expect_identical(
+  win_builder_sent[win_builder_sent %in% c(
+    "__VIEWSTATE=a+/=", "__VIEWSTATEGENERATOR=69164837",
+    "__EVENTVALIDATION=b+/=", "Button2=Upload File"
+  ) | grepl("^FileUpload", win_builder_sent)],
+  c(
+    "__VIEWSTATE=a+/=", "__VIEWSTATEGENERATOR=69164837",
+    "__EVENTVALIDATION=b+/=",
+    "FileUpload1=@empty;filename=;type=application/octet-stream",
+    "FileUpload2=@marginplyr_0.1.0.tar.gz;type=application/x-gzip",
+    "FileUpload3=@empty;filename=;type=application/octet-stream",
+    "Button2=Upload File"
+  ),
+  "the Win-Builder upload fields"
+)
+for (args in stub$calls()) {
+  expect_identical(
+    args[c(which(args == "--proto") + 1L, length(args))],
+    c("=https", "https://win-builder.r-project.org/upload.aspx"),
+    "the HTTPS-only Win-Builder destination"
+  )
+  expect_identical(
+    any(c("-k", "--insecure") %in% args), FALSE, "the certificate check"
+  )
+  expect_identical(args[[1L]], "--disable", "the ignored curl configuration")
+}
+
+writeBin(raw(100000), win_builder_tarball)
+stub <- win_builder_stub(
+  win_builder_page(),
+  win_builder_page(win_builder_status("marginplyr_0.1.0.tar.gz", "100000"))
+)
+output <- utils::capture.output(
+  outcome <- submit_win_builder(
+    c(
+      "--tarball", win_builder_tarball, "--sha256",
+      unname(tools::sha256sum(win_builder_tarball)), "--send"
+    ),
+    stub$run
+  )
+)
+expect_identical(outcome, "accepted", "an upload whose size prints as 1e+05")
+writeBin(charToRaw("fixture"), win_builder_tarball)
+
+# Nothing is sent: no curl call, or only the form's.
+refusals <- list(
+  "a wrong digest" = c(
+    "--tarball", win_builder_tarball, "--sha256", strrep("0", 64L), "--send"
+  ),
+  "a missing tarball" = c(
+    "--tarball", file.path(win_builder_directory, "marginplyr_0.2.0.tar.gz"),
+    "--sha256", win_builder_digest, "--send"
+  ),
+  "another file" = c(
+    "--tarball", "DESCRIPTION", "--sha256", win_builder_digest, "--send"
+  ),
+  "an absent digest" = c("--tarball", win_builder_tarball, "--send"),
+  "an unknown option" = c(win_builder_args, "--send", "--force"),
+  "a missing CA bundle" = c(
+    win_builder_args, "--send", "--ca-bundle", win_builder_digest
+  )
+)
+for (label in names(refusals)) {
+  stub <- win_builder_stub()
+  expect_win_builder_error(
+    submit_win_builder(refusals[[label]], stub$run), 1L, 0L, stub, label
+  )
+}
+forms <- list(
+  "an unreachable form" = 60,
+  "a form without its state" = win_builder_page(viewstate = ""),
+  "a field name curl would read as a file" = win_builder_page(
+    release_file = "a=@/etc/hosts;x"
+  ),
+  "a form without R-devel" = setdiff(win_builder_page(), "<h2>R-devel</h2>")
+)
+for (label in names(forms)) {
+  stub <- win_builder_stub(forms[[label]])
+  expect_win_builder_error(
+    submit_win_builder(c(win_builder_args, "--send"), stub$run),
+    1L, 1L, stub, label
+  )
+}
+
+# An upload was attempted, and it is not repeated.
+responses <- list(
+  "a lost response" = 28,
+  "a response without an upload" = win_builder_page(),
+  "a response naming another size" = win_builder_page(
+    win_builder_status("marginplyr_0.1.0.tar.gz", 70)
+  ),
+  "a response naming another file" = win_builder_page(
+    win_builder_status("marginplyr_0.2.0.tar.gz", 7)
+  ),
+  "an unreadable response" = "<html></html>",
+  "a response that is not UTF-8" = win_builder_page("\xff\xfe"),
+  "an interrupted upload" = structure(
+    class = c("interrupt", "condition"), list(message = "", call = NULL)
+  )
+)
+for (label in names(responses)) {
+  stub <- win_builder_stub(win_builder_page(), responses[[label]])
+  expect_win_builder_error(
+    submit_win_builder(c(win_builder_args, "--send"), stub$run),
+    2L, 2L, stub, label
+  )
+}
+unlink(win_builder_directory, recursive = TRUE)
+
 message(
   "Verified the CRAN release helpers against initial, update, preview, ",
   "zero-diff, idempotence, publication, dirty-state, and command-failure ",
-  "fixtures."
+  "fixtures, and the Win-Builder sender against preview, accepted, refused, ",
+  "and unknown-outcome fixtures."
 )
