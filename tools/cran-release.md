@@ -35,6 +35,8 @@ There is no global `--yes` setting or approval database.
 - [`tools/cran-preflight.R`](cran-preflight.R) remains the directly invoked,
   non-mutating release-readiness audit. It neither calls the release helper nor
   performs an external release action.
+- [`tools/submit-win-builder.R`](submit-win-builder.R) sends one retained tarball
+  to Win-Builder R-devel, and only with `--send`. Stage 9 owns its use.
 - One release issue is the current checklist and evidence ledger. It records
   durable summaries and URLs, never credentials, authentication material, raw
   local logs, or an unexpired private win-builder result URL.
@@ -650,74 +652,44 @@ shasum -a 256 /absolute/path/marginplyr_<version>.tar.gz
 cat /absolute/path/SHA256SUMS
 ```
 
-Show the exact path and matching digest and obtain approval before the external
-send. Send over HTTPS, through the form at
+Approval-gated external action: send that archive over HTTPS, through the form at
 `https://win-builder.r-project.org/upload.aspx`. Do not use FTP, which has
 failed for this maintainer, or `devtools::check_win_devel()`, which rebuilds the
 package instead of sending the retained archive and sends by FTP by default. Add
 release/oldrelease only for a concrete Windows-specific risk or missing CI
 coverage.
 
-Agent-operated: the approval that names this path, digest, and R-devel lets the
-agent send with the commands below. Each block is written for its own shell call
-and keeps its state in the printed directory. First fetch the form, which sends
-nothing:
+[`tools/submit-win-builder.R`](submit-win-builder.R) is the agent's route to that
+form. Its preview verifies the digest, fetches the form, and sends nothing:
 
 ```sh
-send_dir=$(mktemp -d "${TMPDIR:-/tmp}/win-builder.XXXXXX")
-cd "$send_dir" && pwd
-curl -fsS --proto '=https' -c cookies.txt -o form.html \
-  https://win-builder.r-project.org/upload.aspx
-grep -nE '<h2>|type="(file|submit)"' form.html
+Rscript tools/submit-win-builder.R \
+  --tarball "/absolute/path/marginplyr_<version>.tar.gz" --sha256 <digest>
 ```
 
-If macOS `curl` reports `unable to get local issuer certificate`, its own CA
-list lacks the site's root. Add `--cacert` with a current CA bundle to both
-`curl` commands, such as `cert.pem` in the directory a Homebrew OpenSSL's
-`openssl version -d` prints. Never turn verification off.
+Show its output, which names the destination, path, size, and digest, and obtain
+approval. Then run the same command once with `--send`. Retain its printed UTC
+time, response, and exit status:
 
-The tracked agent network allowlist omits `win-builder.r-project.org`, because
-it holds only preflight hosts. Claude Code in auto mode requests that host for
-each command, with the Bash tool's `allowed_domains`. An agent that still cannot
-reach it gives the maintainer the same commands instead of widening the
-allowlist or using another route.
+| Exit | Meaning | Next action |
+|---|---|---|
+| `0` | Win-Builder named this tarball and its exact size. | Wait for the e-mail. |
+| `1` | Nothing was sent. | Repair the named cause and rerun the preview. |
+| `2` | An upload was attempted and its acceptance is unknown. | Report it; send again only after a new approval. |
 
-Confirm in the printed lines that `FileUpload2` and `Button2` are the fields
-under the R-devel heading, then send once:
+When the preview reports that curl's CA list lacks the site's root, as macOS's
+does, add `--ca-bundle` with a current CA bundle to both commands, such as
+`cert.pem` in the directory a Homebrew OpenSSL's `openssl version -d` prints.
+Never turn certificate verification off.
 
-```sh
-cd <printed-directory>
-tarball=/absolute/path/marginplyr_<version>.tar.gz
-hidden() { sed -n "s/.*id=\"$1\" value=\"\([^\"]*\)\".*/\1/p" form.html; }
-: > empty
-(
-  set -e
-  test "$(shasum -a 256 "$tarball" | cut -d ' ' -f 1)" = "<sha256>"
-  for field in __VIEWSTATE __VIEWSTATEGENERATOR __EVENTVALIDATION; do
-    hidden "$field" | tr -d '\r\n' > "$field"
-    test -s "$field"
-  done
-  date -u +%Y-%m-%dT%H:%M:%SZ
-  curl -sS --proto '=https' -b cookies.txt -H 'Expect:' --max-time 300 \
-    -F '__VIEWSTATE=<__VIEWSTATE' \
-    -F '__VIEWSTATEGENERATOR=<__VIEWSTATEGENERATOR' \
-    -F '__EVENTVALIDATION=<__EVENTVALIDATION' \
-    -F 'FileUpload1=@empty;filename=;type=application/octet-stream' \
-    -F "FileUpload2=@$tarball;type=application/x-gzip" \
-    -F 'FileUpload3=@empty;filename=;type=application/octet-stream' \
-    -F 'Button2=Upload File' -o response.html -w '%{http_code}\n' \
-    https://win-builder.r-project.org/upload.aspx
-)
-grep -n 'id="Label2"' response.html
-wc -c < "$tarball"
-```
-
-The send is accepted when `Label2` names the tarball and its exact size. HTTP
-200 alone is not acceptance: the bare form also answers 200. Each accepted send
-starts another check, so report one whose response was lost and do not repeat it
-without a new approval. Report the printed UTC time and the `Label2` text to the
-maintainer. The result reaches the maintainer by e-mail, which the agent cannot
-read, so ask for the downloaded `00check.log` and `00install.out`.
+The tracked agent network allowlist does not name this host, and
+[`tools/cran-preflight.md`](cran-preflight.md) owns that list, so do not add it.
+Claude Code in auto mode requests `win-builder.r-project.org` for each of the
+two commands through the Bash tool's `allowed_domains`. An agent whose sandbox
+denies the host, as the tracked Codex allowlist does, gives the maintainer the
+preview command and then the approved send command to run, and reads their
+output. The result e-mail reaches only the maintainer, so ask for the downloaded
+`00check.log` and `00install.out`.
 
 Success evidence: matching digest, environment/date, and a passing emailed
 result. Archive the result into the external evidence bundle before it expires;
