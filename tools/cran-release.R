@@ -336,28 +336,35 @@ release_post_files <- function(files, version) {
   files
 }
 
+# Reads a source package index. CRAN serves it XZ-compressed, which readRDS()
+# decompresses from a file and not from a URL connection.
+read_cran_source_packages <- function(index) {
+  path <- tempfile("cran-packages-", fileext = ".rds")
+  on.exit(unlink(path), add = TRUE)
+  tryCatch(
+    {
+      status <- utils::download.file(index, path, mode = "wb", quiet = TRUE)
+      if (status != 0L) stop("download status ", status, call. = FALSE)
+      readRDS(path)
+    },
+    error = function(error) {
+      release_abort(
+        paste(
+          "Could not read CRAN source package data:",
+          conditionMessage(error)
+        ),
+        status = 2L
+      )
+    }
+  )
+}
+
 # Verifies the requested release against the authoritative source index.
 verify_cran_publication <- function(version, packages = NULL) {
   version <- release_version(version)
   if (is.null(packages)) {
-    packages <- tryCatch(
-      {
-        connection <- url(
-          "https://cran.r-project.org/src/contrib/PACKAGES.rds",
-          open = "rb"
-        )
-        on.exit(close(connection), add = TRUE)
-        readRDS(connection)
-      },
-      error = function(error) {
-        release_abort(
-          paste(
-            "Could not read CRAN source package data:",
-            conditionMessage(error)
-          ),
-          status = 2L
-        )
-      }
+    packages <- read_cran_source_packages(
+      "https://cran.r-project.org/src/contrib/PACKAGES.rds"
     )
   }
   if (
