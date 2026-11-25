@@ -280,6 +280,22 @@ expect_release_error(
   "a CRAN publication version mismatch"
 )
 
+package_index <- tempfile("cran-packages-fixture-", fileext = ".rds")
+package_index_url <- paste0("file://", package_index)
+saveRDS(packages, package_index, compress = "xz")
+expect_identical(
+  read_cran_source_packages(package_index_url),
+  packages,
+  "an XZ-compressed CRAN package index"
+)
+writeLines("<html></html>", package_index)
+expect_release_error(
+  read_cran_source_packages(package_index_url),
+  2L,
+  "an unreadable CRAN package index"
+)
+unlink(package_index)
+
 fixture_root <- tempfile("marginplyr-release-fixture-")
 dir.create(fixture_root)
 on.exit(unlink(fixture_root, recursive = TRUE), add = TRUE)
