@@ -668,19 +668,20 @@ Rscript tools/submit-win-builder.R \
 ```
 
 Show its output, which names the destination, path, size, and digest, and obtain
-approval. Then run the same command once with `--send`. Retain its printed UTC
-time, response, and exit status:
+approval. Then run the same command once with `--send`, under a command timeout
+above the five minutes the upload may take. Retain its printed UTC time,
+response, and exit status:
 
 | Exit | Meaning | Next action |
 |---|---|---|
 | `0` | Win-Builder named this tarball and its exact size. | Wait for the e-mail. |
 | `1` | Nothing was sent. | Repair the named cause and rerun the preview. |
-| `2` | An upload was attempted and its acceptance is unknown. | Report it; send again only after a new approval. |
+| `2`, or killed after printing `Sending:` | An upload was attempted and its acceptance is unknown. | Report it; send again only after a new approval. |
 
-When the preview reports that curl's CA list lacks the site's root, as macOS's
-does, add `--ca-bundle` with a current CA bundle to both commands, such as
-`cert.pem` in the directory a Homebrew OpenSSL's `openssl version -d` prints.
-Never turn certificate verification off.
+When the preview stops at curl status 60 with `unable to get local issuer
+certificate`, as macOS's curl does, add `--ca-bundle` with a current CA bundle to
+both commands, such as `cert.pem` in the directory a Homebrew OpenSSL's
+`openssl version -d` prints. Never turn certificate verification off.
 
 The tracked agent network allowlist does not name this host, and
 [`tools/cran-preflight.md`](cran-preflight.md) owns that list, so do not add it.

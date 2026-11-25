@@ -899,7 +899,8 @@ expect_error(
 # The Win-Builder sender runs against a stand-in for curl, so nothing is sent.
 source("tools/submit-win-builder.R")
 
-win_builder_page <- function(status = "", viewstate = "a+/=") {
+win_builder_page <- function(status = "", viewstate = "a+/=",
+                             release_file = "FileUpload1") {
   c(
     "<form>",
     paste0(
@@ -909,7 +910,7 @@ win_builder_page <- function(status = "", viewstate = "a+/=") {
     '<input type="hidden" name="__VIEWSTATEGENERATOR" value="69164837" />',
     '<input type="hidden" name="__EVENTVALIDATION" value="b+/=" />',
     "<h2>R-release</h2>",
-    '<input type="file" name="FileUpload1" />',
+    paste0('<input type="file" name="', release_file, '" />'),
     '<input type="submit" name="Button1" value="Upload File" />',
     '<span id="Label1"></span>',
     "<h2>R-devel</h2>",
@@ -917,7 +918,7 @@ win_builder_page <- function(status = "", viewstate = "a+/=") {
     '<input type="file" name="FileUpload2" />',
     '<input type="submit" name="Button2" value="Upload File" />&nbsp;<br />',
     paste0('<span id="Label2">', status, "</span></div>"),
-    "<!-- <h2>R-devel</h2>",
+    "<!-- <h2>R-devel UCRT (new toolchain)</h2>",
     '<input type="file" name="FileUpload4" /> -->',
     "<h2>R-oldrelease</h2>",
     '<input type="file" name="FileUpload3" />',
@@ -942,6 +943,7 @@ win_builder_stub <- function(...) {
     run = function(args, directory) {
       calls[[length(calls) + 1L]] <<- args
       page <- pages[[length(calls)]]
+      if (inherits(page, "interrupt")) stop(page)
       if (is.numeric(page)) {
         return(list(status = as.integer(page), stdout = "", stderr = "failed"))
       }
@@ -1018,7 +1020,25 @@ for (args in stub$calls()) {
   expect_identical(
     any(c("-k", "--insecure") %in% args), FALSE, "the certificate check"
   )
+  expect_identical(args[[1L]], "--disable", "the ignored curl configuration")
 }
+
+writeBin(raw(100000), win_builder_tarball)
+stub <- win_builder_stub(
+  win_builder_page(),
+  win_builder_page(win_builder_status("marginplyr_0.1.0.tar.gz", "100000"))
+)
+output <- utils::capture.output(
+  outcome <- submit_win_builder(
+    c(
+      "--tarball", win_builder_tarball, "--sha256",
+      unname(tools::sha256sum(win_builder_tarball)), "--send"
+    ),
+    stub$run
+  )
+)
+expect_identical(outcome, "accepted", "an upload whose size prints as 1e+05")
+writeBin(charToRaw("fixture"), win_builder_tarball)
 
 # Nothing is sent: no curl call, or only the form's.
 refusals <- list(
@@ -1047,6 +1067,9 @@ for (label in names(refusals)) {
 forms <- list(
   "an unreachable form" = 60,
   "a form without its state" = win_builder_page(viewstate = ""),
+  "a field name curl would read as a file" = win_builder_page(
+    release_file = "a=@/etc/hosts;x"
+  ),
   "a form without R-devel" = setdiff(win_builder_page(), "<h2>R-devel</h2>")
 )
 for (label in names(forms)) {
@@ -1067,7 +1090,11 @@ responses <- list(
   "a response naming another file" = win_builder_page(
     win_builder_status("marginplyr_0.2.0.tar.gz", 7)
   ),
-  "an unreadable response" = "<html></html>"
+  "an unreadable response" = "<html></html>",
+  "a response that is not UTF-8" = win_builder_page("\xff\xfe"),
+  "an interrupted upload" = structure(
+    class = c("interrupt", "condition"), list(message = "", call = NULL)
+  )
 )
 for (label in names(responses)) {
   stub <- win_builder_stub(win_builder_page(), responses[[label]])

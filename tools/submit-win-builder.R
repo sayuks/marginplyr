@@ -9,7 +9,8 @@
 #
 # Without --send it verifies the tarball, fetches the form, and sends nothing.
 # Exit 0: the preview passed, or the form accepted the upload. Exit 1: nothing
-# was sent. Exit 2: an upload was attempted and its acceptance is unknown.
+# was sent. Exit 2: an upload was attempted and its acceptance is unknown. A run
+# killed after it prints `Sending:` has no exit of its own and means the same.
 
 win_builder_form <- "https://win-builder.r-project.org/upload.aspx"
 
@@ -76,7 +77,7 @@ stage_win_builder_tarball <- function(path, sha256, directory) {
   if (!identical(actual, sha256)) {
     stop_win_builder("SHA-256 is ", actual, ", not ", sha256, ".")
   }
-  list(name = name, size = file.size(staged))
+  list(name = name, size = format(file.size(staged), scientific = FALSE))
 }
 
 html_matches <- function(pattern, html) {
@@ -90,8 +91,8 @@ html_attribute <- function(tag, name) {
 }
 
 # Answers the page's hidden fields, every file field, and the R-devel section's
-# own file field, submit field, submit label, and status text. The page comments
-# out a second R-devel heading, so comments are dropped before it is read.
+# own file field, submit field, submit label, and status text. Comments are
+# dropped first, because the page keeps a retired section in one.
 parse_win_builder_form <- function(html) {
   html <- gsub("(?s)<!--.*?-->", "", paste(html, collapse = "\n"), perl = TRUE)
   inputs <- html_matches("<input\\b[^>]*>", html)
@@ -119,11 +120,13 @@ parse_win_builder_form <- function(html) {
     submit_label = values(submit, "value"),
     status = paste(gsub("<br\\s*/?>", "; ", status), collapse = "")
   )
+  # curl reads `=`, `@`, `<` and `;` in a field as its own syntax.
+  names <- c(names(form$hidden), form$files, form$submit)
   required <- c("__VIEWSTATE", "__VIEWSTATEGENERATOR", "__EVENTVALIDATION")
   present <- form$hidden[required]
   if (anyNA(present) || !all(nzchar(present)) || anyNA(form$hidden) ||
         length(form$file) != 1L || length(form$submit) != 1L ||
-        anyNA(c(form$files, form$file, form$submit, form$submit_label))) {
+        is.na(form$submit_label) || !all(grepl("^[A-Za-z0-9_]+$", names))) {
     stop_win_builder("The form's R-devel fields are not the expected ones.")
   }
   form
@@ -160,8 +163,8 @@ win_builder_curl_failure <- function(result) {
     "curl status ", result$status, ": ", trimws(result$stderr),
     if (identical(result$status, 60L)) {
       paste0(
-        "\ncurl's own CA list lacks the site's root. Rerun with --ca-bundle ",
-        "naming a current CA bundle."
+        "\ncurl could not verify the certificate. If its CA list lacks the ",
+        "site's root, rerun with --ca-bundle naming a current CA bundle."
       )
     }
   )
@@ -175,8 +178,9 @@ submit_win_builder <- function(args, run = run_win_builder_curl) {
   tarball <- stage_win_builder_tarball(options$tarball, options$sha256, directory)
   file.create(file.path(directory, "empty"))
 
+  # --disable keeps a .curlrc out, which could turn off verification or retry.
   common <- c(
-    "--silent", "--show-error", "--fail", "--proto", "=https",
+    "--disable", "--silent", "--show-error", "--fail", "--proto", "=https",
     "--max-time", "300",
     if (!is.null(options$ca_bundle)) c("--cacert", options$ca_bundle)
   )
@@ -212,31 +216,33 @@ submit_win_builder <- function(args, run = run_win_builder_curl) {
   }
 
   cat("Sending: ", format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"), "\n", sep = "")
-  sent <- run(
-    c(common, "--cookie", "cookies.txt", "--header", "Expect:",
-      win_builder_upload_args(form, tarball$name),
-      "--output", "response.html", win_builder_form),
-    directory
-  )
-  if (!identical(sent$status, 0L)) {
+  unknown <- function(condition) {
+    reason <- conditionMessage(condition)
     stop_win_builder(
       "The upload was attempted and its acceptance is unknown; do not repeat ",
-      "it without a new approval. ", win_builder_curl_failure(sent),
+      "it without a new approval. ",
+      if (nzchar(reason)) reason else class(condition)[[1L]],
       status = 2L
     )
   }
-  status <- tryCatch(
-    parse_win_builder_form(read_page("response.html"))$status,
-    marginplyr_win_builder_error = function(error) ""
+  tryCatch(
+    {
+      sent <- run(
+        c(common, "--cookie", "cookies.txt", "--header", "Expect:",
+          win_builder_upload_args(form, tarball$name),
+          "--output", "response.html", win_builder_form),
+        directory
+      )
+      if (!identical(sent$status, 0L)) stop(win_builder_curl_failure(sent))
+      status <- parse_win_builder_form(read_page("response.html"))$status
+      cat("Response: ", status, "\n", sep = "")
+      if (!win_builder_accepted(status, tarball)) {
+        stop("The response does not name this tarball and size.")
+      }
+    },
+    error = unknown,
+    interrupt = unknown
   )
-  cat("Response: ", status, "\n", sep = "")
-  if (!win_builder_accepted(status, tarball)) {
-    stop_win_builder(
-      "The response does not name this tarball and size, so its acceptance is ",
-      "unknown; do not repeat it without a new approval.",
-      status = 2L
-    )
-  }
   cat("Accepted.\n")
   invisible("accepted")
 }
