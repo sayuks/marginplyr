@@ -651,10 +651,63 @@ cat /absolute/path/SHA256SUMS
 ```
 
 Show the exact path and matching digest and obtain approval before the external
-send. A human or approved agent browser then opens
-`https://win-builder.r-project.org/upload.aspx`, chooses R-devel, and selects
-that exact retained tarball. Add release/oldrelease only for a concrete
-Windows-specific risk or missing CI coverage.
+send. Send over HTTPS, through the form at
+`https://win-builder.r-project.org/upload.aspx`. Do not use FTP, which has
+failed for this maintainer, or `devtools::check_win_devel()`, which rebuilds the
+package instead of sending the retained archive and sends by FTP by default. Add
+release/oldrelease only for a concrete Windows-specific risk or missing CI
+coverage.
+
+A human uses the form in a browser, choosing R-devel and that exact retained
+tarball. An approved agent sends with `curl`. First fetch the form:
+
+```sh
+send_dir=$(mktemp -d "${TMPDIR:-/tmp}/win-builder.XXXXXX")
+cd "$send_dir"
+curl -fsS --proto '=https' -c cookies.txt -o form.html \
+  https://win-builder.r-project.org/upload.aspx
+grep -nE '<h2>|type="(file|submit)"' form.html
+```
+
+If macOS `curl` reports `unable to get local issuer certificate`, its own CA
+list lacks the site's root. Add `--cacert` with a current CA bundle to both
+`curl` commands, such as `cert.pem` in the directory a Homebrew OpenSSL's
+`openssl version -d` prints. Never turn verification off. The tracked agent
+network allowlist omits this host; a sandboxed agent asks for it for these
+commands only.
+
+Confirm in the printed lines that `FileUpload2` and `Button2` are the fields
+under the R-devel heading, then send once:
+
+```sh
+tarball=/absolute/path/marginplyr_<version>.tar.gz
+hidden() { sed -n "s/.*id=\"$1\" value=\"\([^\"]*\)\".*/\1/p" form.html; }
+: > empty
+(
+  set -e
+  for field in __VIEWSTATE __VIEWSTATEGENERATOR __EVENTVALIDATION; do
+    hidden "$field" | tr -d '\r\n' > "$field"
+    test -s "$field"
+  done
+  date -u +%Y-%m-%dT%H:%M:%SZ
+  curl -sS --proto '=https' -b cookies.txt -H 'Expect:' --max-time 300 \
+    -F '__VIEWSTATE=<__VIEWSTATE' \
+    -F '__VIEWSTATEGENERATOR=<__VIEWSTATEGENERATOR' \
+    -F '__EVENTVALIDATION=<__EVENTVALIDATION' \
+    -F 'FileUpload1=@empty;filename=;type=application/octet-stream' \
+    -F "FileUpload2=@$tarball;type=application/x-gzip" \
+    -F 'FileUpload3=@empty;filename=;type=application/octet-stream' \
+    -F 'Button2=Upload File' -o response.html -w '%{http_code}\n' \
+    https://win-builder.r-project.org/upload.aspx
+)
+grep -n 'id="Label2"' response.html
+wc -c < "$tarball"
+```
+
+The send is accepted when `Label2` names the tarball and its exact size. HTTP
+200 alone is not acceptance: the bare form also answers 200. Each accepted send
+starts another check, so report one whose response was lost and do not repeat it
+without a new approval.
 
 Success evidence: matching digest, environment/date, and a passing emailed
 result. Archive the result into the external evidence bundle before it expires;
