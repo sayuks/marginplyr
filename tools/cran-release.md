@@ -4,8 +4,8 @@ This is the durable release authority for marginplyr. A local Codex agent
 normally operates the commands, interprets their evidence, and updates one
 English GitHub issue per release. A human can follow the same procedure without
 Codex. The process prepares one candidate commit and one retained source
-tarball, proves them, leaves CRAN submission to the maintainer, and follows the
-published release for 72 hours.
+tarball, proves them, leaves confirming a CRAN submission to the maintainer, and
+follows the published release for 72 hours.
 
 The release is not resumable state hidden in a script. The repository, the
 external preflight bundle, and the release issue are the records. After an
@@ -20,7 +20,7 @@ the first unchecked stage whose evidence still belongs to that candidate.
 | Agent-operated | Codex runs a documented command, reads its result, and summarizes it. A human can run the same command instead. | CI inspection, semantic review, R-hub inspection, stage 4 release-dependency update |
 | Agent-prepared | Codex makes a bounded remediation PR from one audit; a human reviews and approves its result before it becomes a candidate. | spelling/source corrections, checktor remediations, generated-file repairs |
 | Approval-gated | Codex stops immediately before an external release action or a change to the approved candidate, and states the exact target and action. | merge, workflow dispatch, issue update, win-builder send, tag/Release, CRAN upload |
-| Human-only | Codex may prepare evidence but cannot perform the action. | CRAN upload, confirmation/rejection/follow-up email |
+| Human-only | Codex may prepare evidence but cannot perform the action. | CRAN policy agreement and submission confirmation, rejection/follow-up email |
 
 The helper previews tracked edits by default. `--apply` is an explicit local
 mechanism, not approval: an agent must still obtain human approval immediately
@@ -35,8 +35,9 @@ There is no global `--yes` setting or approval database.
 - [`tools/cran-preflight.R`](cran-preflight.R) remains the directly invoked,
   non-mutating release-readiness audit. It neither calls the release helper nor
   performs an external release action.
-- [`tools/submit-win-builder.R`](submit-win-builder.R) sends one retained tarball
-  to Win-Builder R-devel, and only with `--send`. Stage 9 owns its use.
+- [`tools/submit-win-builder.R`](submit-win-builder.R) and
+  [`tools/submit-cran.R`](submit-cran.R) send one retained tarball to Win-Builder
+  R-devel and to CRAN, and only with `--send`. Stages 9 and 11 own their use.
 - One release issue is the current checklist and evidence ledger. It records
   durable summaries and URLs, never credentials, authentication material, raw
   local logs, or an unexpired private win-builder result URL.
@@ -669,7 +670,7 @@ Rscript tools/submit-win-builder.R \
 
 Show its output, which names the destination, path, size, and digest, and obtain
 approval. Then run the same command once with `--send`, under a command timeout
-above the five minutes the upload may take. Retain its printed UTC time,
+above the four minutes its requests may take. Retain its printed UTC time,
 response, and exit status:
 
 | Exit | Meaning | Next action |
@@ -712,20 +713,52 @@ summarizes, without mutating state:
 - semantic findings and every disposition;
 - R-hub platform/SHA/result and win-builder environment/result;
 - `cran-comments.md` status and initial/update-specific evidence;
-- remaining human-only upload and email steps.
+- remaining submission, confirmation, and email steps.
 
 The result is exactly `READY` or `NOT READY`, with blockers listed. Update the
 release issue only after approval. Success evidence is `READY` with no open
-blocker and “Next human action: upload the retained tarball to CRAN.” Recovery:
-return to the stage named by each blocker. Human fallback: assemble the same
+blocker and “Next human action: approve the CRAN submission.” Recovery: return to the stage named by each blocker. Human fallback: assemble the same
 ledger entries manually.
 
-### 11. Human CRAN upload and email handling
+### 11. Submit to CRAN and handle its email
 
-Purpose: submit the proven bytes. This stage is human-only. The maintainer opens
-`https://cran.r-project.org/submit.html`, selects the retained tarball whose
-digest appears in stage 10, submits it, and handles confirmation, rejection, or
-follow-up email.
+Purpose: submit the proven bytes. The upload and submission are approval-gated.
+The policy agreement, the confirmation, and every email are human-only, because
+CRAN asks the maintainer for them.
+
+[`tools/submit-cran.R`](submit-cran.R) is the agent's route to the form that
+`https://cran.r-project.org/submit.html` embeds. Do not use
+`devtools::submit_cran()`, which rebuilds the package instead of submitting the
+retained archive. From the candidate worktree, the preview verifies the digest,
+fetches the form, and sends nothing:
+
+```sh
+Rscript tools/submit-cran.R \
+  --tarball "/absolute/path/marginplyr_<version>.tar.gz" --sha256 <digest> \
+  --comments cran-comments.md
+```
+
+Require stage 10's `READY` for this digest. Show the preview's output and the
+comments, and obtain approval that names them, the irreversible submission, and
+the maintainer's own agreement to the CRAN policies, which a submission implies.
+Then run the same command once with `--send`, under a command timeout above the
+eight minutes its requests may take. It uploads, compares CRAN's review page with the tarball's
+DESCRIPTION and the comments, and submits only when they agree. Retain its
+printed UTC times, review-page address, and exit status:
+
+| Exit | Meaning | Next action |
+|---|---|---|
+| `0` | CRAN accepted the submission and sent its confirmation email. | The maintainer confirms. |
+| `1` | Nothing was sent. | Repair the named cause and rerun the preview. |
+| `2`, or killed after printing `Uploading:` | An upload was attempted and the submission is incomplete or its outcome is unknown. | Report it; the maintainer inspects their email and CRAN's incoming queue. Send again only after a new approval. |
+
+The review-page address is private; do not put it in the issue. Certificate and
+sandbox-host handling are stage 9's, with the host `xmpalantir.wu.ac.at`.
+
+The maintainer then opens the link CRAN emails, agrees to the CRAN policies
+there, and confirms. The submission is complete only after that; the tarball's
+appearance under `https://cran.r-project.org/incoming/` shows CRAN holds it. The
+maintainer handles rejection and follow-up email.
 
 Record submission time and a non-secret summary in the issue after approval.
 Do not paste authentication, private email headers, or private links. An
@@ -735,8 +768,8 @@ question or requested change until the maintainer decides the response.
 If rejected or changes are requested, keep the issue open. A textual answer that
 does not change the candidate may retain evidence after human review; any
 tracked change gets a PR/new candidate and restarts at stage 4. If submission is
-withdrawn, record why and the next action. Human fallback is intrinsic: no agent
-performs this stage.
+withdrawn, record why and the next action. Human fallback: submit that retained
+tarball and the comments through the same web form in a browser.
 
 ### 12. Verify public CRAN publication
 
@@ -947,8 +980,8 @@ before freezing the Candidate SHA.”
 ## Human submission and publication
 
 - [ ] Final decision is READY
-- [ ] Human uploaded the retained tarball
-- [ ] Human handled confirmation/rejection/follow-up email
+- [ ] Retained tarball submitted to CRAN with approval
+- [ ] Human confirmed the submission and handled rejection/follow-up email
 - [ ] CRAN source index publishes exactly `<version>`
 
 ## Public release and follow-up

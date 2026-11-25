@@ -12,77 +12,9 @@
 # was sent. Exit 2: an upload was attempted and its acceptance is unknown. A run
 # killed after it prints `Sending:` has no exit of its own and means the same.
 
+source(file.path("tools", "web-submission.R"))
+
 win_builder_form <- "https://win-builder.r-project.org/upload.aspx"
-
-stop_win_builder <- function(..., status = 1L) {
-  stop(structure(
-    class = c("marginplyr_win_builder_error", "error", "condition"),
-    list(message = paste0(...), call = NULL, status = status)
-  ))
-}
-
-# Runs curl without a shell, so no argument is parsed or expanded by one.
-run_win_builder_curl <- function(args, directory) {
-  result <- tryCatch(
-    processx::run("curl", args, wd = directory, error_on_status = FALSE),
-    error = function(error) list(status = NA_integer_, stdout = "",
-                                 stderr = conditionMessage(error))
-  )
-  result[c("status", "stdout", "stderr")]
-}
-
-parse_win_builder_args <- function(args) {
-  options <- list(tarball = NULL, sha256 = NULL, ca_bundle = NULL, send = FALSE)
-  while (length(args) > 0L) {
-    if (identical(args[[1L]], "--send")) {
-      options$send <- TRUE
-      args <- args[-1L]
-      next
-    }
-    name <- gsub("-", "_", sub("^--", "", args[[1L]]), fixed = TRUE)
-    if (!args[[1L]] %in% c("--tarball", "--sha256", "--ca-bundle") ||
-          length(args) < 2L || !is.null(options[[name]])) {
-      stop_win_builder(
-        "Usage: submit-win-builder.R --tarball PATH --sha256 DIGEST ",
-        "[--ca-bundle PATH] [--send]"
-      )
-    }
-    options[[name]] <- args[[2L]]
-    args <- args[-(1:2)]
-  }
-  if (is.null(options$tarball) || is.null(options$sha256)) {
-    stop_win_builder("Both --tarball and --sha256 are required.")
-  }
-  if (!is.null(options$ca_bundle)) {
-    if (!file.exists(options$ca_bundle)) {
-      stop_win_builder("The CA bundle does not exist: ", options$ca_bundle)
-    }
-    options$ca_bundle <- normalizePath(options$ca_bundle)
-  }
-  options
-}
-
-# Copies the tarball into `directory` and answers its name and size. The digest
-# is taken from the copy, so the bytes verified are the bytes sent.
-stage_win_builder_tarball <- function(path, sha256, directory) {
-  name <- basename(path)
-  if (!grepl("^marginplyr_[0-9]+([.][0-9]+)+[.]tar[.]gz$", name)) {
-    stop_win_builder("Not a marginplyr source tarball: ", name)
-  }
-  staged <- file.path(directory, name)
-  if (!file.exists(path) || !file.copy(path, staged)) {
-    stop_win_builder("The tarball cannot be read: ", path)
-  }
-  actual <- unname(tools::sha256sum(staged))
-  if (!identical(actual, sha256)) {
-    stop_win_builder("SHA-256 is ", actual, ", not ", sha256, ".")
-  }
-  list(name = name, size = format(file.size(staged), scientific = FALSE))
-}
-
-html_matches <- function(pattern, html) {
-  regmatches(html, gregexpr(pattern, html, perl = TRUE))[[1L]]
-}
 
 # The named attribute of one tag, or NA where it has none.
 html_attribute <- function(tag, name) {
@@ -91,10 +23,8 @@ html_attribute <- function(tag, name) {
 }
 
 # Answers the page's hidden fields, every file field, and the R-devel section's
-# own file field, submit field, submit label, and status text. Comments are
-# dropped first, because the page keeps a retired section in one.
+# own file field, submit field, submit label, and status text.
 parse_win_builder_form <- function(html) {
-  html <- gsub("(?s)<!--.*?-->", "", paste(html, collapse = "\n"), perl = TRUE)
   inputs <- html_matches("<input\\b[^>]*>", html)
   types <- vapply(inputs, html_attribute, character(1), "type")
   values <- function(tags, name) {
@@ -104,7 +34,7 @@ parse_win_builder_form <- function(html) {
 
   section <- html_matches("(?s)<h2>\\s*R-devel\\s*</h2>.*?(?=<h2>|</form>)", html)
   if (length(section) != 1L) {
-    stop_win_builder("The form does not hold exactly one R-devel section.")
+    stop_submission("The form does not hold exactly one R-devel section.")
   }
   own <- html_matches("<input\\b[^>]*>", section)
   own_types <- vapply(own, html_attribute, character(1), "type")
@@ -127,7 +57,7 @@ parse_win_builder_form <- function(html) {
   if (anyNA(present) || !all(nzchar(present)) || anyNA(form$hidden) ||
         length(form$file) != 1L || length(form$submit) != 1L ||
         is.na(form$submit_label) || !all(grepl("^[A-Za-z0-9_]+$", names))) {
-    stop_win_builder("The form's R-devel fields are not the expected ones.")
+    stop_submission("The form's R-devel fields are not the expected ones.")
   }
   form
 }
@@ -158,35 +88,16 @@ win_builder_accepted <- function(status, tarball) {
     grepl(paste0("; File Size: ", tarball$size, " bytes;"), status, fixed = TRUE)
 }
 
-win_builder_curl_failure <- function(result) {
-  paste0(
-    "curl status ", result$status, ": ", trimws(result$stderr),
-    if (identical(result$status, 60L)) {
-      paste0(
-        "\ncurl could not verify the certificate. If its CA list lacks the ",
-        "site's root, rerun with --ca-bundle naming a current CA bundle."
-      )
-    }
-  )
-}
-
-submit_win_builder <- function(args, run = run_win_builder_curl) {
-  options <- parse_win_builder_args(args)
+submit_win_builder <- function(args, run = run_submission_curl) {
+  options <- parse_submission_args(args, c("--tarball", "--sha256"))
   directory <- tempfile("win-builder-")
   dir.create(directory)
   on.exit(unlink(directory, recursive = TRUE), add = TRUE)
-  tarball <- stage_win_builder_tarball(options$tarball, options$sha256, directory)
+  tarball <- stage_submission_tarball(options$tarball, options$sha256, directory)
   file.create(file.path(directory, "empty"))
-
-  # --disable keeps a .curlrc out, which could turn off verification or retry.
-  common <- c(
-    "--disable", "--silent", "--show-error", "--fail", "--proto", "=https",
-    "--max-time", "300",
-    if (!is.null(options$ca_bundle)) c("--cacert", options$ca_bundle)
-  )
-  read_page <- function(name) {
-    path <- file.path(directory, name)
-    if (file.exists(path)) readLines(path, warn = FALSE) else character()
+  common <- submission_curl_options(options$ca_bundle)
+  read_form <- function(name) {
+    parse_win_builder_form(read_submission_page(file.path(directory, name)))
   }
 
   fetched <- run(
@@ -195,12 +106,12 @@ submit_win_builder <- function(args, run = run_win_builder_curl) {
     directory
   )
   if (!identical(fetched$status, 0L)) {
-    stop_win_builder(
+    stop_submission(
       "The form cannot be fetched; nothing was sent. ",
-      win_builder_curl_failure(fetched)
+      submission_curl_failure(fetched)
     )
   }
-  form <- parse_win_builder_form(read_page("form.html"))
+  form <- read_form("form.html")
 
   cat(
     "Destination: ", win_builder_form, " (R-devel: ", form$file, ", ",
@@ -215,44 +126,23 @@ submit_win_builder <- function(args, run = run_win_builder_curl) {
     return(invisible("preview"))
   }
 
-  cat("Sending: ", format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"), "\n", sep = "")
-  unknown <- function(condition) {
-    reason <- conditionMessage(condition)
-    stop_win_builder(
-      "The upload was attempted and its acceptance is unknown; do not repeat ",
-      "it without a new approval. ",
-      if (nzchar(reason)) reason else class(condition)[[1L]],
-      status = 2L
+  cat("Sending: ", utc_now(), "\n", sep = "")
+  after_sending({
+    sent <- run(
+      c(common, "--cookie", "cookies.txt", "--header", "Expect:",
+        win_builder_upload_args(form, tarball$name),
+        "--output", "response.html", win_builder_form),
+      directory
     )
-  }
-  tryCatch(
-    {
-      sent <- run(
-        c(common, "--cookie", "cookies.txt", "--header", "Expect:",
-          win_builder_upload_args(form, tarball$name),
-          "--output", "response.html", win_builder_form),
-        directory
-      )
-      if (!identical(sent$status, 0L)) stop(win_builder_curl_failure(sent))
-      status <- parse_win_builder_form(read_page("response.html"))$status
-      cat("Response: ", status, "\n", sep = "")
-      if (!win_builder_accepted(status, tarball)) {
-        stop("The response does not name this tarball and size.")
-      }
-    },
-    error = unknown,
-    interrupt = unknown
-  )
+    if (!identical(sent$status, 0L)) stop(submission_curl_failure(sent))
+    status <- read_form("response.html")$status
+    cat("Response: ", status, "\n", sep = "")
+    if (!win_builder_accepted(status, tarball)) {
+      stop("The response does not name this tarball and size.")
+    }
+  })
   cat("Accepted.\n")
   invisible("accepted")
 }
 
-if (sys.nframe() == 0L) {
-  tryCatch(
-    submit_win_builder(commandArgs(trailingOnly = TRUE)),
-    marginplyr_win_builder_error = function(error) {
-      message(conditionMessage(error))
-      quit(status = error$status)
-    }
-  )
-}
+if (sys.nframe() == 0L) run_submission_command(submit_win_builder)
