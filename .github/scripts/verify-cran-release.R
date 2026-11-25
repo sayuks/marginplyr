@@ -973,6 +973,17 @@ expect_submission_error <- function(expr, status, calls, stub, label) {
   expect_identical(length(stub$calls()), calls, paste(label, "curl calls"))
 }
 
+# Masks cat() for one call, so that it fails on the line starting `prefix` as it
+# does when the reader of the output has gone.
+with_failing_line <- function(prefix, expr) {
+  assign("cat", envir = globalenv(), function(...) {
+    if (startsWith(paste0(...), prefix)) stop("the output is closed")
+    base::cat(...)
+  })
+  on.exit(rm("cat", envir = globalenv()))
+  force(expr)
+}
+
 win_builder_directory <- tempfile("win builder, fixture;")
 dir.create(win_builder_directory)
 win_builder_tarball <- file.path(win_builder_directory, "marginplyr_0.1.0.tar.gz")
@@ -1026,6 +1037,9 @@ for (args in stub$calls()) {
     any(c("-k", "--insecure") %in% args), FALSE, "the certificate check"
   )
   expect_identical(args[[1L]], "--disable", "the ignored curl configuration")
+  expect_identical(
+    args[[which(args == "--max-time") + 1L]], "300", "the Win-Builder time limit"
+  )
 }
 
 writeBin(raw(100000), win_builder_tarball)
@@ -1108,6 +1122,16 @@ for (label in names(responses)) {
     2L, 2L, stub, label
   )
 }
+stub <- submission_stub(
+  win_builder_page(),
+  win_builder_page(win_builder_status("marginplyr_0.1.0.tar.gz", 7))
+)
+expect_submission_error(
+  with_failing_line(
+    "Accepted.", submit_win_builder(c(win_builder_args, "--send"), stub$run)
+  ),
+  2L, 2L, stub, "an accepted upload that cannot be printed"
+)
 unlink(win_builder_directory, recursive = TRUE)
 
 # The CRAN submitter, against the same stand-in.
@@ -1240,6 +1264,9 @@ for (args in stub$calls()) {
     all(c("--fail", "--cookie", "--cookie-jar") %in% args),
     "the CRAN call's failure and session options"
   )
+  expect_identical(
+    args[[which(args == "--max-time") + 1L]], "300", "the CRAN time limit"
+  )
 }
 expect_identical(
   vapply(stub$calls(), function(args) basename(args[[length(args)]]), ""),
@@ -1301,6 +1328,11 @@ cran_uploads <- list(
   "another submission's CRAN review page" = list(
     cran_uploaded, sub('value="77"', 'value="78"', cran_review_page, fixed = TRUE)
   ),
+  "another maintainer name's CRAN review page" = list(
+    cran_uploaded,
+    sub('"A Person" readonly', '"B Person" readonly', cran_review_page,
+        fixed = TRUE)
+  ),
   "another maintainer's CRAN review page" = list(
     cran_uploaded,
     sub('"a@example.org" readonly', '"b@example.org" readonly',
@@ -1342,6 +1374,15 @@ for (label in names(cran_outcomes)) {
     submit_cran(c(cran_args, "--send"), stub$run), 2L, 4L, stub, label
   )
 }
+stub <- submission_stub(
+  cran_form_page, cran_uploaded, cran_review_page, cran_submitted
+)
+expect_submission_error(
+  with_failing_line(
+    "Submitted.", submit_cran(c(cran_args, "--send"), stub$run)
+  ),
+  2L, 4L, stub, "an accepted submission that cannot be printed"
+)
 unlink(cran_directory, recursive = TRUE)
 
 message(
