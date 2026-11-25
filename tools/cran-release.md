@@ -658,12 +658,14 @@ package instead of sending the retained archive and sends by FTP by default. Add
 release/oldrelease only for a concrete Windows-specific risk or missing CI
 coverage.
 
-A human uses the form in a browser, choosing R-devel and that exact retained
-tarball. An approved agent sends with `curl`. First fetch the form:
+Agent-operated: the approval that names this path, digest, and R-devel lets the
+agent send with the commands below. Each block is written for its own shell call
+and keeps its state in the printed directory. First fetch the form, which sends
+nothing:
 
 ```sh
 send_dir=$(mktemp -d "${TMPDIR:-/tmp}/win-builder.XXXXXX")
-cd "$send_dir"
+cd "$send_dir" && pwd
 curl -fsS --proto '=https' -c cookies.txt -o form.html \
   https://win-builder.r-project.org/upload.aspx
 grep -nE '<h2>|type="(file|submit)"' form.html
@@ -672,19 +674,25 @@ grep -nE '<h2>|type="(file|submit)"' form.html
 If macOS `curl` reports `unable to get local issuer certificate`, its own CA
 list lacks the site's root. Add `--cacert` with a current CA bundle to both
 `curl` commands, such as `cert.pem` in the directory a Homebrew OpenSSL's
-`openssl version -d` prints. Never turn verification off. The tracked agent
-network allowlist omits this host; a sandboxed agent asks for it for these
-commands only.
+`openssl version -d` prints. Never turn verification off.
+
+The tracked agent network allowlist omits `win-builder.r-project.org`, because
+it holds only preflight hosts. Claude Code in auto mode requests that host for
+each command, with the Bash tool's `allowed_domains`. An agent that still cannot
+reach it gives the maintainer the same commands instead of widening the
+allowlist or using another route.
 
 Confirm in the printed lines that `FileUpload2` and `Button2` are the fields
 under the R-devel heading, then send once:
 
 ```sh
+cd <printed-directory>
 tarball=/absolute/path/marginplyr_<version>.tar.gz
 hidden() { sed -n "s/.*id=\"$1\" value=\"\([^\"]*\)\".*/\1/p" form.html; }
 : > empty
 (
   set -e
+  test "$(shasum -a 256 "$tarball" | cut -d ' ' -f 1)" = "<sha256>"
   for field in __VIEWSTATE __VIEWSTATEGENERATOR __EVENTVALIDATION; do
     hidden "$field" | tr -d '\r\n' > "$field"
     test -s "$field"
@@ -707,7 +715,9 @@ wc -c < "$tarball"
 The send is accepted when `Label2` names the tarball and its exact size. HTTP
 200 alone is not acceptance: the bare form also answers 200. Each accepted send
 starts another check, so report one whose response was lost and do not repeat it
-without a new approval.
+without a new approval. Report the printed UTC time and the `Label2` text to the
+maintainer. The result reaches the maintainer by e-mail, which the agent cannot
+read, so ask for the downloaded `00check.log` and `00install.out`.
 
 Success evidence: matching digest, environment/date, and a passing emailed
 result. Archive the result into the external evidence bundle before it expires;
@@ -715,7 +725,8 @@ record a durable summary in the issue, not the unexpired private URL. Block on a
 digest mismatch, unexpected archive, send failure, or check finding. Recovery:
 never rebuild silently—locate the retained archive or restart at stage 4; retry
 transient service failure only after approval. Human fallback is the same web
-form and email handling.
+form in a browser, choosing R-devel and that exact retained tarball, and email
+handling.
 
 ### 10. Present the final readiness decision
 
