@@ -896,7 +896,7 @@ expect_error(
   "a duplicate release-playbook stage"
 )
 
-# The Win-Builder sender runs against a stand-in for curl, so nothing is sent.
+# The senders run against a stand-in for curl, so nothing is sent.
 source("tools/submit-win-builder.R")
 
 win_builder_page <- function(status = "", viewstate = "a+/=",
@@ -935,8 +935,10 @@ win_builder_status <- function(name, size) {
 }
 
 # Answers each curl call from `pages` in turn and records its arguments. A
-# number stands for a curl that failed with that status.
-win_builder_stub <- function(...) {
+# number stands for a curl that failed with that status. A page's `redirect`
+# attribute is the redirect target curl reports, and its `status` attribute a
+# failure that came with an answer.
+submission_stub <- function(...) {
   pages <- list(...)
   calls <- list()
   list(
@@ -948,24 +950,38 @@ win_builder_stub <- function(...) {
         return(list(status = as.integer(page), stdout = "", stderr = "failed"))
       }
       output <- args[[which(args == "--output") + 1L]]
-      writeLines(page, file.path(directory, output))
-      list(status = 0L, stdout = "", stderr = "")
+      writeLines(page, file.path(directory, output), useBytes = TRUE)
+      redirect <- attr(page, "redirect")
+      status <- attr(page, "status")
+      list(status = if (is.null(status)) 0L else status, stdout = if (is.null(redirect)) "" else redirect,
+           stderr = "")
     },
     calls = function() calls
   )
 }
 
-expect_win_builder_error <- function(expr, status, calls, stub, label) {
+expect_submission_error <- function(expr, status, calls, stub, label) {
   error <- tryCatch(
     {
       output <- utils::capture.output(force(expr))
       NULL
     },
-    marginplyr_win_builder_error = identity
+    marginplyr_submission_error = identity
   )
-  expect_true(inherits(error, "marginplyr_win_builder_error"), label)
+  expect_true(inherits(error, "marginplyr_submission_error"), label)
   expect_identical(error$status, status, paste(label, "status"))
   expect_identical(length(stub$calls()), calls, paste(label, "curl calls"))
+}
+
+# Masks cat() for one call, so that it fails on the line starting `prefix` as it
+# does when the reader of the output has gone.
+with_failing_line <- function(prefix, expr) {
+  assign("cat", envir = globalenv(), function(...) {
+    if (startsWith(paste0(...), prefix)) stop("the output is closed")
+    base::cat(...)
+  })
+  on.exit(rm("cat", envir = globalenv()))
+  force(expr)
 }
 
 win_builder_directory <- tempfile("win builder, fixture;")
@@ -977,7 +993,7 @@ win_builder_args <- c(
   "--tarball", win_builder_tarball, "--sha256", win_builder_digest
 )
 
-stub <- win_builder_stub(win_builder_page())
+stub <- submission_stub(win_builder_page())
 output <- utils::capture.output(
   outcome <- submit_win_builder(win_builder_args, stub$run)
 )
@@ -987,7 +1003,7 @@ expect_true(
   any(grepl("nothing was sent", output, fixed = TRUE)), "the preview notice"
 )
 
-stub <- win_builder_stub(
+stub <- submission_stub(
   win_builder_page(),
   win_builder_page(win_builder_status("marginplyr_0.1.0.tar.gz", 7))
 )
@@ -1021,10 +1037,13 @@ for (args in stub$calls()) {
     any(c("-k", "--insecure") %in% args), FALSE, "the certificate check"
   )
   expect_identical(args[[1L]], "--disable", "the ignored curl configuration")
+  expect_identical(
+    args[[which(args == "--max-time") + 1L]], "300", "the Win-Builder time limit"
+  )
 }
 
 writeBin(raw(100000), win_builder_tarball)
-stub <- win_builder_stub(
+stub <- submission_stub(
   win_builder_page(),
   win_builder_page(win_builder_status("marginplyr_0.1.0.tar.gz", "100000"))
 )
@@ -1059,8 +1078,8 @@ refusals <- list(
   )
 )
 for (label in names(refusals)) {
-  stub <- win_builder_stub()
-  expect_win_builder_error(
+  stub <- submission_stub()
+  expect_submission_error(
     submit_win_builder(refusals[[label]], stub$run), 1L, 0L, stub, label
   )
 }
@@ -1073,8 +1092,8 @@ forms <- list(
   "a form without R-devel" = setdiff(win_builder_page(), "<h2>R-devel</h2>")
 )
 for (label in names(forms)) {
-  stub <- win_builder_stub(forms[[label]])
-  expect_win_builder_error(
+  stub <- submission_stub(forms[[label]])
+  expect_submission_error(
     submit_win_builder(c(win_builder_args, "--send"), stub$run),
     1L, 1L, stub, label
   )
@@ -1097,17 +1116,278 @@ responses <- list(
   )
 )
 for (label in names(responses)) {
-  stub <- win_builder_stub(win_builder_page(), responses[[label]])
-  expect_win_builder_error(
+  stub <- submission_stub(win_builder_page(), responses[[label]])
+  expect_submission_error(
     submit_win_builder(c(win_builder_args, "--send"), stub$run),
     2L, 2L, stub, label
   )
 }
+stub <- submission_stub(
+  win_builder_page(),
+  win_builder_page(win_builder_status("marginplyr_0.1.0.tar.gz", 7))
+)
+expect_submission_error(
+  with_failing_line(
+    "Accepted.", submit_win_builder(c(win_builder_args, "--send"), stub$run)
+  ),
+  2L, 2L, stub, "an accepted upload that cannot be printed"
+)
 unlink(win_builder_directory, recursive = TRUE)
+
+# The CRAN submitter, against the same stand-in.
+source("tools/submit-cran.R")
+
+cran_directory <- tempfile("cran fixture, ;")
+dir.create(file.path(cran_directory, "marginplyr"), recursive = TRUE)
+cran_description <- c(
+  "Package: marginplyr", "Version: 0.1.0", "Title: 'A' Title",
+  "Description: Text that", "    continues & compares.",
+  "Author: A Person [aut, cre]", "Maintainer: A Person <a@example.org>",
+  "License: MIT + file LICENSE", "Depends: R (>= 4.1.0)",
+  "Imports: cli (>= 3.4.0), dplyr,", "        glue", "Suggests: DBI"
+)
+writeLines(
+  cran_description, file.path(cran_directory, "marginplyr", "DESCRIPTION")
+)
+cran_comments <- c("## Results", "", "None <here> \u2014 & 'there'.")
+writeLines(
+  enc2utf8(cran_comments), file.path(cran_directory, "comments.md"),
+  useBytes = TRUE
+)
+old_cran_wd <- setwd(cran_directory)
+utils::tar("marginplyr_0.1.0.tar.gz", "marginplyr", compression = "gzip")
+setwd(old_cran_wd)
+cran_tarball <- file.path(cran_directory, "marginplyr_0.1.0.tar.gz")
+cran_args <- c(
+  "--tarball", cran_tarball,
+  "--sha256", unname(tools::sha256sum(cran_tarball)),
+  "--comments", file.path(cran_directory, "comments.md"),
+  "--comments-sha256",
+  unname(tools::sha256sum(file.path(cran_directory, "comments.md")))
+)
+
+cran_form_page <- c(
+  '<FORM action="index2.php" method="post" enctype="multipart/form-data">',
+  '<input name="pkg_id" type="hidden"  >',
+  '<INPUT size=19 name="name"><INPUT size=19 name="email">',
+  '<input name="uploaded_file" type="file" id="userfile">',
+  "<textarea name='comment' cols=50 rows=10></textarea>",
+  '<INPUT type="submit" value="Upload the package" name="upload">', "</FORM>"
+)
+cran_review_page <- c(
+  "<strong><font color=red>Please review and submit.</font></strong>",
+  '<input name="pkg_id" type="hidden" value="77">',
+  '<tr><td>Your name:</td><td><INPUT name="name" value="A Person"></td></tr>',
+  "<textarea name='comment' cols=50 rows=10>## Results", "",
+  "None &lt;here&gt; \u2014 &amp; &#039;there&#039;.", "</textarea>",
+  '<td>Package:</td><td><input name="uploaded_file" type="file">',
+  '<tr><td>Package:</td><td><INPUT size=19 value="marginplyr" readonly></td>',
+  '<tr><td>Version:</td><td><INPUT size=19 value="0.1.0" readonly></td></tr>',
+  paste0(
+    '<tr><td valign="top">Title:</td><td><textarea cols=50 readonly>',
+    "'A' Title</textarea></td></tr>"
+  ),
+  paste0(
+    '<tr><td valign="top">Description:</td><td><textarea readonly>',
+    "Text that continues &amp; compares.</textarea></td></tr>"
+  ),
+  '<tr><td>Author(s):</td><td><INPUT value="A Person [aut, cre]" readonly></td>',
+  '<tr><td>Maintainer Name:</td><td><INPUT value="A Person" readonly></td>',
+  '<tr><td>Maintainer Email:</td><td><INPUT value="a@example.org" readonly></td>',
+  '<tr><td>License:</td><td><INPUT value="MIT + file LICENSE" readonly></td>',
+  "<tr><td>Depends:</td><td><textarea readonly>R (&gt;= 4.1.0)</textarea></td>",
+  "<tr><td>Suggests:</td><td><textarea readonly>DBI</textarea></td></tr>",
+  paste0(
+    "<tr><td>Imports:</td><td><textarea readonly>",
+    "cli (&gt;= 3.4.0), dplyr, glue</textarea></td></tr>"
+  ),
+  "<tr><td>Linking To:</td><td><textarea readonly></textarea></td></tr>",
+  '<INPUT type="submit" value="Submit package" name="submit">'
+)
+cran_answer <- function(target) {
+  structure("", redirect = paste0("https://xmpalantir.wu.ac.at/cransubmit/", target))
+}
+cran_uploaded <- cran_answer("index.php?strErr=99&edit=1&pkg_id=77")
+cran_submitted <- cran_answer("index.php?strErr=0&submit=1")
+
+stub <- submission_stub(cran_form_page)
+output <- utils::capture.output(outcome <- submit_cran(cran_args, stub$run))
+expect_identical(outcome, "preview", "the CRAN preview")
+expect_identical(length(stub$calls()), 1L, "the CRAN preview's one curl call")
+expect_true(
+  any(output == "Submitter: A Person <a@example.org>"), "the previewed submitter"
+)
+
+stub <- submission_stub(
+  cran_form_page, cran_uploaded, cran_review_page, cran_submitted
+)
+output <- utils::capture.output(
+  outcome <- submit_cran(c(cran_args, "--send"), stub$run)
+)
+expect_identical(outcome, "submitted", "the accepted CRAN submission")
+expect_identical(length(stub$calls()), 4L, "the CRAN submission's curl calls")
+cran_fields <- function(args) {
+  args[which(args %in% c("--form-string", "-F")) + 1L]
+}
+cran_identity <- c("name=A Person", "email=a@example.org")
+expect_identical(
+  cran_fields(stub$calls()[[2L]]),
+  c(
+    "pkg_id=", cran_identity, "upload=Upload the package",
+    "uploaded_file=@marginplyr_0.1.0.tar.gz;type=application/x-gzip",
+    "comment=<comments.txt;type=text/plain"
+  ),
+  "the CRAN upload fields"
+)
+expect_identical(
+  cran_fields(stub$calls()[[4L]]),
+  c(
+    "pkg_id=77", cran_identity, "submit=Submit package",
+    "uploaded_file=@empty;filename=;type=application/octet-stream",
+    "comment=<comments.txt;type=text/plain"
+  ),
+  "the CRAN submission fields"
+)
+for (args in stub$calls()) {
+  expect_identical(args[[1L]], "--disable", "the ignored curl configuration")
+  expect_identical(
+    args[[which(args == "--proto") + 1L]], "=https", "the HTTPS-only CRAN call"
+  )
+  expect_true(
+    startsWith(args[[length(args)]], "https://xmpalantir.wu.ac.at/cransubmit/"),
+    "the CRAN destination"
+  )
+  expect_identical(
+    any(c("-k", "--insecure") %in% args), FALSE, "the CRAN certificate check"
+  )
+  expect_true(
+    all(c("--fail", "--cookie", "--cookie-jar") %in% args),
+    "the CRAN call's failure and session options"
+  )
+  expect_identical(
+    args[[which(args == "--max-time") + 1L]], "300", "the CRAN time limit"
+  )
+}
+expect_identical(
+  vapply(stub$calls(), function(args) basename(args[[length(args)]]), ""),
+  c(
+    "cransubmit", "index2.php", "index.php?strErr=99&edit=1&pkg_id=77",
+    "index2.php"
+  ),
+  "the CRAN pages"
+)
+for (args in stub$calls()[c(2L, 4L)]) {
+  expect_identical(
+    args[[which(args == "--write-out") + 1L]], "%{redirect_url}",
+    "the CRAN redirect report"
+  )
+}
+cran_failed <- function(page) structure(page, status = 22L)
+
+cran_refusals <- list(
+  "a wrong CRAN digest" = replace(cran_args, 4L, strrep("0", 64L)),
+  "missing CRAN comments" = replace(cran_args, 6L, "absent.md"),
+  "absent CRAN comments" = cran_args[-(5:6)],
+  "unapproved CRAN comments" = replace(cran_args, 8L, strrep("0", 64L))
+)
+for (label in names(cran_refusals)) {
+  stub <- submission_stub()
+  expect_submission_error(
+    submit_cran(c(cran_refusals[[label]], "--send"), stub$run),
+    1L, 0L, stub, label
+  )
+}
+cran_forms <- list(
+  "an unreachable CRAN form" = 6,
+  "a CRAN form closed for maintenance" = "<html></html>"
+)
+for (label in names(cran_forms)) {
+  stub <- submission_stub(cran_forms[[label]])
+  expect_submission_error(
+    submit_cran(c(cran_args, "--send"), stub$run), 1L, 1L, stub, label
+  )
+}
+
+# The upload was attempted and nothing was submitted.
+cran_uploads <- list(
+  "a lost CRAN upload" = list(28),
+  "a refused CRAN upload" = list(cran_answer("index.php?strErr=1")),
+  "a CRAN upload redirected elsewhere" = list(
+    structure("", redirect = sub(
+      "wu.ac.at", "ex.am.pl", attr(cran_uploaded, "redirect"), fixed = TRUE
+    ))
+  ),
+  "a CRAN upload with another error" = list(
+    cran_answer("index.php?strErr=1&edit=1&pkg_id=77")
+  ),
+  "a failed CRAN upload" = list(cran_failed(cran_uploaded)),
+  "a lost CRAN review page" = list(cran_uploaded, 28),
+  "a failed CRAN review page" = list(
+    cran_uploaded, cran_failed(cran_review_page)
+  ),
+  "another submission's CRAN review page" = list(
+    cran_uploaded, sub('value="77"', 'value="78"', cran_review_page, fixed = TRUE)
+  ),
+  "another maintainer name's CRAN review page" = list(
+    cran_uploaded,
+    sub('"A Person" readonly', '"B Person" readonly', cran_review_page,
+        fixed = TRUE)
+  ),
+  "another maintainer's CRAN review page" = list(
+    cran_uploaded,
+    sub('"a@example.org" readonly', '"b@example.org" readonly',
+        cran_review_page, fixed = TRUE)
+  ),
+  "a CRAN review page with two versions" = list(
+    cran_uploaded,
+    append(
+      cran_review_page,
+      grep("Version:", cran_review_page, fixed = TRUE, value = TRUE)
+    )
+  )
+)
+for (line in grep("readonly|Please|Submit package|pkg_id|None", cran_review_page)) {
+  label <- paste("a CRAN review page without", cran_review_page[[line]])
+  cran_uploads[[label]] <- list(cran_uploaded, cran_review_page[-line])
+}
+cran_uploads[["a CRAN review page with another version"]] <- list(
+  cran_uploaded, sub("0.1.0", "0.1.1", cran_review_page, fixed = TRUE)
+)
+for (label in names(cran_uploads)) {
+  stub <- do.call(submission_stub, c(list(cran_form_page), cran_uploads[[label]]))
+  expect_submission_error(
+    submit_cran(c(cran_args, "--send"), stub$run),
+    2L, 1L + length(cran_uploads[[label]]), stub, label
+  )
+}
+
+cran_outcomes <- list(
+  "a lost CRAN submission" = 28,
+  "a refused CRAN submission" = cran_answer("index.php?strErr=5&submit=1"),
+  "a failed CRAN submission" = cran_failed(cran_submitted)
+)
+for (label in names(cran_outcomes)) {
+  stub <- submission_stub(
+    cran_form_page, cran_uploaded, cran_review_page, cran_outcomes[[label]]
+  )
+  expect_submission_error(
+    submit_cran(c(cran_args, "--send"), stub$run), 2L, 4L, stub, label
+  )
+}
+stub <- submission_stub(
+  cran_form_page, cran_uploaded, cran_review_page, cran_submitted
+)
+expect_submission_error(
+  with_failing_line(
+    "Submitted.", submit_cran(c(cran_args, "--send"), stub$run)
+  ),
+  2L, 4L, stub, "an accepted submission that cannot be printed"
+)
+unlink(cran_directory, recursive = TRUE)
 
 message(
   "Verified the CRAN release helpers against initial, update, preview, ",
   "zero-diff, idempotence, publication, dirty-state, and command-failure ",
-  "fixtures, and the Win-Builder sender against preview, accepted, refused, ",
-  "and unknown-outcome fixtures."
+  "fixtures, and the Win-Builder and CRAN senders against preview, accepted, ",
+  "refused, and unknown-outcome fixtures."
 )
