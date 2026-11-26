@@ -484,6 +484,19 @@ relation, reader and call checks still read. A finer rule, admitting unless a
 caller macro's name occurs in the system macro's stored definition, would
 refuse less for callers who define macros; it is not adopted.
 
+The name match is position-blind on purpose (#1781). DuckDB binds a table
+macro only from a relation position, so `histogram(v)` in a select list binds
+the aggregate, yet it is refused because the system `histogram` table macro is
+that call's first catalog match. Matching a head outside a relation position
+against scalar macros only would admit the aggregate, but it would rest the
+table-macro refusal on `duckdb_metadata_relations()` recognising every relation
+position. That scan is a lexical approximation with known gaps, and a position
+it missed would then admit a table macro such as `histogram`, which reaches
+`query_table()`. One aggregate that returns a `MAP`, with `compute()` as its
+remedy, does not justify trading a match that fails closed for one that
+depends on the scan. For the same reason a caller table macro named like a
+built-in, such as `sum`, refuses every call of that name.
+
 ## Amendment (#1650): the rendered statement is checked too
 
 The checks above read only the captured lazy query's `sql()` fragments and

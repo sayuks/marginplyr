@@ -326,6 +326,10 @@ check that the input hides no source work behind a view or macro before
 its types are read. It binds no table of yours. Table macros, macros you
 define, \code{query()}, \code{query_table()}, and views without stored SQL are
 refused, except a data frame registered with \code{duckdb::duckdb_register()}.
+A function sharing its name with a table macro is refused as that macro
+is, wherever the call stands; in a database holding no macro of yours,
+DuckDB's own \code{histogram()} aggregate is the one such function. Call
+\code{\link[dplyr:compute]{dplyr::compute()}} first to use it.
 Other table functions, such as \code{read_parquet()} or \code{range()}, are
 admitted inside a view as they are when written directly.
 A macro you define is refused however the query reaches it: written in

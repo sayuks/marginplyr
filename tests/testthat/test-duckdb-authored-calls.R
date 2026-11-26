@@ -905,3 +905,32 @@ test_that("each implicitly bound function name is reached without a head", {
     DBI::dbExecute(con, paste("DROP MACRO", macro))
   }
 })
+
+test_that("the histogram() aggregate is refused like its table macro (#1781)", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  DBI::dbWriteTable(con, "t", data.frame(g = c("a", "a", "b"),
+                                         v = c(1L, 1L, 2L)))
+  # The aggregate shares its name with a system table macro, and the call
+  # head is matched against macros wherever it stands.
+  x <- dplyr::summarise(dplyr::group_by(dplyr::tbl(con, "t"), g),
+                        h = histogram(v), v = sum(v, na.rm = TRUE))
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  expect_error(
+    inspect_grouping(x, .grouping = grouping_set(where(is.numeric))),
+    "DuckDB call", fixed = TRUE, class = "marginplyr_error"
+  )
+  expect_duckdb_catalog_only()
+  expect_error(
+    summarize_with_margins(x, v = sum(v), .grouping = rollup(g)),
+    "DuckDB call", fixed = TRUE, class = "marginplyr_error"
+  )
+  # compute() first is the documented remedy.
+  totals <- dplyr::collect(summarize_with_margins(
+    dplyr::compute(x), v = sum(v, na.rm = TRUE), .grouping = rollup(g)
+  ))
+  expect_identical(as.numeric(totals$v[match(c("a", "b", "Total"), totals$g)]),
+                   c(2, 2, 4))
+})

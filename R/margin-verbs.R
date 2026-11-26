@@ -313,6 +313,10 @@
 #'   its types are read. It binds no table of yours. Table macros, macros you
 #'   define, `query()`, `query_table()`, and views without stored SQL are
 #'   refused, except a data frame registered with `duckdb::duckdb_register()`.
+#'   A function sharing its name with a table macro is refused as that macro
+#'   is, wherever the call stands; in a database holding no macro of yours,
+#'   DuckDB's own `histogram()` aggregate is the one such function. Call
+#'   [dplyr::compute()] first to use it.
 #'   Other table functions, such as `read_parquet()` or `range()`, are
 #'   admitted inside a view as they are when written directly.
 #'   A macro you define is refused however the query reaches it: written in
