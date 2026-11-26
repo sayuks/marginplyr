@@ -3032,6 +3032,10 @@ test_that("unrecognized dtplyr subset forms cannot certify column metadata", {
   unknown_join <- dplyr::full_join(root, root, by = "region")
   unknown_join$on <- NULL
   expect_false(dtplyr_join_set_types_match(unknown_join))
+
+  absent_key <- dplyr::full_join(root, root, by = "region")
+  absent_key$on$x <- "missing_column"
+  expect_false(dtplyr_join_set_types_match(absent_key))
 })
 
 test_that("set operations with derived factor levels refuse unsafe metadata", {

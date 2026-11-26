@@ -840,7 +840,7 @@ test_that("Arrow names a renamed across() of a lazy-load export", {
 test_that("an environment named like a package keeps its promise unread", {
   data <- data.frame(g = c("a", "b"), x = c(1, 2))
   reads <- 0L
-  for (name in c("package:lazyacrossfake", "imports:stats")) {
+  for (name in c("package:lazyacrossfake", "imports:stats", "tools:fake")) {
     imitation <- rlang::new_environment(parent = globalenv())
     attr(imitation, "name") <- name
     delayedAssign("fn", {
