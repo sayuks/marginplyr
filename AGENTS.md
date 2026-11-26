@@ -344,7 +344,7 @@ maps the rest of what the skill expects onto this repository.
 
 ### Implementing a spec
 
-Brief `implement-spec`'s implementers with `design/agents/implement-spec.md`.
+Run `implement-spec` with `design/agents/implement-spec.md`.
 
 ### Main compatibility and conflicts
 
