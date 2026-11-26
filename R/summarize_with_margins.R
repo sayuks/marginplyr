@@ -725,17 +725,18 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
       # ADR 0005 places them ahead of the label query below; staging rewrites
       # the same dots again, per branch.
       check_grouping_helper_calls(dots, plan)
-      validate_margin_operation(
-        operation,
-        on_observed_collision = abort_summary_label_collision
-      )
-
+      # The Arrow share refusal needs only the planned requests, so it too
+      # precedes the label query (ADR 0005).
       if (
         has_shares &&
           identical(operation$backend$kind, "arrow")
       ) {
         abort_arrow_shares(share_request_kinds(summary_plan$requests))
       }
+      validate_margin_operation(
+        operation,
+        on_observed_collision = abort_summary_label_collision
+      )
 
       staged_result <- stage_margin_summaries(
         operation,
