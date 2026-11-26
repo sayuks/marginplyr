@@ -1,0 +1,28 @@
+# Investigated SHA: 0fe5f1e40daa14e2ba2b5246452fa668bc330f80
+# Run from the repository root: Rscript <this file>. Prints observed behaviour.
+# A dtplyr join is refused whenever a root table holds a classed column, even one the call never names.
+suppressMessages(pkgload::load_all(".", quiet = TRUE))
+suppressPackageStartupMessages({library(dplyr)})
+msg <- function(expr) tryCatch(expr, error = function(e) paste0("<", class(e)[1], "> ", gsub("\\s+", " ", conditionMessage(e))))
+sales <- data.frame(store = c("a", "a", "b", "c"), revenue = c(4, 1, 3, 2),
+                    day = as.Date("2026-01-01") + 0:3)
+stores <- data.frame(store = c("a", "b", "c"), region = c("east", "west", "east"))
+f <- function(x) summarize_with_margins(x, revenue = sum(revenue), .grouping = rollup(region))
+cat("expected (the guide admits a join; native collect-then-verb):\n")
+print(f(left_join(sales, stores, by = "store")))
+cat("observed, dtplyr left_join, sales has a Date column the call never names:\n")
+print(msg(collect(f(left_join(dtplyr::lazy_dt(sales), dtplyr::lazy_dt(stores), by = "store")))))
+cat("observed, the same with a factor instead of the Date:\n")
+sales_f <- transform(sales, day = factor(format(day)))
+print(msg(collect(f(left_join(dtplyr::lazy_dt(sales_f), dtplyr::lazy_dt(stores), by = "store")))))
+cat("observed, inspect_grouping() with a typed selection:\n")
+print(msg(inspect_grouping(left_join(dtplyr::lazy_dt(sales), dtplyr::lazy_dt(stores), by = "store"), .grouping = rollup(where(is.character)))))
+cat("control, the same join without the classed column (admitted):\n")
+print(msg(collect(f(left_join(dtplyr::lazy_dt(select(sales, -day)), dtplyr::lazy_dt(stores), by = "store")))))
+cat("control, head()/distinct()/drop_na() over the Date-carrying input (admitted):\n")
+print(msg(collect(summarize_with_margins(head(dtplyr::lazy_dt(sales), 3), revenue = sum(revenue), .grouping = rollup(store)))))
+cat("native control, the same dtplyr join collected and passed to the verb:\n")
+print(f(collect(left_join(dtplyr::lazy_dt(sales), dtplyr::lazy_dt(stores), by = "store"))))
+cat("native control, the join's zero-row type is the input's (dtplyr, no data read):\n")
+str(collect(left_join(dtplyr::lazy_dt(sales[0, ]), dtplyr::lazy_dt(stores[0, ]), by = "store")))
+invisible(0)
