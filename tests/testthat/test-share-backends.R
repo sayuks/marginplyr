@@ -2178,6 +2178,131 @@ test_that("a Converting dialect is asked exactly one query", {
   expect_identical(queries, 1L)
 })
 
+# Delivers `deliver()` while the dialect question is in flight, from the
+# driver's own send method, which sits below the DBI generics the package
+# calls. Returns the function that removes the trace.
+trace_share_question <- function(package, connection_class, deliver) {
+  signature <- c(connection_class, "character")
+  # do.call retains the tracer's closure when S4 tracing wraps .local lazily.
+  suppressMessages(do.call(trace, list(
+    what = "dbSendQuery", signature = signature,
+    where = asNamespace(package), print = FALSE,
+    tracer = function() {
+      statement <- get("statement", envir = parent.frame())
+      if (grepl("SUM\\('x'", statement, ignore.case = TRUE)) deliver()
+    }
+  )))
+  function() {
+    suppressMessages(untrace(
+      "dbSendQuery", signature = signature, where = asNamespace(package)
+    ))
+  }
+}
+
+# Runs `code` with a share question that a time limit expires during, and
+# returns what the call raised, or `NULL` when it returned.
+time_limited_share_question <- function(package, connection_class, code) {
+  untrace_question <- trace_share_question(
+    package, connection_class, expire_time_limit
+  )
+  on.exit(untrace_question(), add = TRUE)
+  catch_time_limited(code)
+}
+
+# R delivers a time limit as an unclassed error and clears it once a handler
+# takes it, so the handler that reads a raised question as the dialect's
+# refusal would let the rest of the call run unbounded and record a verdict
+# nothing measured. SQLite converts, so that verdict is the wrong one there,
+# and a later share over a string would be calculated. With the limit deferred
+# past the question, the question's own answer is the only one that can be
+# recorded, and where the limit is then delivered decides which error ends
+# the call: the guide promises an error, not the time-limit message.
+test_that("a time limit during the dialect question ends the call", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  saved <- share_dialect_snapshot()
+  on.exit(restore_share_dialect_verdicts(saved), add = TRUE)
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  remote <- dplyr::copy_to(
+    con,
+    data.frame(
+      g = c("a", "a", "b"), code = c("10", "20", "30"), v = c(1, 2, 5)
+    ),
+    "share_question_time_limit", temporary = TRUE
+  )
+  # The symbols are columns and summary names in the public data mask.
+  # nolint start: object_usage_linter.
+  numeric_share <- function() {
+    summarize_with_margins(
+      remote, s = sum(v, na.rm = TRUE), p = share_of_total(s),
+      .grouping = rollup(g)
+    )
+  }
+  character_share <- function() {
+    summarize_with_margins(
+      remote, s = max(code, na.rm = TRUE), p = share_of_total(s),
+      .grouping = rollup(g)
+    )
+  }
+  # nolint end
+
+  empty_share_dialect_verdicts()
+  expect_s3_class(
+    time_limited_share_question(
+      "RSQLite", "SQLiteConnection", numeric_share()
+    ),
+    "error"
+  )
+  expect_in(as.character(as.list(share_dialect_verdicts)), "converts")
+  expect_error(character_share(), class = "marginplyr_error")
+
+  # An interrupt at the same point is deferred alike and still reaches the
+  # caller, with nothing recorded.
+  empty_share_dialect_verdicts()
+  untrace_question <- trace_share_question(
+    "RSQLite", "SQLiteConnection", rlang::interrupt
+  )
+  on.exit(untrace_question(), add = TRUE)
+  expect_s3_class(
+    tryCatch(numeric_share(), interrupt = identity),
+    "interrupt"
+  )
+  expect_identical(ls(share_dialect_verdicts, all.names = TRUE), character())
+})
+
+# The refusing half: DuckDB rejects summing a string, so the question raises
+# inside the handler that reads the refusal, and the call used to return.
+test_that("a time limit during a refused dialect question ends the call", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  saved <- share_dialect_snapshot()
+  on.exit(restore_share_dialect_verdicts(saved), add = TRUE)
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  remote <- dplyr::copy_to(
+    con, data.frame(g = c("a", "a", "b"), v = c(1, 2, 5)),
+    "share_question_time_limit"
+  )
+
+  # The symbols are columns and summary names in the public data mask.
+  # nolint start: object_usage_linter.
+  share <- function() {
+    summarize_with_margins(
+      remote, s = sum(v, na.rm = TRUE), p = share_of_total(s),
+      .grouping = rollup(g)
+    )
+  }
+  # nolint end
+
+  empty_share_dialect_verdicts()
+  expect_s3_class(
+    time_limited_share_question(
+      "duckdb", "duckdb_connection", share()
+    ),
+    "error"
+  )
+  expect_in(as.character(as.list(share_dialect_verdicts)), "refuses")
+})
+
 # An unrecognized kind is a marginplyr defect and not something a caller can
 # rewrite, so it stops bare rather than raising a Package condition
 # (ADR 0015). The class assertion is the load-bearing half: a defect caught by
