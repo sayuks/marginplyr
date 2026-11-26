@@ -248,6 +248,13 @@ top_level_sql <- function(query) {
   sql
 }
 
+# The identifiers a rendered clause names, in each quoting style the simulated
+# dialects use.
+quoted_identifiers <- function(sql) {
+  ids <- regmatches(sql, gregexpr('"[^"]+"|`[^`]+`|\\[[^]]+\\]', sql))[[1L]]
+  unique(substr(ids, 2L, nchar(ids) - 1L))
+}
+
 test_that("a sorted compound orders only by columns its operands select", {
   for (simulate in c("simulate_dbi", "simulate_mssql", "simulate_mysql",
                      "simulate_oracle", "simulate_snowflake",
@@ -255,12 +262,22 @@ test_that("a sorted compound orders only by columns its operands select", {
     con <- getExportedValue("dbplyr", simulate)()
     source <- dbplyr::lazy_frame(a = "x", v = 1, con = con, .name = "df")
     for (sort in c("last", "first")) {
-      sql <- top_level_sql(sorted_typed_missing_share(source, sort = sort))
-      order_by <- sub(".*ORDER BY", "", sql)
-      expect_match(sql, "ORDER BY", info = simulate)
-      if (grepl("UNION ALL", sql, fixed = TRUE)) {
-        expect_no_match(order_by, "marginplyr", info = paste(simulate, sort))
-      }
+      info <- paste(simulate, sort)
+      query <- sorted_typed_missing_share(source, sort = sort)
+      # The ORDER BY belongs to an outer SELECT over the compound, not to the
+      # compound itself, whose columns are those its first operand selects.
+      expect_no_match(top_level_sql(query), "UNION ALL", info = info)
+      sql <- gsub("\\s+", " ", as.character(dbplyr::sql_render(query)))
+      order_by <- quoted_identifiers(sub(".*ORDER BY ", "", sql))
+      anchor <- non_final_union_operands(query)[[1L]]
+      anchor <- sub(" FROM .*", "", sub("^SELECT ", "", anchor))
+      selected <- vapply(
+        strsplit(anchor, ", ", fixed = TRUE)[[1L]],
+        function(item) utils::tail(quoted_identifiers(item), 1L),
+        character(1), USE.NAMES = FALSE
+      )
+      expect_true(length(order_by) > 0L, info = info)
+      expect_in(order_by, selected)
     }
   }
   source <- dbplyr::lazy_frame(
