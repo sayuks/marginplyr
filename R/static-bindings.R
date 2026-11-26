@@ -167,6 +167,29 @@ ordinary_function_binding <- function(name, env, owners = character(),
   absent
 }
 
+# Whether `env` is a loaded package's namespace, its imports environment, or
+# its attached `package:` environment on the search path. A name attribute
+# alone is settable by a caller, so each kind is matched by identity against
+# the environment R itself holds under that name.
+is_package_environment <- function(env) {
+  if (isNamespace(env)) {
+    return(TRUE)
+  }
+  name <- attr(env, "name", exact = TRUE)
+  if (!rlang::is_string(name)) {
+    return(FALSE)
+  }
+  if (startsWith(name, "package:")) {
+    return(name %in% search() && identical(as.environment(name), env))
+  }
+  if (startsWith(name, "imports:")) {
+    package <- substring(name, nchar("imports:") + 1L)
+    return(isNamespaceLoaded(package) &&
+             identical(parent.env(asNamespace(package)), env))
+  }
+  FALSE
+}
+
 # Names that may be rebound while the expression runs. Unlike the walk's
 # definite `bound` set, conditional assignments also prevent a lexical
 # environment value from proving an external lookup. An unresolved reflective

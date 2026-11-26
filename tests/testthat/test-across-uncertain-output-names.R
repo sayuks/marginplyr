@@ -667,3 +667,183 @@ test_that("an empty `.fns` list names no output on SQLite", {
     dplyr::copy_to(con, data, overwrite = TRUE)
   }, .check_share_source = FALSE)
 })
+
+# An export of an attached or imported package is an unforced lazy-load
+# promise until something evaluates it, and the installed-package test
+# environment forces its own copies (#1685), so these fixtures install
+# packages of their own and load them afresh for every call. `lazyacrossa`
+# exports `n_distinct()` and shares its output from its own namespace;
+# `lazyacrossb` imports it and does the same from its imports environment
+# (#1793).
+lazy_load_fixture <- new.env(parent = emptyenv())
+
+lazy_load_fixture_lib <- function() {
+  if (!is.null(lazy_load_fixture$lib)) {
+    return(lazy_load_fixture$lib)
+  }
+  root <- tempfile("lazyacross")
+  dir.create(root)
+  lib <- file.path(root, "lib")
+  dir.create(lib)
+  share_call <- paste0(
+    "marginplyr::summarize_with_margins(data, ",
+    "dplyr::across(c(x, y), n_distinct, .names = '{.col}_n'), ",
+    "s = marginplyr::share_of_total(y_n), ",
+    ".grouping = marginplyr::rollup(g))"
+  )
+  write_fixture <- function(name, namespace, code) {
+    pkg <- file.path(root, name)
+    dir.create(file.path(pkg, "R"), recursive = TRUE)
+    writeLines(c(
+      paste("Package:", name), "Version: 0.0.1", "Title: Fixture",
+      "Description: Fixture package.", "License: MIT",
+      paste0("Authors@R: person('A', 'B', email = 'a@example.com', ",
+             "role = c('aut', 'cre'))")
+    ), file.path(pkg, "DESCRIPTION"))
+    writeLines(namespace, file.path(pkg, "NAMESPACE"))
+    writeLines(code, file.path(pkg, "R", "fixture.R"))
+    status <- system2(
+      file.path(R.home("bin"), "R"),
+      c("CMD", "INSTALL", "--no-byte-compile", "-l", shQuote(lib),
+        shQuote(pkg)),
+      stdout = TRUE, stderr = TRUE, env = paste0("R_LIBS=", shQuote(lib))
+    )
+    if (!is.null(attr(status, "status"))) {
+      stop(paste(status, collapse = "\n"))
+    }
+  }
+  write_fixture(
+    "lazyacrossa", c("export(n_distinct)", "export(own_share)"),
+    c("n_distinct <- function(x) length(unique(x))",
+      paste0("own_share <- function(data) ", share_call))
+  )
+  write_fixture(
+    "lazyacrossb",
+    c("importFrom(lazyacrossa, n_distinct)", "export(imported_share)"),
+    paste0("imported_share <- function(data) ", share_call)
+  )
+  lazy_load_fixture$lib <- lib
+  lib
+}
+
+# Runs `code` with both fixtures freshly loaded from their lazy-load
+# databases, so no binding of theirs has been forced yet.
+with_fresh_lazy_load_fixture <- function(code) {
+  lib <- lazy_load_fixture_lib()
+  unload <- function() {
+    if ("package:lazyacrossa" %in% search()) {
+      detach("package:lazyacrossa")
+    }
+    for (name in c("lazyacrossb", "lazyacrossa")) {
+      if (isNamespaceLoaded(name)) unloadNamespace(name)
+    }
+  }
+  unload()
+  on.exit(unload(), add = TRUE)
+  loadNamespace("lazyacrossb", lib.loc = c(lib, .libPaths()))
+  code()
+}
+
+expect_lazy_load_share <- function(result) {
+  result <- as.data.frame(dplyr::collect(result))
+  result <- result[match(c("a", "b", "Total"), result$g), , drop = FALSE]
+  expect_identical(names(result), c("g", "x_n", "y_n", "s"))
+  expect_equal(result$y_n, c(2, 1, 3))
+  expect_equal(result$s, c(2 / 3, 1 / 3, 1))
+}
+
+expect_lazy_load_names <- function(make_input) {
+  data <- data.frame(g = c("a", "a", "b"), x = c(1, 2, 5), y = c(10, 20, 30))
+  with_fresh_lazy_load_fixture(function() {
+    attachNamespace("lazyacrossa")
+    attached <- as.environment("package:lazyacrossa")
+    expect_true(rlang::env_binding_are_lazy(attached, "n_distinct"))
+    caller <- rlang::new_environment(list(data = make_input(data)),
+                                     parent = globalenv())
+    expect_lazy_load_share(eval(quote(marginplyr::summarize_with_margins(
+      data, dplyr::across(c(x, y), n_distinct, .names = "{.col}_n"),
+      s = marginplyr::share_of_total(y_n),
+      .grouping = marginplyr::rollup(g)
+    )), caller))
+  })
+  with_fresh_lazy_load_fixture(function() {
+    expect_true(rlang::env_binding_are_lazy(
+      asNamespace("lazyacrossa"), "n_distinct"
+    ))
+    expect_lazy_load_share(
+      getExportedValue("lazyacrossa", "own_share")(make_input(data))
+    )
+  })
+  with_fresh_lazy_load_fixture(function() {
+    imports <- parent.env(asNamespace("lazyacrossb"))
+    expect_true(rlang::env_binding_are_lazy(imports, "n_distinct"))
+    expect_lazy_load_share(
+      getExportedValue("lazyacrossb", "imported_share")(make_input(data))
+    )
+  })
+}
+
+test_that("a lazy-load export names a share source on a data frame", {
+  expect_lazy_load_names(identity)
+})
+
+test_that("a lazy-load export names a share source on a data.table", {
+  skip_if_suggest_absent("data.table")
+  expect_lazy_load_names(data.table::as.data.table)
+})
+
+test_that("a lazy-load export names a share source on dtplyr", {
+  skip_if_suggest_absent("dtplyr")
+  expect_lazy_load_names(dtplyr::lazy_dt)
+})
+
+test_that("a lazy-load export names a share source on DuckDB", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  expect_lazy_load_names(function(data) {
+    dplyr::copy_to(con, data, overwrite = TRUE)
+  })
+})
+
+test_that("Arrow names a renamed across() of a lazy-load export", {
+  skip_if_suggest_absent("arrow")
+  data <- data.frame(g = c("a", "a", "b"), x = c(1, 2, 5))
+  with_fresh_lazy_load_fixture(function() {
+    attachNamespace("lazyacrossa")
+    attached <- as.environment("package:lazyacrossa")
+    expect_true(rlang::env_binding_are_lazy(attached, "n_distinct"))
+    caller <- rlang::new_environment(
+      list(data = arrow::arrow_table(data)), parent = globalenv()
+    )
+    result <- as.data.frame(dplyr::collect(eval(quote(
+      marginplyr::summarize_with_margins(
+        data, dplyr::across(c(a = x), n_distinct),
+        .grouping = marginplyr::rollup(g)
+      )
+    ), caller)))
+    result <- result[match(c("a", "b", "Total"), result$g), , drop = FALSE]
+    expect_identical(names(result), c("g", "a"))
+    expect_equal(result$a, c(2, 1, 3))
+  })
+})
+
+test_that("an environment named like a package keeps its promise unread", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 2))
+  reads <- 0L
+  for (name in c("package:lazyacrossfake", "imports:stats")) {
+    imitation <- rlang::new_environment(parent = globalenv())
+    attr(imitation, "name") <- name
+    delayedAssign("fn", {
+      reads <<- reads + 1L
+      sum
+    }, assign.env = imitation)
+    caller <- rlang::new_environment(list(data = data), parent = imitation)
+    expect_error(eval(quote(marginplyr::summarize_with_margins(
+      data, dplyr::across(x, fn, .names = "{.col}_{.fn}"),
+      share = marginplyr::share_of_parent(x_1),
+      .grouping = marginplyr::rollup(g)
+    )), caller), "unknown preceding ordinary summary `x_1`", info = name)
+  }
+  expect_identical(reads, 0L)
+})

@@ -3434,6 +3434,8 @@ known_across_source_names <- function(expr, env, data_proxy) {
 # omitted `.fns`. Resolved function bindings, including namespace exports, are
 # also single when the authored namespace operator is known. `substitute()`
 # reads caller bindings without forcing promises or invoking active bindings.
+# A package's own environments are read as values: their promises fetch from
+# the lazy-load database and run no caller code.
 known_across_function_names <- function(parsed, env) {
   parsed$fns <- unparenthesized_value(parsed$fns)
   if (is.null(parsed$fns) || is.function(parsed$fns) ||
@@ -3487,7 +3489,7 @@ known_across_function_names <- function(parsed, env) {
           }
           base_binding <- identical(current, baseenv()) ||
             identical(current, asNamespace("base"))
-          binding <- if (base_binding ||
+          binding <- if (base_binding || is_package_environment(current) ||
                            !rlang::env_binding_are_lazy(current, name)) {
             get(name, envir = current, inherits = FALSE)
           } else {
