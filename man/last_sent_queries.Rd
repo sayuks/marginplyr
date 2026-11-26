@@ -156,7 +156,9 @@ tibble. This includes validation-only refusal and an internal-only view
 of a call that recorded just its result.
 \item A diagnostic render failed, and its row holds \code{NA} in \code{sql}. Recording
 does not raise that render error. The internal backend operation, or a
-later explicit render or collection of the result, may still fail.
+later explicit render or collection of the result, may still fail. A
+time limit or an interrupt arriving during a diagnostic render is not a
+render error: it is delivered when that render ends.
 }
 }
 

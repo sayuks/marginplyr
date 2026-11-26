@@ -15,8 +15,10 @@
 #' `"marginplyr_error"` is the only package-specific class marginplyr promises.
 #' Narrower subclasses and the wording of any message are implementation details
 #' that can change without a deprecation cycle, so match on the class rather
-#' than on message text. No field of the condition names the argument it
-#' refuses; only the message does.
+#' than on message text. No field the promised class carries names the
+#' argument it refuses; only the message does. A field that some subclass
+#' carries, such as the name of a share's source summary, is an implementation
+#' detail as that subclass is.
 #'
 #' Errors raised by tidyselect, by dplyr, or by a database backend fall outside
 #' the class and propagate with their original class, diagnostic, and cause

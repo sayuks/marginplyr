@@ -1585,3 +1585,22 @@ deferred_private_call <- function(namespace, name, ...) {
   helper <- rlang::call2(base::`:::`, rlang::sym(namespace), rlang::sym(name))
   rlang::call2(helper, ...)
 }
+
+# Answer the SQL options a `verb` method's `sql_options` and dbplyr's
+# deprecated `cte` argument stand for, refusing both together as dbplyr's own
+# method does. A supplied `cte` carries dbplyr 2.6.0's deprecation warning.
+# The caller passes its own two formals, either possibly missing.
+margin_resolve_sql_options <- function(verb, sql_options, cte,
+                                       frame = rlang::caller_env(),
+                                       user_env = rlang::caller_env(2)) {
+  rlang::check_exclusive(sql_options, cte, .require = FALSE, .frame = frame)
+  if (missing(cte)) {
+    return(sql_options)
+  }
+  lifecycle::deprecate_warn(
+    "2.4.0", paste0(verb, "(cte)"),
+    with = I(paste0(verb, "(sql_options = sql_options(cte = TRUE))")),
+    env = asNamespace("dbplyr"), user_env = user_env
+  )
+  dbplyr::sql_options(cte = cte)
+}

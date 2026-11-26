@@ -213,6 +213,29 @@ check_grouping_helper_calls <- function(dots, plan) {
   invisible(NULL)
 }
 
+# Refuses a Grouping helper call in the caller's unplanned `dots` that the call
+# alone decides -- its arity, a non-bare or a repeated column -- and returns
+# nothing, so ADR 0005 can place it ahead of typed metadata acquisition. The
+# walk is `contains_grouping_helper()`'s, which reaches a helper in an
+# `across()` lambda before expansion; the plan-dependent refusals stay with
+# `check_grouping_helper_calls()`.
+check_grouping_helper_args <- function(dots) {
+  walk <- function(expr) {
+    if (!rlang::is_call(expr)) {
+      return(invisible(NULL))
+    }
+    helper <- grouping_helper_name(expr)
+    if (!is.null(helper)) {
+      grouping_helper_vars(static_call_args(expr), helper, plan = NULL)
+      return(invisible(NULL))
+    }
+    lapply(searched_call_parts(expr), walk)
+    invisible(NULL)
+  }
+  lapply(dots, function(dot) walk(rlang::quo_get_expr(dot)))
+  invisible(NULL)
+}
+
 rewrite_grouping_expr <- function(expr,
                                   plan,
                                   grouping_set,
@@ -346,6 +369,10 @@ grouping_helper_under_call <- function(expr,
   ))
 }
 
+# The columns a Grouping helper call names, refusing the call where it is
+# invalid. `plan = NULL` asks only what the call decides: written columns are
+# returned unchecked against a plan, and `grouping_id()` naming none returns
+# none.
 grouping_helper_vars <- function(args, helper, plan) {
   # Each argument is read as a value rather than bound to a name, for the reason
   # `static_call_args()` gives: one of them may be R's empty argument, which is
@@ -411,6 +438,9 @@ grouping_helper_vars <- function(args, helper, plan) {
   }
   if (identical(helper, "grouping_id") && length(vars) > 31L) {
     abort_marginplyr("{.fun grouping_id} supports at most 31 columns.")
+  }
+  if (is.null(plan)) {
+    return(vars)
   }
   allowed <- unique(c(plan$by, plan$dimensions))
   unknown <- setdiff(vars, allowed)
