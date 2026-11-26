@@ -726,3 +726,211 @@ test_that("a refused DuckDB call or view names compute() as its remedy", {
     expect_true("y" %in% included[[1L]], info = kind)
   }
 })
+
+test_that("backtick-quoted macro and query heads are refused (#1779)", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  if (utils::packageVersion("duckdb") < "2.0.0") {
+    # DuckDB 1.5 has no backtick identifier; the operator reading below is
+    # what its preflight follows.
+    expect_error(DBI::dbGetQuery(con, "SELECT 1 AS `k`"), "syntax error",
+                 fixed = TRUE)
+  } else {
+    path <- tempfile(fileext = ".csv")
+    on.exit(unlink(path), add = TRUE)
+    writeLines(c("k", "101"), path)
+    reader <- paste0("read_csv_auto(", DBI::dbQuoteString(con, path), ")")
+    DBI::dbWriteTable(con, "t", data.frame(g = c("a", "b"), v = c(1L, 2L)))
+    DBI::dbExecute(con, paste0(
+      "CREATE MACRO hidden_first(x) AS (SELECT first(k) FROM ", reader, ")"
+    ))
+    DBI::dbExecute(con, paste(
+      "CREATE MACRO hidden_reader() AS TABLE SELECT * FROM", reader
+    ))
+    authored <- function(sql, vars) {
+      dplyr::tbl(con, dbplyr::sql(sql), vars = vars)
+    }
+    inputs <- list(
+      authored("SELECT g, v, `hidden_first`(v) AS y FROM t", c("g", "v", "y")),
+      authored("SELECT g, v, main.`hidden_first`(v) AS y FROM t",
+               c("g", "v", "y")),
+      authored("SELECT 'a' AS g, * FROM `hidden_reader`()", c("g", "k")),
+      authored(paste0(
+        "SELECT 'a' AS g, * FROM `query`(",
+        DBI::dbQuoteString(con, paste("SELECT * FROM", reader)), ")"
+      ), c("g", "k")),
+      dplyr::mutate(dplyr::tbl(con, "t"), y = dplyr::sql("`hidden_first`(v)"))
+    )
+    old <- options(marginplyr.audit_sql = TRUE)
+    on.exit(options(old), add = TRUE)
+    for (value in c("101", "source_tail")) {
+      writeLines(c("k", value), path)
+      for (input in inputs) {
+        expect_error(inspect_grouping(
+          input, .grouping = grouping_set(where(is.numeric))
+        ), "DuckDB call", fixed = TRUE, class = "marginplyr_error")
+        expect_duckdb_catalog_only()
+        expect_error(
+          summarize_with_margins(input, n = dplyr::n(), .grouping = rollup(g)),
+          "DuckDB call", fixed = TRUE, class = "marginplyr_error"
+        )
+        expect_duckdb_catalog_only()
+      }
+    }
+  }
+})
+
+test_that("a caller macro DuckDB binds without a call head refuses (#1780)", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  writeLines(c("k", "101"), path)
+  reader <- paste0("read_csv_auto(", DBI::dbQuoteString(con, path), ")")
+  DBI::dbWriteTable(con, "t", data.frame(g = c("a", "b"), v = c(1L, 2L)))
+  operator_sql <- "SELECT g, v, v + 1 AS y FROM t"
+  like_sql <- "SELECT g, v, g LIKE 'a' AS y FROM t"
+  # DuckDB stores both forms as operators, not as named calls.
+  DBI::dbExecute(con, paste("CREATE VIEW operator_view AS", operator_sql))
+  DBI::dbExecute(con, paste("CREATE VIEW like_view AS", like_sql))
+  t <- dplyr::tbl(con, "t")
+  authored <- function(sql, vars = c("g", "v", "y")) {
+    dplyr::tbl(con, dbplyr::sql(sql), vars = vars)
+  }
+  inputs <- list(
+    dplyr::mutate(t, y = v + 1L),
+    dplyr::count(t, g),
+    authored(operator_sql),
+    authored("SELECT g, COUNT(*) AS n FROM t GROUP BY g", c("g", "n")),
+    authored("SELECT g, v, {'a': v} AS y FROM t"),
+    authored("SELECT g, v, [v] AS y FROM t"),
+    authored("SELECT g, v, EXTRACT(year FROM DATE '2020-01-01') AS y FROM t"),
+    authored(like_sql),
+    dplyr::tbl(con, "operator_view"),
+    dplyr::tbl(con, "like_view")
+  )
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  typed_plans <- function() {
+    lapply(inputs, function(input) {
+      plan <- inspect_grouping(input, .grouping = grouping_set(
+        where(is.numeric)
+      ))$included
+      sent <- last_sent_queries(details = TRUE)
+      expect_identical(sum(sent$purpose == "selection_proxy"), 1L)
+      plan
+    })
+  }
+  # Without such a macro, or with one the statement does not reach, the
+  # plans do not follow the file.
+  plans <- typed_plans()
+  DBI::dbExecute(con, paste0(
+    "CREATE MACRO hidden_first(x) AS (SELECT first(k) FROM ", reader, ")"
+  ))
+  writeLines(c("k", "source_tail"), path)
+  expect_identical(typed_plans(), plans)
+  for (name in c("+", "count_star", "struct_pack", "list_value", "date_part",
+                 "~~")) {
+    macro <- DBI::dbQuoteIdentifier(con, name)
+    DBI::dbExecute(con, paste0(
+      "CREATE MACRO ", macro, "(a := NULL, b := NULL) AS ",
+      "(SELECT first(k) FROM ", reader, ")"
+    ))
+    for (value in c("101", "source_tail")) {
+      writeLines(c("k", value), path)
+      for (input in inputs) {
+        expect_error(inspect_grouping(
+          input, .grouping = grouping_set(where(is.numeric))
+        ), "DuckDB call", fixed = TRUE, class = "marginplyr_error")
+        expect_duckdb_catalog_only()
+        expect_error(
+          summarize_with_margins(input, n = dplyr::n(), .grouping = rollup(g)),
+          "DuckDB call", fixed = TRUE, class = "marginplyr_error"
+        )
+        expect_duckdb_catalog_only()
+        expect_error(expand_with_margins(input, .grouping = rollup(g)),
+                     "DuckDB call", fixed = TRUE, class = "marginplyr_error")
+        expect_duckdb_catalog_only()
+      }
+    }
+    DBI::dbExecute(con, paste("DROP MACRO", macro))
+  }
+})
+
+test_that("each implicitly bound function name is reached without a head", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  # The syntax that binds each name in duckdb_implicit_functions.
+  forms <- c(
+    "+" = "2 + 1", "-" = "2 - 1", "*" = "2 * 1", "/" = "2 / 1", "%" = "2 % 1",
+    "//" = "2 // 1", "^" = "2 ^ 1", "**" = "2 ** 1", "||" = "'a' || 'b'",
+    "<<" = "2 << 1", ">>" = "2 >> 1", "&" = "2 & 1", "|" = "2 | 1",
+    "~" = "~ 2", "@" = "@ 2", "^@" = "'ab' ^@ 'a'", "&&" = "[1] && [1]",
+    "@>" = "[1] @> [1]", "<@" = "[1] <@ [1]", "<->" = "[1.0] <-> [1.0]",
+    "<=>" = "[1.0] <=> [1.0]", "~~" = "'a' LIKE 'a'",
+    "!~~" = "'a' NOT LIKE 'a'", "~~*" = "'a' ILIKE 'a'",
+    "!~~*" = "'a' NOT ILIKE 'a'", "~~~" = "'a' GLOB 'a'",
+    count_star = "COUNT(*)", list_value = "[1]", struct_pack = "{'a': 1}",
+    row = "(1, 2)", map = "MAP {'a': 1}",
+    date_part = "EXTRACT(year FROM DATE '2020-01-01')",
+    timezone = "TIMESTAMPTZ '2020-01-01' AT TIME ZONE 'UTC'",
+    ltrim = "TRIM(LEADING 'x' FROM 'xa')",
+    rtrim = "TRIM(TRAILING 'x' FROM 'ax')",
+    regexp_full_match = "'a' SIMILAR TO 'a'",
+    like_escape = "'a' LIKE 'a' ESCAPE '$'",
+    ilike_escape = "'a' ILIKE 'a' ESCAPE '$'",
+    list_apply = "[x FOR x IN [1]]", contains = "1 IN [1]",
+    to_millennia = "INTERVAL (1) MILLENNIUM",
+    to_centuries = "INTERVAL (1) CENTURY", to_decades = "INTERVAL (1) DECADE",
+    to_years = "INTERVAL (1) YEAR", to_quarters = "INTERVAL (1) QUARTER",
+    to_months = "INTERVAL (1) MONTH", to_weeks = "INTERVAL (1) WEEK",
+    to_days = "INTERVAL (1) DAY", to_hours = "INTERVAL (1) HOUR",
+    to_minutes = "INTERVAL (1) MINUTE", to_seconds = "INTERVAL (1) SECOND",
+    to_milliseconds = "INTERVAL (1) MILLISECOND",
+    to_microseconds = "INTERVAL (1) MICROSECOND"
+  )
+  expect_setequal(names(forms), duckdb_implicit_functions)
+  for (name in names(forms)) {
+    macro <- DBI::dbQuoteIdentifier(con, name)
+    DBI::dbExecute(con, paste0(
+      "CREATE MACRO ", macro, "(a := NULL, b := NULL, c := NULL) AS 'reached'"
+    ))
+    expect_identical(
+      DBI::dbGetQuery(con, paste("SELECT", forms[[name]], "AS r"))$r,
+      "reached", label = forms[[name]]
+    )
+    DBI::dbExecute(con, paste("DROP MACRO", macro))
+  }
+})
+
+test_that("the histogram() aggregate is refused like its table macro (#1781)", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  DBI::dbWriteTable(con, "t", data.frame(g = c("a", "a", "b"),
+                                         v = c(1L, 1L, 2L)))
+  # The aggregate shares its name with a system table macro, and the call
+  # head is matched against macros wherever it stands.
+  x <- dplyr::summarise(dplyr::group_by(dplyr::tbl(con, "t"), g),
+                        h = histogram(v), v = sum(v, na.rm = TRUE))
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  expect_error(
+    inspect_grouping(x, .grouping = grouping_set(where(is.numeric))),
+    "DuckDB call", fixed = TRUE, class = "marginplyr_error"
+  )
+  expect_duckdb_catalog_only()
+  expect_error(
+    summarize_with_margins(x, v = sum(v), .grouping = rollup(g)),
+    "DuckDB call", fixed = TRUE, class = "marginplyr_error"
+  )
+  # compute() first is the documented remedy.
+  totals <- dplyr::collect(summarize_with_margins(
+    dplyr::compute(x), v = sum(v, na.rm = TRUE), .grouping = rollup(g)
+  ))
+  expect_identical(as.numeric(totals$v[match(c("a", "b", "Total"), totals$g)]),
+                   c(2, 2, 4))
+})

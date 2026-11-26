@@ -101,7 +101,8 @@
 #' inspection that needs them is refused before they are requested:
 #' - A derived dtplyr step whose types depend on processing source rows. Call
 #'   [dplyr::collect()] on it explicitly and pass the resulting data frame.
-#' - A DuckDB CSV reader that uses auto-detection, including filename
+#' - A DuckDB CSV reader -- `read_csv()`, `read_csv_auto()` or
+#'   `read_single_csv_file()` -- that uses auto-detection, including filename
 #'   replacement scans such as `FROM 'path.csv'`, because binding even a
 #'   zero-row query can sample CSV values. Supply an explicit CSV schema
 #'   with `auto_detect = false`, or collect explicitly first.
