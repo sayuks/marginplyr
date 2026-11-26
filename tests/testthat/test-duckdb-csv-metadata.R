@@ -1729,3 +1729,114 @@ test_that("a continued escape string spelling a CSV path is refused", {
   )
   expect_duckdb_catalog_only()
 })
+
+test_that("backtick-quoted relations refuse CSV as double quotes do (#1779)", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  if (utils::packageVersion("duckdb") < "2.0.0") {
+    # DuckDB 1.5 has no backtick identifier; the operator reading below is
+    # what its preflight follows.
+    expect_error(DBI::dbGetQuery(con, "SELECT 1 AS `k`"), "syntax error",
+                 fixed = TRUE)
+  } else {
+    # A backtick in the filename is spelled doubled inside a backtick span.
+    path <- tempfile(pattern = "tick`name", fileext = ".csv")
+    on.exit(unlink(path), add = TRUE)
+    tick <- paste0("`", gsub("`", "``", path, fixed = TRUE), "`")
+    reader <- paste0("read_csv_auto(", DBI::dbQuoteString(con, path), ")")
+    writeLines(c("k", "101"), path)
+    DBI::dbWriteTable(con, "src", data.frame(k = 101L))
+    DBI::dbExecute(con, paste("CREATE VIEW v_csv AS SELECT * FROM", reader))
+    old <- options(marginplyr.audit_sql = TRUE)
+    on.exit(options(old), add = TRUE)
+    refused <- list(
+      list(paste("SELECT * FROM", tick), "k"),
+      list(paste("TABLE", tick), "k"),
+      list(paste("SELECT f.k FROM src AS s JOIN", tick, "AS f ON true"), "k"),
+      list("SELECT * FROM `v_csv`", "k"),
+      # A double quote inside a backtick span opens no identifier.
+      list(paste("SELECT 1 AS `a\"b`, k FROM",
+                 DBI::dbQuoteIdentifier(con, path)), c("a\"b", "k"))
+    )
+    for (value in c("101", "source_tail")) {
+      writeLines(c("k", value), path)
+      for (case in refused) {
+        source <- dplyr::tbl(con, dbplyr::sql(case[[1L]]), vars = case[[2L]])
+        expect_error(
+          inspect_grouping(source, .grouping = grouping_set(where(is.numeric))),
+          "source rows", fixed = TRUE, class = "marginplyr_error"
+        )
+        expect_duckdb_catalog_only()
+        expect_error(
+          summarize_with_margins(source, n = dplyr::n(), .grouping = rollup(k)),
+          "DuckDB CSV input", fixed = TRUE, class = "marginplyr_error"
+        )
+        expect_duckdb_catalog_only()
+      }
+      # A quoted reader head is refused before any catalog read.
+      source <- dplyr::tbl(con, dbplyr::sql(paste0(
+        "SELECT * FROM `read_csv_auto`(", DBI::dbQuoteString(con, path), ")"
+      )), vars = "k")
+      expect_error(
+        inspect_grouping(source, .grouping = grouping_set(where(is.numeric))),
+        "source rows", fixed = TRUE, class = "marginplyr_error"
+      )
+      expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+    }
+    # Refused before binding: an absent file would otherwise reach an IO error.
+    unlink(path)
+    source <- dplyr::tbl(con, dbplyr::sql(paste("SELECT * FROM", tick)),
+                         vars = "k")
+    expect_error(
+      inspect_grouping(source, .grouping = grouping_set(where(is.numeric))),
+      "source rows", fixed = TRUE, class = "marginplyr_error"
+    )
+
+    # A backtick CTE shadows the file it spells, and a backtick catalog name,
+    # column name or source-free CTE keeps its typed plan.
+    for (sql in c(
+      paste0("WITH ", tick, " AS (SELECT 101 AS k) SELECT * FROM ",
+             DBI::dbQuoteIdentifier(con, path)),
+      "SELECT * FROM `src`",
+      "SELECT `k` FROM src",
+      "WITH `c` AS (SELECT 101 AS k) SELECT * FROM `c`"
+    )) {
+      source <- dplyr::tbl(con, dbplyr::sql(sql), vars = "k")
+      expect_identical(inspect_grouping(
+        source, .grouping = grouping_set(where(is.numeric))
+      )$included, "(k)")
+      expect_identical(
+        setdiff(last_sent_queries(details = TRUE)$purpose, "relation_catalog"),
+        "selection_proxy"
+      )
+    }
+  }
+})
+
+test_that("a backtick span is SQL where DuckDB lexes an operator (#1779)", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  writeLines(c("k", "101"), path)
+  reader <- paste0("read_csv_auto(", DBI::dbQuoteString(con, path), ")")
+  DBI::dbWriteTable(con, "src", data.frame(k = 101L))
+  # A caller macro named after the operator lets DuckDB 1.5 bind the span.
+  DBI::dbExecute(con, 'CREATE MACRO "`"(a, b) AS a')
+  source <- dplyr::tbl(con, dbplyr::sql(paste0(
+    "SELECT k `(SELECT first(k) FROM ", reader, ")` 1 AS y FROM src"
+  )), vars = "y")
+  if (utils::packageVersion("duckdb") < "2.0.0") {
+    expect_true(is.numeric(dplyr::collect(utils::head(source, 0L))$y))
+    expect_error(
+      inspect_grouping(source, .grouping = grouping_set(where(is.numeric))),
+      "source rows", fixed = TRUE, class = "marginplyr_error"
+    )
+  } else {
+    # DuckDB 2.0 reads the span as one identifier, so nothing binds.
+    expect_error(dplyr::collect(utils::head(source, 0L)), "Parser Error",
+                 fixed = TRUE)
+  }
+})

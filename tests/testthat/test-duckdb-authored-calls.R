@@ -726,3 +726,57 @@ test_that("a refused DuckDB call or view names compute() as its remedy", {
     expect_true("y" %in% included[[1L]], info = kind)
   }
 })
+
+test_that("backtick-quoted macro and query heads are refused (#1779)", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  if (utils::packageVersion("duckdb") < "2.0.0") {
+    # DuckDB 1.5 has no backtick identifier; the operator reading below is
+    # what its preflight follows.
+    expect_error(DBI::dbGetQuery(con, "SELECT 1 AS `k`"), "syntax error",
+                 fixed = TRUE)
+  } else {
+    path <- tempfile(fileext = ".csv")
+    on.exit(unlink(path), add = TRUE)
+    writeLines(c("k", "101"), path)
+    reader <- paste0("read_csv_auto(", DBI::dbQuoteString(con, path), ")")
+    DBI::dbWriteTable(con, "t", data.frame(g = c("a", "b"), v = c(1L, 2L)))
+    DBI::dbExecute(con, paste0(
+      "CREATE MACRO hidden_first(x) AS (SELECT first(k) FROM ", reader, ")"
+    ))
+    DBI::dbExecute(con, paste(
+      "CREATE MACRO hidden_reader() AS TABLE SELECT * FROM", reader
+    ))
+    authored <- function(sql, vars) {
+      dplyr::tbl(con, dbplyr::sql(sql), vars = vars)
+    }
+    inputs <- list(
+      authored("SELECT g, v, `hidden_first`(v) AS y FROM t", c("g", "v", "y")),
+      authored("SELECT g, v, main.`hidden_first`(v) AS y FROM t",
+               c("g", "v", "y")),
+      authored("SELECT 'a' AS g, * FROM `hidden_reader`()", c("g", "k")),
+      authored(paste0(
+        "SELECT 'a' AS g, * FROM `query`(",
+        DBI::dbQuoteString(con, paste("SELECT * FROM", reader)), ")"
+      ), c("g", "k")),
+      dplyr::mutate(dplyr::tbl(con, "t"), y = dplyr::sql("`hidden_first`(v)"))
+    )
+    old <- options(marginplyr.audit_sql = TRUE)
+    on.exit(options(old), add = TRUE)
+    for (value in c("101", "source_tail")) {
+      writeLines(c("k", value), path)
+      for (input in inputs) {
+        expect_error(inspect_grouping(
+          input, .grouping = grouping_set(where(is.numeric))
+        ), "DuckDB call", fixed = TRUE, class = "marginplyr_error")
+        expect_duckdb_catalog_only()
+        expect_error(
+          summarize_with_margins(input, n = dplyr::n(), .grouping = rollup(g)),
+          "DuckDB call", fixed = TRUE, class = "marginplyr_error"
+        )
+        expect_duckdb_catalog_only()
+      }
+    }
+  }
+})

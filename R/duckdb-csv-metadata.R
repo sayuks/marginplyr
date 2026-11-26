@@ -1,11 +1,14 @@
 # SQL lexical tokens for reader metadata guards, using ASCII identifier keys.
 # Quoted values stay opaque and nested comments are discarded. A string
-# continued across a line break, which DuckDB concatenates, is one token.
+# continued across a line break, which DuckDB concatenates, is one token. A
+# backtick span is a quoted identifier where duckdb_backtick_identifiers() says
+# DuckDB reads it as one.
 duckdb_metadata_tokens <- function(sql) {
   # Whitespace holding a line break, optionally after a line comment.
   continue <- "(?:[ \\t\\f]*(?:--[^\\r\\n]*)?[\\r\\n])+[[:space:]]*"
   escaped <- "'(?:[^'\\\\]|\\\\.|'')*'"
   plain <- "'(?:[^']|'')*'"
+  backtick <- duckdb_backtick_identifiers()
   pattern <- paste0(
     "(?s)",
     "(?<comment>/\\*(?:[^*/]|/(?!\\*)|\\*(?!/)|(?&comment))*\\*/)",
@@ -14,6 +17,7 @@ duckdb_metadata_tokens <- function(sql) {
     "|", plain, "(?:", continue, plain, ")*",
     "|(?<tag>\\$[A-Za-z_0-9]*\\$).*?\\k<tag>",
     '|"(?:[^"]|"")*"',
+    if (backtick) "|`(?:[^`]|``)*`",
     "|[[:alpha:]_][[:alnum:]_$]*|:=|[^[:space:]]"
   )
   tokens <- regmatches(sql, gregexpr(pattern, sql, perl = TRUE))[[1L]]
@@ -32,12 +36,23 @@ duckdb_metadata_tokens <- function(sql) {
     }
     paste0(prefix, "'", paste(contents, collapse = ""), "'")
   }, character(1), USE.NAMES = FALSE)
-  quoted <- startsWith(tokens, '"')
-  tokens[quoted] <- gsub(
-    '""', '"', substring(tokens[quoted], 2L, nchar(tokens[quoted]) - 1L),
-    fixed = TRUE
-  )
+  # An unterminated backtick is a one-character token, not an identifier.
+  quoted <- startsWith(tokens, '"') |
+    (backtick & startsWith(tokens, "`") & nchar(tokens) > 1L)
+  tokens[quoted] <- vapply(tokens[quoted], function(token) {
+    delimiter <- substring(token, 1L, 1L)
+    gsub(strrep(delimiter, 2L), delimiter,
+         substring(token, 2L, nchar(token) - 1L), fixed = TRUE)
+  }, character(1), USE.NAMES = FALSE)
   structure(sql_ascii_lower(tokens), quoted = quoted)
+}
+
+# Whether the loaded DuckDB reads a backtick span as a quoted identifier. 2.0's
+# tokenizer does; 1.5's lexes a backtick as an operator character, so the
+# span's contents are SQL there. A session links the one engine its duckdb
+# package carries, under that package's version.
+duckdb_backtick_identifiers <- function() {
+  utils::packageVersion("duckdb") >= "2.0.0"
 }
 
 # Remove only parentheses enclosing a complete token expression.
