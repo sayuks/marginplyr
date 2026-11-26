@@ -516,8 +516,11 @@ summarize_with_margins <- function(.data,
     call = call
   )
 
-  # Whether the plan-name hook below has yet to run its pass before metadata.
-  before_metadata <- TRUE
+  # Whether the plan-name hook below is yet to make its call from names alone,
+  # the one ahead of typed metadata.
+  plan_names <- new.env(parent = emptyenv())
+  plan_names$pass_pending <- TRUE
+  lazy_input <- !is.data.frame(.data)
   operation <- prepare_margin_operation(
     .data,
     by_quo = by_quo,
@@ -548,15 +551,18 @@ summarize_with_margins <- function(.data,
           grouping_name_proxy(setdiff(data_vars, c(fixed$columns, dimensions)))
         )
       }
-      # After the `.grouping` and `.by` checks, which keep their precedence,
-      # and ahead of typed metadata (ADR 0005). Only on the pass before that
-      # metadata, and only once names have settled the plan: a `.by` or
-      # `.grouping` refusal still undecided there is reached afterwards, ahead
-      # of `check_grouping_helper_calls()` in `execute_margin_summary()`.
-      if (before_metadata && complete) {
+      # On the call from names alone, after the `.grouping` and `.by` checks
+      # names decide. A lazy input runs it there even when names leave the plan
+      # unsettled, so a `.by` or `.grouping` refusal that only typed metadata
+      # decides comes after it: no statement precedes a refusal the call alone
+      # decides (ADR 0005). A data frame sends no statement, so it runs it there
+      # only on a settled plan, and otherwise leaves it to
+      # `check_grouping_helper_calls()` in `execute_margin_summary()`, after
+      # every `.grouping` and `.by` refusal.
+      if (plan_names$pass_pending && (complete || lazy_input)) {
         check_grouping_helper_args(dots)
       }
-      before_metadata <<- FALSE
+      plan_names$pass_pending <- FALSE
     },
     call = call
   )

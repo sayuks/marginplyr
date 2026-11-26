@@ -135,14 +135,17 @@ call_only_helper_calls <- function() {
   )
 }
 
+# The second `.grouping` is settled only by typed metadata, which a lazy input
+# still does not acquire before the helper refusal.
 expect_helper_sends_nothing <- function(data) {
   counter <- duckdb_query_counter()
   on.exit(counter$untrace(), add = TRUE)
-  for (case in call_only_helper_calls()) {
-    info <- deparse1(case$call)
+  groupings <- rlang::exprs(rollup("g"), rollup(dplyr::where(is.character)))
+  for (case in call_only_helper_calls()) for (grouping in groupings) {
+    info <- paste(deparse1(case$call), deparse1(grouping))
     counter$queries <- 0L
     error <- expect_error(
-      summarize_with_margins(data, s = !!case$call, .grouping = rollup("g")),
+      summarize_with_margins(data, s = !!case$call, .grouping = !!grouping),
       case$message,
       fixed = TRUE,
       class = "marginplyr_error",
@@ -188,15 +191,17 @@ test_that("DuckDB refuses a helper wrong on its face before any statement", {
   )
 })
 
-# A `.by` refusal precedes a helper refusal whether names decide it before
-# typed metadata, as an overlap with `.grouping` is, or only afterwards, as a
-# computed expression is.
+# A `.by` refusal precedes a helper refusal when names decide it before typed
+# metadata, as an overlap with `.grouping` is. One decided only afterwards, as
+# a computed expression is, still precedes it on a data frame, which acquires
+# no metadata; a lazy input refuses the helper first, before any statement
+# (ADR 0005).
 test_that("a `.by` error keeps its precedence over a helper refusal", {
   by_errors <- rlang::exprs(
     "cannot appear in both `.by` and `.grouping`" = g,
     "`.by` selects existing columns, not computed expressions" = g + 1
   )
-  expect_by_refused_first <- function(data) {
+  expect_by_refused_first <- function(data, by_errors) {
     for (message in names(by_errors)) {
       expect_error(
         summarize_with_margins(
@@ -211,11 +216,20 @@ test_that("a `.by` error keeps its precedence over a helper refusal", {
     }
   }
   local <- data.frame(g = c("a", "a", "b"), h = c("x", "y", "x"), v = 1:3)
-  expect_by_refused_first(local)
+  expect_by_refused_first(local, by_errors)
 
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   DBI::dbWriteTable(con, "helper_by", local)
-  expect_by_refused_first(dplyr::tbl(con, "helper_by"))
+  lazy <- dplyr::tbl(con, "helper_by")
+  expect_by_refused_first(lazy, by_errors[1L])
+  expect_error(
+    summarize_with_margins(
+      lazy, s = grouping_bit(g, h), .by = g + 1, .grouping = rollup(g)
+    ),
+    "requires exactly one column",
+    fixed = TRUE,
+    class = "marginplyr_error"
+  )
 })
