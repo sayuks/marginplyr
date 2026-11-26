@@ -128,10 +128,8 @@ render_sent_query_sql <- function(query, entry) {
     )
     on.exit(suspendInterrupts(options(old)), add = TRUE)
   })
-  # R delivers a time limit as an ordinary error, which the error branch below
-  # would keep local, clearing the limit for the rest of the call (#1796).
-  # Suspended, R delivers neither a limit nor an interrupt inside these
-  # handlers, so both reach the caller once the render ends.
+  # The error branch below would keep a time limit local (#1796); suspended
+  # for the reason `probe_share_dialect_answer()` suspends its question.
   suspendInterrupts(withRestarts(
     withCallingHandlers(
       as.character(dbplyr::sql_render(query)),
