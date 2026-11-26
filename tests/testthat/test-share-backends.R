@@ -910,6 +910,58 @@ test_that("dtplyr preserves an omitted across selection", {
   )
 })
 
+# Each Arrow input shape a share refusal is asserted on, holding a value equal
+# to the default Margin label, and a Parquet dataset whose file was removed
+# after it was opened (#1771). The caller has checked that arrow is installed.
+arrow_share_refusal_inputs <- function() {
+  colliding <- arrow::Table$create(data.frame(
+    group = c("Total", "y"),
+    value = 1:2
+  ))
+  path <- tempfile(fileext = ".parquet")
+  arrow::write_parquet(colliding, path)
+  gone <- arrow::open_dataset(path)
+  unlink(path)
+  list(
+    Table = colliding,
+    RecordBatch = arrow::record_batch(as.data.frame(colliding)),
+    Dataset = arrow::InMemoryDataset$create(colliding),
+    query = dplyr::filter(colliding, .data$value > 0L),
+    gone = gone
+  )
+}
+
+# Calls `helper` on every input `arrow_share_refusal_inputs()` returns, written
+# directly and as an `across()` function, with the label check opted into,
+# and returns the conditions the calls raised.
+# The symbols are columns and summary names in the public data mask.
+# nolint start: object_usage_linter.
+arrow_checked_share_refusals <- function(helper) {
+  inputs <- arrow_share_refusal_inputs()
+  share <- rlang::sym(helper)
+  forms <- list(
+    direct = rlang::exprs(share = (!!share)(total)),
+    across = rlang::exprs(dplyr::across(total, !!share, .names = "share"))
+  )
+  refusals <- list()
+  for (kind in names(inputs)) {
+    for (form in names(forms)) {
+      refusals[[paste(kind, form)]] <- tryCatch(
+        summarize_with_margins(
+          inputs[[kind]],
+          total = sum(value),
+          !!!forms[[form]],
+          .grouping = rollup(group),
+          .check_margin_label = TRUE
+        ),
+        error = identity
+      )
+    }
+  }
+  refusals
+}
+# nolint end
+
 test_that("Arrow rejects Parent shares before constructing a query", {
   skip_if_suggest_absent("arrow")
   source <- arrow::Table$create(data.frame(
@@ -969,29 +1021,12 @@ test_that("Arrow rejects Parent shares before constructing a query", {
 
   # An opted-in label check is a query too, so ADR 0005 places the refusal
   # ahead of it, whatever the data holds and on every Arrow input shape.
-  colliding <- arrow::Table$create(data.frame(
-    group = c("Total", "y"),
-    value = 1:2
-  ))
-  inputs <- list(
-    Table = colliding,
-    RecordBatch = arrow::record_batch(as.data.frame(colliding)),
-    Dataset = arrow::InMemoryDataset$create(colliding),
-    query = dplyr::filter(colliding, value > 0L)
-  )
-  for (kind in names(inputs)) {
-    checked <- expect_error(
-      summarize_with_margins(
-        inputs[[kind]],
-        total = sum(value),
-        share = share_of_parent(total),
-        .grouping = rollup(group),
-        .check_margin_label = TRUE
-      ),
-      "Arrow.*Parent share",
-      info = kind
+  refusals <- arrow_checked_share_refusals("share_of_parent")
+  for (case in names(refusals)) {
+    expect_s3_class(refusals[[case]], "marginplyr_error")
+    expect_match(
+      conditionMessage(refusals[[case]]), "Arrow.*Parent share", info = case
     )
-    expect_s3_class(checked, "marginplyr_error")
   }
   expect_identical(calls$summarize, 0L)
   expect_identical(calls$collect, 0L)
@@ -3516,18 +3551,13 @@ test_that("Arrow rejects Total shares before constructing a query", {
   expect_snapshot(conditionMessage(both))
 
   # With the label check opted into, the refusal still precedes its query.
-  checked <- expect_error(
-    summarize_with_margins(
-      arrow::Table$create(data.frame(group = c("Total", "y"), value = 1:2)),
-      total = sum(value),
-      across(total, share_of_total, .names = "whole"),
-      .grouping = cube(group),
-      .margin_label = "Total",
-      .check_margin_label = TRUE
-    ),
-    "Arrow.*Total share"
-  )
-  expect_s3_class(checked, "marginplyr_error")
+  refusals <- arrow_checked_share_refusals("share_of_total")
+  for (case in names(refusals)) {
+    expect_s3_class(refusals[[case]], "marginplyr_error")
+    expect_match(
+      conditionMessage(refusals[[case]]), "Arrow.*Total share", info = case
+    )
+  }
 
   expect_identical(calls$summarize, 0L)
   expect_identical(calls$collect, 0L)
