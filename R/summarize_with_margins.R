@@ -546,6 +546,9 @@ summarize_with_margins <- function(.data,
           grouping_name_proxy(setdiff(data_vars, c(fixed$columns, dimensions)))
         )
       }
+      # After the `.grouping` and `.by` checks, which keep their precedence,
+      # and ahead of typed metadata (ADR 0005).
+      check_grouping_helper_args(dots)
     },
     call = call
   )
