@@ -801,6 +801,14 @@ rejection with evidence. Naming which one is what the disposition does, and a
 comment is not among them: a finding a comment would answer is one of the
 others.
 
+A disposition rests on the finding's premise as measured, not as read. A
+finding that code misbehaves is reproduced at the reviewed SHA before it is
+dispositioned, and a remedy it proposes is a hypothesis like its premise:
+whoever answers it receives the finding with that reproduction and chooses the
+remedy against the Acceptance it touches. On #1799, two findings fixed as
+written each broke what an issue required — the hints of #1772 and #1773, and
+#1785's refusal order — and each took a further round to undo.
+
 A finding about prose is one of five: the prose is false, it duplicates an
 argument another file owns and can drift from it, it restates what a diagnostic
 rendered beside it says, it breaks a rule a repository document states, or
