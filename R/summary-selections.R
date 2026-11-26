@@ -1832,7 +1832,8 @@ cached_local_across_names <- function(dots) {
 }
 
 # Reads a literal or an existing plain caller constant without forcing a
-# promise or active binding. Mask names remain owned by local execution.
+# promise or active binding; a promise counts only when its expression is
+# such a constant. Mask names remain owned by local execution.
 known_context_constant <- function(expr, lookup) {
   if (rlang::is_missing(expr)) return(NULL)
   if (rlang::is_quosure(expr)) {
@@ -1855,9 +1856,14 @@ known_context_constant <- function(expr, lookup) {
   current <- lookup$env
   while (!identical(current, emptyenv())) {
     if (exists(name, envir = current, inherits = FALSE)) {
-      if (bindingIsActive(name, current) ||
-            rlang::env_binding_are_lazy(current, name)) return(NULL)
-      value <- get(name, envir = current, inherits = FALSE)
+      if (bindingIsActive(name, current)) return(NULL)
+      value <- if (rlang::env_binding_are_lazy(current, name)) {
+        # Interpreted code passes a constant argument as a promise of that
+        # constant, which compiled code passes as its value.
+        eval(call("substitute", as.name(name), current), envir = baseenv())
+      } else {
+        get(name, envir = current, inherits = FALSE)
+      }
       if (is.null(value) || (is.atomic(value) && !is.object(value))) {
         return(list(value = value))
       }
@@ -3372,6 +3378,11 @@ known_across_output_names <- function(expr, env, data_proxy) {
   if (is.null(parsed$names)) {
     if (is_known_function_list_call(parsed$fns, env)) {
       function_names <- known_across_function_names(parsed, env)
+      # `paste()` recycles an empty function list to one `<col>_` name, but
+      # an empty list produces no output on any backend.
+      if (length(function_names) == 0L) {
+        return(character())
+      }
       return(unlist(
         lapply(
           column_names,
@@ -3464,6 +3475,8 @@ known_across_source_names <- function(expr, env, data_proxy) {
 # omitted `.fns`. Resolved function bindings, including namespace exports, are
 # also single when the authored namespace operator is known. `substitute()`
 # reads caller bindings without forcing promises or invoking active bindings.
+# A package's own environments are read as values: their promises fetch from
+# the lazy-load database and run no caller code.
 known_across_function_names <- function(parsed, env) {
   parsed$fns <- unparenthesized_value(parsed$fns)
   if (is.null(parsed$fns) || is.function(parsed$fns) ||
@@ -3517,7 +3530,7 @@ known_across_function_names <- function(parsed, env) {
           }
           base_binding <- identical(current, baseenv()) ||
             identical(current, asNamespace("base"))
-          binding <- if (base_binding ||
+          binding <- if (base_binding || is_package_environment(current) ||
                            !rlang::env_binding_are_lazy(current, name)) {
             get(name, envir = current, inherits = FALSE)
           } else {
