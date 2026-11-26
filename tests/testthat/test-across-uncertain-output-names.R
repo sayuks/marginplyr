@@ -691,12 +691,16 @@ lazy_load_fixture_lib <- function() {
     "s = marginplyr::share_of_total(y_n), ",
     ".grouping = marginplyr::rollup(g))"
   )
-  write_fixture <- function(name, namespace, code) {
+  write_fixture <- function(name, namespace, code, imports = character()) {
     pkg <- file.path(root, name)
     dir.create(file.path(pkg, "R"), recursive = TRUE)
     writeLines(c(
       paste("Package:", name), "Version: 0.0.1", "Title: Fixture",
       "Description: Fixture package.", "License: MIT",
+      # `R CMD check --as-cran` sets `_R_CHECK_INSTALL_DEPENDS_`, under which
+      # INSTALL lazy-loads with only DESCRIPTION's declared dependencies
+      # visible, so an importFrom() needs its Imports entry.
+      if (length(imports)) paste("Imports:", imports),
       paste0("Authors@R: person('A', 'B', email = 'a@example.com', ",
              "role = c('aut', 'cre'))")
     ), file.path(pkg, "DESCRIPTION"))
@@ -720,7 +724,8 @@ lazy_load_fixture_lib <- function() {
   write_fixture(
     "lazyacrossb",
     c("importFrom(lazyacrossa, n_distinct)", "export(imported_share)"),
-    paste0("imported_share <- function(data) ", share_call)
+    paste0("imported_share <- function(data) ", share_call),
+    imports = "lazyacrossa"
   )
   lazy_load_fixture$lib <- lib
   lib
