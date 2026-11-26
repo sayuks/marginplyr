@@ -2362,7 +2362,7 @@ validate_share_request <- function(outputs,
         ))
       }
       # An earlier `across()` whose outputs are unknown is reported ahead of the
-      # input-column hint.
+      # input-column hint, since it may be what produces the name.
       if (!is.null(context$source_hint)) {
         abort_share_source_hint(label, output, source, context$source_hint)
       }

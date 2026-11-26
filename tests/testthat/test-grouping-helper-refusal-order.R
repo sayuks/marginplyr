@@ -194,8 +194,8 @@ test_that("DuckDB refuses a helper wrong on its face before any statement", {
 # A `.by` refusal precedes a helper refusal when names decide it before typed
 # metadata, as an overlap with `.grouping` is. One decided only afterwards, as
 # a computed expression is, precedes it on a data frame, which acquires no
-# metadata; a SQL input refuses the helper first, before any statement
-# (ADR 0005).
+# metadata; a DuckDB input, whose metadata sends statements, refuses the
+# helper first, before any of them (ADR 0005).
 test_that("a `.by` error precedes a helper refusal unless metadata decides", {
   by_errors <- rlang::exprs(
     "cannot appear in both `.by` and `.grouping`" = g,
@@ -234,13 +234,31 @@ test_that("a `.by` error precedes a helper refusal unless metadata decides", {
   )
 })
 
-# dtplyr reads its metadata in R, so it keeps the data frame's order.
+# dtplyr and SQLite send no statement for typed metadata, so they keep the data
+# frame's order.
 test_that("a computed `.by` precedes a helper refusal on dtplyr", {
   skip_if_suggest_absent("dtplyr")
   local <- data.frame(g = c("a", "a", "b"), h = c("x", "y", "x"), v = 1:3)
   expect_error(
     summarize_with_margins(
       dtplyr::lazy_dt(local), s = grouping_bit(g, h), .by = g + 1,
+      .grouping = rollup(g)
+    ),
+    "`.by` selects existing columns, not computed expressions",
+    fixed = TRUE,
+    class = "marginplyr_error"
+  )
+})
+
+test_that("a computed `.by` precedes a helper refusal on SQLite", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  local <- data.frame(g = c("a", "a", "b"), h = c("x", "y", "x"), v = 1:3)
+  DBI::dbWriteTable(con, "helper_by", local)
+  expect_error(
+    summarize_with_margins(
+      dplyr::tbl(con, "helper_by"), s = grouping_bit(g, h), .by = g + 1,
       .grouping = rollup(g)
     ),
     "`.by` selects existing columns, not computed expressions",

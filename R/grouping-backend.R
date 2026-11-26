@@ -265,3 +265,12 @@ supports_grouping_sets <- function(.data,
   }
   TRUE
 }
+
+# Whether acquiring `.data`'s typed metadata sends a statement: a SQL input
+# that collects its selection proxy, as DuckDB does. Other SQL inputs keep the
+# lazy table and Arrow reads its in-memory schema. The caller holds a validated
+# Margin verb input.
+metadata_sends_statements <- function(.data) {
+  backend <- grouping_backend(.data)
+  backend$is_sql && backend$collect_selection_proxy
+}

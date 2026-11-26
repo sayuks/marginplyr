@@ -520,10 +520,6 @@ summarize_with_margins <- function(.data,
   # the one ahead of typed metadata.
   plan_names <- new.env(parent = emptyenv())
   plan_names$pass_pending <- TRUE
-  # Whether typed metadata comes from outside R: a SQL or Arrow input.
-  reads_backend_metadata <- inherits(
-    .data, c("tbl_lazy", arrow_input_classes())
-  ) && !inherits(.data, "dtplyr_step")
   operation <- prepare_margin_operation(
     .data,
     by_quo = by_quo,
@@ -556,13 +552,16 @@ summarize_with_margins <- function(.data,
       }
       # The helper-call check runs on the call from names alone, after the
       # `.grouping` and `.by` checks that names decide. An input whose metadata
-      # comes from outside R runs it there even on an unsettled plan, so no
+      # sends a statement runs it there even on an unsettled plan, so no
       # statement precedes a refusal the call alone decides (ADR 0005); a
       # `.by` or `.grouping` refusal that only typed metadata decides then
       # follows it. Any other input runs it there only on a settled plan and
       # otherwise leaves it to `check_grouping_helper_calls()` in
       # `execute_margin_summary()`, after every `.grouping` and `.by` refusal.
-      if (plan_names$pass_pending && (complete || reads_backend_metadata)) {
+      if (
+        plan_names$pass_pending &&
+          (complete || metadata_sends_statements(.data))
+      ) {
         check_grouping_helper_args(dots)
       }
       plan_names$pass_pending <- FALSE
