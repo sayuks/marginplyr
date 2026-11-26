@@ -3337,6 +3337,11 @@ known_across_output_names <- function(expr, env, data_proxy) {
   if (is.null(parsed$names)) {
     if (is_known_function_list_call(parsed$fns, env)) {
       function_names <- known_across_function_names(parsed, env)
+      # `paste()` recycles an empty function list to one `<col>_` name, but
+      # an empty list produces no output on any backend.
+      if (length(function_names) == 0L) {
+        return(character())
+      }
       return(unlist(
         lapply(
           column_names,

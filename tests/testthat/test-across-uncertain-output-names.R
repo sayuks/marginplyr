@@ -559,3 +559,111 @@ test_that("a constant .names that yields too few names counts real outputs", {
     "produced 1 for 2 outputs"
   )
 })
+
+# A literal empty `.fns` list produces no column on any backend, so the
+# planner predicts none (#1795). SQLite's dialect cannot type a share source,
+# so its shares are taken without the source check. Each backend runs in a
+# test of its own, so no test requires more than one member of
+# `optional_backends()`.
+empty_fns_input <- function() {
+  data.frame(g = c("a", "a", "b"), x = c(1, 2, 5), y = c(10, 20, 30))
+}
+
+empty_fns_acrosses <- function() {
+  empty <- list()
+  spellings <- list(
+    literal = quote(list()),
+    qualified = quote(base::list()),
+    parenthesized = quote((list())),
+    spliced = rlang::expr(list(!!!empty))
+  )
+  lapply(spellings, function(fns) {
+    across <- quote(dplyr::across(x, NULL))
+    across[[3L]] <- fns
+    across
+  })
+}
+
+empty_fns_rows <- function(query) {
+  result <- as.data.frame(dplyr::collect(query))
+  result[order(is.na(result[[1L]]), result[[1L]]), , drop = FALSE]
+}
+
+expect_empty_fns_outputs <- function(make_input, ...) {
+  acrosses <- empty_fns_acrosses()
+  rolled <- rollup(dplyr::all_of("g"))
+  for (label in names(acrosses)) {
+    across <- acrosses[[label]]
+    input <- make_input(empty_fns_input())
+    direct <- expect_error(summarize_with_margins(
+      input, !!across, s = !!quote(share_of_total(x_)), .grouping = rolled,
+      ...
+    ), "unknown preceding ordinary summary `x_`", info = label)
+    expect_s3_class(direct, "marginplyr_error")
+    expect_error(summarize_with_margins(
+      input, !!across,
+      dplyr::across(dplyr::all_of("x_"), share_of_parent, .names = "p"),
+      .grouping = rolled, ...
+    ), class = "marginplyr_share_source_unknown_error", info = label)
+
+    genuine <- empty_fns_rows(summarize_with_margins(
+      input, !!across, x_ = !!quote(sum(x)),
+      s = !!quote(share_of_total(x_)), .grouping = rolled,
+      .margin_label = NULL, ...
+    ))
+    expect_identical(names(genuine), c("g", "x_", "s"), info = label)
+    expect_equal(genuine$x_, c(3, 5, 8), info = label)
+    expect_equal(genuine$s, c(0.375, 0.625, 1), info = label)
+
+    identified <- empty_fns_rows(summarize_with_margins(
+      input, !!across, m = dplyr::n(), .grouping = rolled, .id = "x_",
+      .margin_label = NULL
+    ))
+    expect_identical(names(identified), c("g", "x_", "m"), info = label)
+    expect_equal(identified$m, c(2, 1, 3), info = label)
+
+    keyed <- make_input(dplyr::rename(empty_fns_input(), x_ = "g"))
+    dimension <- empty_fns_rows(summarize_with_margins(
+      keyed, !!across, m = dplyr::n(),
+      .grouping = rollup(dplyr::all_of("x_")), .margin_label = NULL
+    ))
+    expect_identical(names(dimension), c("x_", "m"), info = label)
+    expect_equal(dimension$m, c(2, 1, 3), info = label)
+    fixed <- empty_fns_rows(summarize_with_margins(
+      keyed, !!across, m = dplyr::n(), .by = dplyr::all_of("x_")
+    ))
+    expect_identical(names(fixed), c("x_", "m"), info = label)
+    expect_equal(fixed$m, c(2, 1), info = label)
+  }
+}
+test_that("an empty `.fns` list names no output on a data frame", {
+  expect_empty_fns_outputs(identity)
+})
+
+test_that("an empty `.fns` list names no output on a data.table", {
+  skip_if_suggest_absent("data.table")
+  expect_empty_fns_outputs(data.table::as.data.table)
+})
+
+test_that("an empty `.fns` list names no output on dtplyr", {
+  skip_if_suggest_absent("dtplyr")
+  expect_empty_fns_outputs(dtplyr::lazy_dt)
+})
+
+test_that("an empty `.fns` list names no output on DuckDB", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  expect_empty_fns_outputs(function(data) {
+    dplyr::copy_to(con, data, overwrite = TRUE)
+  })
+})
+
+test_that("an empty `.fns` list names no output on SQLite", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  expect_empty_fns_outputs(function(data) {
+    dplyr::copy_to(con, data, overwrite = TRUE)
+  }, .check_share_source = FALSE)
+})
