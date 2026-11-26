@@ -2764,7 +2764,11 @@ bind_duckdb_share_values <- function(result) {
     "WITH ", dbplyr::ident(name), " AS MATERIALIZED (", query,
     ") SELECT * FROM ", dbplyr::ident(name), con = con
   )
-  dplyr::tbl(con, sql, vars = vars)
+  # A tbl built from SQL text carries no window ordering, so the staged
+  # result's is restored on it (ADR 0018's `.sort = "none"` amendment, #1791).
+  restore_input_window_order(
+    dplyr::tbl(con, sql, vars = vars), dbplyr::op_sort(result)
+  )
 }
 
 # Refuse a staged dtplyr result with more than one row per occurrence and
