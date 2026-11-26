@@ -155,6 +155,23 @@ for (input_kind in c("data.frame", "tibble", "data.table")) {
       "Did you mean `.grouping = spec`?",
       fixed = TRUE
     )
+
+    # A summary written as `NULL` produces no column, so the mask again reads
+    # the environment's specification.
+    null <- rlang::catch_cnd(
+      summarize_with_margins(
+        data,
+        spec = NULL,
+        again = spec,
+        .grouping = spec
+      ),
+      classes = "marginplyr_error"
+    )
+    expect_match(
+      conditionMessage(null),
+      "Did you mean `.grouping = spec`?",
+      fixed = TRUE
+    )
   })
 }
 

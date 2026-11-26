@@ -188,7 +188,8 @@ binding_is_evaluated <- function(env, symbol) {
 # own `rollup()` still runs. A bare name is refused where it is bound to a
 # specification and no column of that name would win the data-mask lookup.
 # On a data-frame input that column is an input column or a strictly earlier
-# named summary; a lazy backend cannot reuse the earlier alias (#1778).
+# named summary not written as literal `NULL`, which produces no column; a lazy
+# backend cannot reuse the earlier alias (#1778).
 check_grouping_spec_summaries <- function(dots, data) {
   exprs <- lapply(dots, rlang::quo_get_expr)
   dot_names <- rlang::names2(dots)
@@ -216,7 +217,10 @@ check_grouping_spec_summaries <- function(dots, data) {
     if (symbol %in% data_vars) {
       return(FALSE)
     }
-    if (local_input && symbol %in% dot_names[seq_len(position - 1L)]) {
+    earlier <- seq_len(position - 1L)
+    earlier <- earlier[dot_names[earlier] == symbol]
+    if (local_input &&
+          !all(vapply(exprs[earlier], is.null, logical(1)))) {
       return(FALSE)
     }
     # On a data-frame input a binding that would run caller code to read is
