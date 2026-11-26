@@ -1802,6 +1802,80 @@ test_that("runtime alias checks follow each across function output", {
   }
 })
 
+# A column an earlier unnamed frame summary produces is an earlier alias, so a
+# source reading it is refused as the named twin is (#1774). The produced names
+# decide, not the constructor's argument names.
+for (input_kind in c("data.frame", "tibble", "data.table")) {
+  label <- "a source reading a frame summary column is refused on"
+  test_that(paste(label, input_kind), {
+    if (input_kind == "data.table") skip_if_suggest_absent("data.table")
+    data <- data.frame(g = c("a", "a", "b"), x = c(1, 2, 5), y = c(10, 20, 30))
+    data <- switch(input_kind,
+      tibble = tibble::as_tibble(data),
+      data.table = data.table::as.data.table(data), data
+    )
+    frame_prior <- function(v) data.frame(prior = sum(v))
+    flag <- TRUE
+    spelling <- function(frame, read, dependency) {
+      list(frame = frame, read = read, dependency = dependency)
+    }
+    spellings <- list(
+      spelling(quote(tibble::tibble(prior = sum(y))), quote(sum(x) + prior),
+               "prior"),
+      spelling(quote(data.frame(prior = sum(y))), quote(sum(x) + prior),
+               "prior"),
+      spelling(quote(frame_prior(y)), quote(sum(x) + prior), "prior"),
+      spelling(quote(tibble::tibble(prior = sum(y))),
+               quote(sum(x) + .data$prior), "prior"),
+      spelling(quote(dplyr::across(y, frame_prior, .unpack = TRUE)),
+               quote(sum(x) + y_prior), "y_prior"),
+      spelling(quote(dplyr::across(y, frame_prior, .unpack = flag)),
+               quote(sum(x) + y_prior), "y_prior"),
+      spelling(quote(tibble::tibble(y = max(y))), quote(sum(x) + sum(y)), "y")
+    )
+    for (helper in c("share_of_parent", "share_of_total")) {
+      for (case in spellings) {
+        error <- rlang::catch_cnd(
+          summarize_with_margins(
+            data, !!case$frame, value = !!case$read,
+            fraction = !!rlang::call2(helper, quote(value)),
+            .grouping = rollup(g)
+          ),
+          classes = "marginplyr_error"
+        )
+        expect_s3_class(error, "marginplyr_error")
+        expected <- paste0(
+          "depends on earlier summary alias `", case$dependency, "`"
+        )
+        expect_match(conditionMessage(error), expected, fixed = TRUE)
+        expect_identical(
+          rlang::call_name(conditionCall(error)), "summarize_with_margins"
+        )
+      }
+    }
+
+    # A frame written after the source, one no share source reads, and one
+    # read only by a summary that is no source are unchanged.
+    after <- summarize_with_margins(
+      data, value = sum(x), tibble::tibble(prior = sum(y)),
+      fraction = share_of_total(value), .grouping = rollup(g)
+    )
+    expect_identical(after$fraction, c(3, 5, 8) / 8)
+    unread <- summarize_with_margins(
+      data, tibble::tibble(prior = sum(y)), value = sum(x),
+      fraction = share_of_total(value), .grouping = rollup(g)
+    )
+    expect_identical(unread$prior, c(30, 30, 60))
+    expect_identical(unread$fraction, c(3, 5, 8) / 8)
+    other <- summarize_with_margins(
+      data, tibble::tibble(prior = sum(y)), value = sum(x),
+      shifted = sum(x) + prior, fraction = share_of_total(value),
+      .grouping = rollup(g)
+    )
+    expect_identical(other$shifted, c(33, 35, 68))
+  })
+}
+
 test_that("dependent across siblings remain ineligible for shares", {
   data <- data.frame(g = c("a", "b"), x = c(1, 3))
   sources <- list(

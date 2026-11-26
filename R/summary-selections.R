@@ -368,7 +368,8 @@ wrap_assigned_local_summaries <- function(dots, assigned_names, group_vars,
                                           share_sources,
                                           source_definitions,
                                           type_states,
-                                          alias_state = NULL) {
+                                          alias_state = NULL,
+                                          source_reads = NULL) {
   for (i in which(!is.na(assigned_names))) {
     dot <- dots[[i]]
     dots[[i]] <- local_summary_value_quo(
@@ -376,7 +377,7 @@ wrap_assigned_local_summaries <- function(dots, assigned_names, group_vars,
       assigned_names[[i]], group_vars, internal_names, set_id_name,
       set_id_is_internal,
       setdiff(share_sources, source_definitions[[i]]), type_states[[i]],
-      alias_state, i
+      alias_state, i, source_reads[[i]]
     )
     names(dots)[[i]] <- ""
   }
@@ -387,16 +388,18 @@ wrap_assigned_local_summaries <- function(dots, assigned_names, group_vars,
 # environment its expression is evaluated from and `position` the dot's own.
 # The call's head is a binding of this position's own that closes over the
 # wrapper's other arguments, as ADR 0022's amendment *each wrapped local
-# summary labels apart* decides.
+# summary labels apart* decides. `source_reads` holds the reads of the share
+# sources written after this position.
 local_summary_value_quo <- function(dot, env, name, group_vars,
                                     internal_names, set_id_name,
                                     set_id_is_internal, protected_sources,
-                                    type_state, alias_state, position) {
+                                    type_state, alias_state, position,
+                                    source_reads = NULL) {
   # The arguments are promises over the caller's loop index, which has moved on
   # by the time the wrapper runs.
   rlang::list2(
     name, group_vars, internal_names, set_id_name, set_id_is_internal,
-    protected_sources, type_state, alias_state, position
+    protected_sources, type_state, alias_state, position, source_reads
   )
   wrapper <- function(value) {
     # `value` is forced in this call's frame, which R blames for a condition
@@ -404,7 +407,8 @@ local_summary_value_quo <- function(dot, env, name, group_vars,
     # parenthesised head as no call at all, as native dplyr's mask has none.
     (local_assigned_summary_value)(
       value, name, group_vars, internal_names, set_id_name,
-      set_id_is_internal, protected_sources, type_state, alias_state, position
+      set_id_is_internal, protected_sources, type_state, alias_state, position,
+      source_reads
     )
   }
   expr <- rlang::quo_get_expr(dot)
@@ -526,14 +530,16 @@ local_argument_thunk <- function(arg) {
 # Return a frame so dplyr places the output in its mask immediately. An actual
 # frame keeps its own checked column names; a scalar takes the caller-facing
 # name; `NULL` keeps dplyr's omission behavior.
-# The caller supplies the evaluated value, its Assigned summary name, and a
-# type state shared by this dot's groups within one branch.
+# The caller supplies the evaluated value, its Assigned summary name, a type
+# state shared by this dot's groups within one branch, and the reads of the
+# share sources written after this dot.
 local_assigned_summary_value <- function(value, name, group_vars,
                                          internal_names, set_id_name,
                                          set_id_is_internal,
                                          protected_sources,
                                          type_state,
-                                         alias_state = NULL, position = NULL) {
+                                         alias_state = NULL, position = NULL,
+                                         source_reads = NULL) {
   # dplyr's own result check refuses a non-vector, which vctrs would otherwise
   # refuse here with its scalar-type error.
   if (is.null(value) || !vctrs::obj_is_vector(value)) {
@@ -552,6 +558,9 @@ local_assigned_summary_value <- function(value, name, group_vars,
   output_names <- if (frame) attr(value, "names", exact = TRUE) else name
   record_local_summary_aliases(output_names, alias_state, position)
   if (frame) {
+    # The produced names, not the constructor's argument names, are the
+    # earlier aliases a later share source may not read (ADR 0010).
+    check_share_alias_reads(output_names, source_reads)
     check_local_frame_output_names(
       output_names, group_vars, internal_names, set_id_name,
       set_id_is_internal, protected_sources
@@ -700,7 +709,7 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
       auto_names[[i]], group_vars, internal_names, set_id_name,
       set_id_is_internal,
       setdiff(share_sources, source_definitions[[i]]), type_states[[i]],
-      alias_state, i
+      alias_state, i, source_reads[[i]]
     )
   }
   dots
