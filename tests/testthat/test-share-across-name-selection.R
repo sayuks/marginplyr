@@ -424,11 +424,12 @@ constant_argument_cases <- rlang::exprs(
   ),
   names = dplyr::across(x, sum, .names = arg),
   null_names = dplyr::across(x, sum, .names = arg),
-  null_fns = dplyr::across(x, arg, .names = "{.col}_t")
+  null_fns = dplyr::across(x, arg, .names = "{.col}_t"),
+  unpack = dplyr::across(x, sum, .names = "{.col}_t", .unpack = arg)
 )
 constant_argument_values <- list(
   all_of = "x", any_of = "x", one_of = "x", number = 1, ignore_case = TRUE,
-  names = "{.col}_t", null_names = NULL, null_fns = NULL
+  names = "{.col}_t", null_names = NULL, null_fns = NULL, unpack = FALSE
 )
 
 test_that("a constant argument names a later across() on its first call", {

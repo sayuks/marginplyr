@@ -1831,6 +1831,13 @@ cached_local_across_names <- function(dots) {
   }), use.names = FALSE)
 }
 
+# The expression of the promise bound to `name` in `env`, read without forcing
+# it. Interpreted code passes a constant argument to a closure as a promise of
+# that constant, where compiled code passes its value (#1773).
+promise_expression <- function(name, env) {
+  eval(call("substitute", as.name(name), env), envir = baseenv())
+}
+
 # Reads a literal or an existing plain caller constant without forcing a
 # promise or active binding; a promise counts only when its expression is
 # such a constant. Mask names remain owned by local execution.
@@ -1858,9 +1865,7 @@ known_context_constant <- function(expr, lookup) {
     if (exists(name, envir = current, inherits = FALSE)) {
       if (bindingIsActive(name, current)) return(NULL)
       value <- if (rlang::env_binding_are_lazy(current, name)) {
-        # Interpreted code passes a constant argument as a promise of that
-        # constant, which compiled code passes as its value.
-        eval(call("substitute", as.name(name), current), envir = baseenv())
+        promise_expression(name, current)
       } else {
         get(name, envir = current, inherits = FALSE)
       }
@@ -2994,9 +2999,10 @@ selection_proxy_callable <- function(head, scope, function_position = TRUE,
 }
 
 # Answers whether `.unpack` is known to be FALSE without evaluating an
-# expression, forcing a promise, or reading an active binding. Unknown values
-# are left to dplyr when it evaluates the summary. The caller supplies the
-# captured argument and its environment.
+# expression, forcing a promise, or reading an active binding; a promise counts
+# only when its expression is FALSE. Unknown values are left to dplyr when it
+# evaluates the summary. The caller supplies the captured argument and its
+# environment.
 across_unpack_is_false <- function(unpack, env) {
   if (is.null(unpack) || isFALSE(unpack)) {
     return(TRUE)
@@ -3008,9 +3014,11 @@ across_unpack_is_false <- function(unpack, env) {
   current <- env
   while (!identical(current, emptyenv())) {
     if (exists(name, envir = current, inherits = FALSE)) {
-      if (bindingIsActive(name, current) ||
-            rlang::env_binding_are_lazy(current, name)) {
+      if (bindingIsActive(name, current)) {
         return(FALSE)
+      }
+      if (rlang::env_binding_are_lazy(current, name)) {
+        return(isFALSE(promise_expression(name, current)))
       }
       return(isFALSE(get(name, envir = current, inherits = FALSE)))
     }
