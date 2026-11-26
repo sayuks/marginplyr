@@ -2300,7 +2300,7 @@ test_that("a time limit during the dialect question ends the call", {
 })
 
 # The refusing half: DuckDB rejects summing a string, so the question raises
-# inside the handler that reads the refusal, and the call used to return.
+# inside the handler that reads the refusal.
 test_that("a time limit during a refused dialect question ends the call", {
   skip_if_suggest_absent("duckdb", "DBI")
   saved <- share_dialect_snapshot()
