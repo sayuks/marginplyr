@@ -61,3 +61,13 @@ local_dtplyr_root_subclass <- function(dispatch, mutating = FALSE,
                         .env = .GlobalEnv, .frame = .env)
   fixture
 }
+
+# The heads `dtplyr_value_stable_arithmetic()` admits, and a call of one over
+# `operand` with the arity its parser form has.
+arithmetic_heads <- c("+", "-", "*", "/", "(", "^", "%%", "%/%")
+arithmetic_call <- function(operator, operand) {
+  if (identical(operator, "(")) {
+    return(as.call(list(as.name(operator), operand)))
+  }
+  as.call(list(as.name(operator), operand, 1L))
+}
