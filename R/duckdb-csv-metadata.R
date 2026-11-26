@@ -1,11 +1,14 @@
 # SQL lexical tokens for reader metadata guards, using ASCII identifier keys.
 # Quoted values stay opaque and nested comments are discarded. A string
-# continued across a line break, which DuckDB concatenates, is one token.
+# continued across a line break, which DuckDB concatenates, is one token. A
+# backtick span is a quoted identifier where duckdb_backtick_identifiers() says
+# DuckDB reads it as one.
 duckdb_metadata_tokens <- function(sql) {
   # Whitespace holding a line break, optionally after a line comment.
   continue <- "(?:[ \\t\\f]*(?:--[^\\r\\n]*)?[\\r\\n])+[[:space:]]*"
   escaped <- "'(?:[^'\\\\]|\\\\.|'')*'"
   plain <- "'(?:[^']|'')*'"
+  backtick <- duckdb_backtick_identifiers()
   pattern <- paste0(
     "(?s)",
     "(?<comment>/\\*(?:[^*/]|/(?!\\*)|\\*(?!/)|(?&comment))*\\*/)",
@@ -14,6 +17,7 @@ duckdb_metadata_tokens <- function(sql) {
     "|", plain, "(?:", continue, plain, ")*",
     "|(?<tag>\\$[A-Za-z_0-9]*\\$).*?\\k<tag>",
     '|"(?:[^"]|"")*"',
+    if (backtick) "|`(?:[^`]|``)*`",
     "|[[:alpha:]_][[:alnum:]_$]*|:=|[^[:space:]]"
   )
   tokens <- regmatches(sql, gregexpr(pattern, sql, perl = TRUE))[[1L]]
@@ -32,12 +36,23 @@ duckdb_metadata_tokens <- function(sql) {
     }
     paste0(prefix, "'", paste(contents, collapse = ""), "'")
   }, character(1), USE.NAMES = FALSE)
-  quoted <- startsWith(tokens, '"')
-  tokens[quoted] <- gsub(
-    '""', '"', substring(tokens[quoted], 2L, nchar(tokens[quoted]) - 1L),
-    fixed = TRUE
-  )
+  # An unterminated backtick is a one-character token, not an identifier.
+  quoted <- startsWith(tokens, '"') |
+    (backtick & startsWith(tokens, "`") & nchar(tokens) > 1L)
+  tokens[quoted] <- vapply(tokens[quoted], function(token) {
+    delimiter <- substring(token, 1L, 1L)
+    gsub(strrep(delimiter, 2L), delimiter,
+         substring(token, 2L, nchar(token) - 1L), fixed = TRUE)
+  }, character(1), USE.NAMES = FALSE)
   structure(sql_ascii_lower(tokens), quoted = quoted)
+}
+
+# Whether the loaded DuckDB reads a backtick span as a quoted identifier. 2.0's
+# tokenizer does; 1.5's lexes a backtick as an operator character, so the
+# span's contents are SQL there. A session links the one engine its duckdb
+# package carries, under that package's version.
+duckdb_backtick_identifiers <- function() {
+  utils::packageVersion("duckdb") >= "2.0.0"
 }
 
 # Remove only parentheses enclosing a complete token expression.
@@ -556,6 +571,20 @@ duckdb_value_function_heads <- function(tokens) {
           !unquoted(-1L, "as"))
 }
 
+# Functions DuckDB binds from syntax with no call head: operators, literal
+# constructors and keyword forms, as measured on DuckDB 1.5 and 2.0. A caller
+# macro of such a name replaces the function wherever that syntax stands,
+# which a head scan cannot see.
+duckdb_implicit_functions <- c(
+  "+", "-", "*", "/", "%", "//", "^", "**", "||", "<<", ">>", "&", "|", "~",
+  "@", "^@", "&&", "@>", "<@", "<->", "<=>", "~~", "!~~", "~~*", "!~~*", "~~~",
+  "count_star", "list_value", "struct_pack", "row", "map", "date_part",
+  "timezone", "ltrim", "rtrim", "regexp_full_match", "like_escape",
+  "ilike_escape", "list_apply", "contains", "to_millennia", "to_centuries",
+  "to_decades", "to_years", "to_quarters", "to_months", "to_weeks", "to_days",
+  "to_hours", "to_minutes", "to_seconds", "to_milliseconds", "to_microseconds"
+)
+
 # Table functions that bind SQL text passed as a value, refused by name in
 # authored SQL and in stored views alike (ADR 0020). Other table functions are
 # admitted; macros and inferring readers are refused by their own checks.
@@ -648,6 +677,16 @@ validate_duckdb_authored_calls <- function(tokens, catalog) {
       abort_duckdb_call_metadata()
     }
   }
+  # Any statement may hold the syntax that reaches an implicitly bound name,
+  # so a caller macro of one refuses the operation. The check reads only a
+  # snapshot this operation already took (ADR 0020).
+  snapshot <- catalog(read = FALSE)
+  if (!is.null(snapshot) && any(
+    duckdb_caller_macros(snapshot) &
+      sql_ascii_lower(snapshot$relation_name) %in% duckdb_implicit_functions
+  )) {
+    abort_duckdb_call_metadata()
+  }
   invisible(NULL)
 }
 
@@ -733,7 +772,8 @@ abort_duckdb_reader_metadata <- function(family) {
 # CSV and JSON binders can sample values even under LIMIT 0. Admit readers
 # whose literal arguments establish inference is disabled at their own depth.
 # The caller supplies captured SQL, without binding the input (ADR 0020).
-# `catalog` lazily returns this operation's catalog-only name snapshot.
+# `catalog` lazily returns this operation's catalog-only name snapshot, and
+# `catalog(read = FALSE)` returns it only once it has been read.
 # Resolve every relation name before following stored reader dependencies.
 validate_duckdb_csv_metadata <- function(
   sql, catalog, namespace = NULL, seen = integer()) {
@@ -773,8 +813,12 @@ validate_duckdb_csv_metadata <- function(
   ))) {
     abort_duckdb_reader_metadata("JSON")
   }
-  json <- c("read_json", "read_json_auto", "read_ndjson", "read_ndjson_auto")
-  readers <- which(tokens %in% c("read_csv", "read_csv_auto", json) &
+  # DuckDB 2.0's multi-file readers bind one file through the read_single_*
+  # functions, which infer as their multi-file readers do.
+  json <- c("read_json", "read_json_auto", "read_ndjson", "read_ndjson_auto",
+            "read_single_json_file")
+  csv <- c("read_csv", "read_csv_auto", "read_single_csv_file")
+  readers <- which(tokens %in% c(csv, json) &
                      c(tokens[-1L], "") == "(")
   for (reader in readers) {
     family <- if (tokens[[reader]] %in% json) "JSON" else "CSV"

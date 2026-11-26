@@ -152,6 +152,16 @@ not evaluate;
 numeric or decimal equivalent.
 }
 
+An \code{across()} output is statically named when its name is known before the
+call runs, which needs \code{.fns} to be one function or a literal \code{list()} of
+functions, such as \code{list(s = sum, m = mean)}. The same functions written
+with \code{c()} or held in a variable produce their columns, but a share cannot
+select them. An \code{across()} written after another summary is evaluated only
+once that summary has run, so it qualifies only when what it reads already
+holds a value; an argument of your own function holds none until it is
+used. Evaluate the argument first with \code{\link[=force]{force()}}, or write the \code{across()}
+before the other summaries.
+
 Logical, complex, date, date-time, duration, character, factor, list,
 data-frame, and other classes are not converted implicitly. Convert
 intentionally in the ordinary summary:

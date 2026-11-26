@@ -1520,6 +1520,28 @@ A bare vector, `rollup(dims)`, selects the same columns but draws a
 deprecation warning from tidyselect for an external vector; `all_of()` is the
 spelling that does not.
 
+A share of an `across()` output needs that output's name before the call
+runs. An argument of your function holds no value until it is used, so an
+`across()` that reads one after another summary names nothing a share can
+select. Evaluate the argument first with `force()`, or write the `across()`
+before the other summaries:
+
+```{r}
+report_measure_shares <- function(data, measures) {
+  force(measures)
+  data |>
+    summarize_with_margins(
+      orders = n(),
+      across(all_of(measures), sum, .names = "{.col}_total"),
+      share = share_of_parent(revenue_total),
+      .grouping = rollup(region),
+      .sort = "last"
+    )
+}
+
+report_measure_shares(retail_sales, c("revenue", "units"))
+```
+
 Dots forwarded into a specification constructor take what the caller wrote,
 bare names or strings:
 

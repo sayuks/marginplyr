@@ -173,3 +173,75 @@ test_that("a string as .grouping is answered with an all_of() rewrite", {
     inspect_grouping(data, .grouping = rollup(region, store))$included
   )
 })
+
+# A bare name bound where `.grouping` is evaluated was not a failed lookup, so
+# whatever its evaluation raised is the caller's to read, even when the input
+# has a column of that name.
+test_that("a bound name's own failure propagates unchanged", {
+  data <- bare_column_data()
+  make_spec <- function(dim) {
+    if (!identical(dim, "region")) stop("unknown dimension: ", dim)
+    rollup(region)
+  }
+  report <- function(data, store) {
+    inspect_grouping(data, .grouping = store)
+  }
+  error <- expect_error(report(data, make_spec("zone")))
+  expect_false(inherits(error, "marginplyr_error"))
+  expect_identical(conditionMessage(error), "unknown dimension: zone")
+  expect_identical(conditionCall(error), quote(make_spec("zone")))
+
+  forwarded <- function(data, region, store) {
+    summarize_with_margins(data, n = dplyr::n(), .grouping = c(region, store))
+  }
+  error <- expect_error(forwarded(data, stop("caller failed"), 1))
+  expect_false(inherits(error, "marginplyr_error"))
+  expect_identical(conditionMessage(error), "caller failed")
+
+  # A missing argument, and an active binding that raises when read.
+  missing_store <- function(data, store) {
+    inspect_grouping(data, .grouping = store)
+  }
+  error <- expect_error(missing_store(data), "is missing")
+  expect_false(inherits(error, "marginplyr_error"))
+  env <- new.env()
+  reads <- 0L
+  makeActiveBinding("region", function() {
+    reads <<- reads + 1L
+    stop("binding failed")
+  }, env)
+  error <- expect_error(
+    inspect_grouping(data, .grouping = !!rlang::new_quosure(
+      quote(region), env
+    ))
+  )
+  expect_identical(conditionMessage(error), "binding failed")
+  expect_identical(reads, 1L)
+
+  # One unbound name among bound ones is still the failed lookup.
+  region <- "East"
+  expect_bare_column_refusal(
+    inspect_grouping(data, .grouping = c(region, store)),
+    "Columns `region` and `store`", "region, store"
+  )
+})
+
+test_that("a time limit while a bound .grouping evaluates ends the call", {
+  data <- bare_column_data()
+  report <- function(data, store) {
+    inspect_grouping(data, .grouping = store)
+  }
+  slow <- function() {
+    deadline <- Sys.time() + 2
+    while (Sys.time() < deadline) NULL
+    rollup(region)
+  }
+  withr::defer(setTimeLimit(elapsed = Inf))
+  error <- expect_error({
+    setTimeLimit(elapsed = 0.2, transient = TRUE)
+    report(data, slow())
+  })
+  setTimeLimit(elapsed = Inf)
+  expect_false(inherits(error, "marginplyr_error"))
+  expect_match(conditionMessage(error), "time limit")
+})
