@@ -967,7 +967,9 @@ summarize_margin_union <- function(.data,
   # An unpartitioned empty grouping set needs an aggregate in SQL even when
   # the caller supplies scalar summaries: otherwise each constant is selected
   # once per source row, and empty input returns no Grand total row. The same
-  # placeholder keeps a no-summary branch renderable on dbplyr (#428).
+  # placeholder keeps a no-summary branch renderable on dbplyr (#428). On
+  # dtplyr a summary that expands to no output, such as an `across()` matching
+  # no column, leaves a zero-column table whose full-size label has no row.
   # `n()` supplies the aggregate and is dropped after the result is built.
   placeholder_name <- new_margin_internal_names(
     1L,
@@ -1046,12 +1048,14 @@ summarize_margin_union <- function(.data,
             share_sources = frame_state$share_sources,
             source_definitions = frame_state$source_definitions,
             type_states = type_states,
-            alias_state = alias_state
+            alias_state = alias_state,
+            source_reads = frame_state$source_reads
           )
           branch_dots <- separate_local_across_labels(branch_dots)
         }
         needs_placeholder <- length(grouping_set) == 0L &&
-          (length(branch_dots) == 0L || backend$is_sql)
+          (length(branch_dots) == 0L || backend$is_sql ||
+             identical(backend$kind, "dtplyr"))
         placeholder <- if (needs_placeholder) placeholder_name else NULL
 
         # Only the caller's expressions are wrapped. The checks and the branch
@@ -1243,7 +1247,8 @@ summarize_margin_union <- function(.data,
               )
             }
           }
-          if (is.data.frame(result)) {
+          # tidyselect refuses dot-dot output names a dtplyr step can hold.
+          if (is.data.frame(result) || identical(backend$kind, "dtplyr")) {
             dplyr::mutate(result, !!placeholder := NULL)
           } else {
             dplyr::select(result, -dplyr::all_of(placeholder))

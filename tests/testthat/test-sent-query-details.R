@@ -320,6 +320,86 @@ test_that("render interrupts keep a prepared row and propagate unchanged", {
   })
 })
 
+# The purpose of the row whose diagnostic render is running, or `NULL` outside
+# one: `record_sent_query()` is the frame that holds it.
+audit_render_purpose <- function() {
+  for (i in rev(seq_len(sys.nframe()))) {
+    if (identical(sys.function(i), record_sent_query)) {
+      return(get("purpose", envir = sys.frame(i)))
+    }
+  }
+  NULL
+}
+
+# Calls `deliver()` once, inside dbplyr's `sql_render()` as the audit renders
+# the row recorded as `purpose`, for the rest of the calling frame.
+deliver_in_audit_render <- function(purpose, deliver = expire_time_limit,
+                                    env = parent.frame()) {
+  render <- dbplyr::sql_render
+  delivered <- FALSE
+  testthat::local_mocked_bindings(sql_render = function(query, ...) {
+    if (!delivered && identical(audit_render_purpose(), purpose)) {
+      delivered <<- TRUE
+      deliver()
+    }
+    render(query, ...)
+  }, .package = "dbplyr", .env = env)
+}
+
+# The render's error branch keeps a render error local, which is what a time
+# limit arriving there looked like: it was recorded as handled, R cleared it,
+# and the call ran on unbounded where the unaudited call ended (#1796). For
+# the `result` row the limit is the caller's, still running when they collect.
+# Each backend runs in a test of its own, so no test requires more than one
+# member of `optional_backends()`.
+expect_render_limit_ends_call <- function(remote) {
+  check_backend <- function() {
+    deliver_in_audit_render("observed_label_collision")
+    expect_s3_class(catch_time_limited(detail_label_check(remote)), "error")
+  }
+  check_result <- function() {
+    deliver_in_audit_render("result")
+    expect_s3_class(
+      catch_time_limited(dplyr::collect(detail_label_check(remote))),
+      "error"
+    )
+  }
+  check_backend()
+  check_result()
+}
+
+test_that("a time limit in an audited render still ends the call", {
+  with_detail_source(expect_render_limit_ends_call)
+})
+
+test_that("a time limit in an audited DuckDB render still ends the call", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  remote <- dplyr::copy_to(con, data.frame(g = "a", v = 1), "condition_source")
+  expect_render_limit_ends_call(remote)
+})
+
+# An interrupt raised during the render is deferred as the limit is, and
+# still reaches the caller exactly once.
+test_that("an interrupt arriving during an audited render is delivered once", {
+  with_detail_source(function(remote) {
+    deliver_in_audit_render("observed_label_collision", rlang::interrupt)
+    delivered <- 0L
+    count <- function(cnd) {
+      delivered <<- delivered + 1L
+    }
+    caught <- tryCatch(
+      withCallingHandlers(detail_label_check(remote), interrupt = count),
+      interrupt = identity
+    )
+    expect_s3_class(caught, "interrupt")
+    expect_identical(delivered, 1L)
+  })
+})
+
 test_that("retrieval and independent SQL leave detailed rows intact", {
   with_detail_source(function(remote) {
     query <- detail_label_check(remote)

@@ -320,6 +320,48 @@ test_that("a column-less dtplyr summary keeps dtplyr's own empty answer", {
   )
 })
 
+# A Margin dimension puts a column in the result, so the boundary above does
+# not reach these calls even though every summary expands to no output.
+test_that("a dtplyr summary that expands to no output keeps the Grand total", {
+  skip_if_suggest_absent("dtplyr")
+  sorted <- function(x) {
+    dplyr::arrange(dplyr::as_tibble(x), dplyr::across(dplyr::everything()))
+  }
+  d <- data.frame(g = c("a", "a", "b"), h = c("p", "q", "p"), x = c(1, 2, 5))
+  summaries <- list(
+    rlang::quos(dplyr::across(dplyr::starts_with("zzz"), sum)),
+    rlang::quos(dplyr::across(x, list())),
+    rlang::quos(dplyr::pick(dplyr::starts_with("zzz")))
+  )
+  groupings <- list(
+    rollup(g), cube(g, h), grouping_sets(rollup(g), grouping_set(h))
+  )
+  for (input in list(d, d[0L, ])) {
+    for (dots in summaries) {
+      for (grouping in groupings) {
+        for (id in list(NULL, "set")) {
+          for (label in list("Total", NA_character_)) {
+            local <- summarize_with_margins(
+              input, !!!dots, .grouping = grouping, .id = id,
+              .margin_label = label
+            )
+            lazy <- summarize_with_margins(
+              dtplyr::lazy_dt(input), !!!dots, .grouping = grouping, .id = id,
+              .margin_label = label
+            )
+            expect_identical(
+              sorted(dplyr::collect(lazy)), sorted(local),
+              info = paste(
+                nrow(input), rlang::as_label(dots[[1L]]), id, label
+              )
+            )
+          }
+        }
+      }
+    }
+  }
+})
+
 # The grand total branch of a summary with nothing to summarize groups by
 # nothing and selects nothing, and the label and identifier `mutate()`s layered
 # on that query gave dbplyr a `lazy_select_query` it could not render: the

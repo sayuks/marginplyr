@@ -851,17 +851,21 @@ test_that("SQLite compute invalid flags leave the destination untouched", {
   for (value in list(NA, 1L, "yes", c(TRUE, FALSE))) {
     expect_error(dplyr::compute(query, name = "invalid_report",
                                 in_transaction = value),
-                 "in_transaction", class = "marginplyr_error")
+                 "`in_transaction` must be TRUE or FALSE.", fixed = TRUE,
+                 class = "marginplyr_error")
   }
   expect_error(dplyr::compute(query, name = "invalid_report",
                               temporary = NA),
-               "temporary", class = "marginplyr_error")
+               "`temporary` must be TRUE or FALSE.", fixed = TRUE,
+               class = "marginplyr_error")
   expect_error(dplyr::compute(query, name = "invalid_report",
                               overwrite = NA),
-               "overwrite", class = "marginplyr_error")
+               "`overwrite` must be TRUE or FALSE.", fixed = TRUE,
+               class = "marginplyr_error")
   expect_error(dplyr::compute(query, name = "invalid_report",
                               analyze = NA),
-               "analyze", class = "marginplyr_error")
+               "`analyze` must be TRUE or FALSE.", fixed = TRUE,
+               class = "marginplyr_error")
   expect_false(DBI::dbExistsTable(con, "invalid_report"))
   with_options <- dplyr::compute(
     query, name = "with_options",
@@ -1379,4 +1383,81 @@ test_that("SQLite compute materializes a sorted result over an ordered input", {
       }
     }
   }
+})
+
+test_that("SQLite compute refusals blame the compute() call written", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  DBI::dbWriteTable(con, "t", data.frame(g = c("a", "b"), v = 1:2))
+  DBI::dbExecute(con, "CREATE TEMP TABLE shadowed (a INTEGER)")
+  query <- summarize_with_margins(
+    dplyr::tbl(con, "t"), n = dplyr::n(), .grouping = rollup(g),
+    .sort = "last"
+  )
+  forward <- function(x, ...) dplyr::compute(x, ...)
+  blamed <- function(expr) {
+    conditionCall(expect_error(expr, class = "marginplyr_error"))
+  }
+  expect_identical(
+    blamed(dplyr::compute(query, temporary = NA)),
+    quote(dplyr::compute(query, temporary = NA))
+  )
+  expect_identical(
+    blamed(forward(query, temporary = NA)), quote(dplyr::compute(x, ...))
+  )
+  expect_identical(
+    blamed(dplyr::compute(query, name = "shadowed", temporary = FALSE)),
+    quote(dplyr::compute(query, name = "shadowed", temporary = FALSE))
+  )
+  expect_identical(
+    blamed(forward(query, name = "shadowed", temporary = FALSE)),
+    quote(dplyr::compute(x, ...))
+  )
+})
+
+test_that("SQLite shadowing compute refuses a missing index column itself", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  input <- data.frame(g = c("b", "a"), v = 1:2)
+  DBI::dbWriteTable(con, "facts", input)
+  temp_schema <- function() {
+    DBI::dbGetQuery(con, "SELECT * FROM temp.sqlite_master ORDER BY name")
+  }
+  for (output in c(".env", "n")) {
+    query <- summarize_with_margins(
+      dplyr::tbl(con, "facts"), !!output := dplyr::n(),
+      .grouping = rollup(g), .sort = "last"
+    )
+    before <- temp_schema()
+    error <- expect_error(
+      dplyr::compute(query, name = "facts", indexes = list(c("g", "zz"))),
+      "Missing columns in `indexes`: `zz`", class = "marginplyr_error"
+    )
+    expect_identical(
+      conditionCall(error),
+      quote(dplyr::compute(query, name = "facts", indexes = list(c("g", "zz"))))
+    )
+    error <- expect_error(
+      dplyr::compute(query, name = "facts", unique_indexes = list("zz")),
+      "Missing columns in `unique_indexes`: `zz`", class = "marginplyr_error"
+    )
+    expect_identical(
+      conditionCall(error),
+      quote(dplyr::compute(query, name = "facts", unique_indexes = list("zz")))
+    )
+    expect_identical(temp_schema(), before, info = output)
+    computed <- dplyr::compute(
+      query, name = "facts", indexes = list(c("g", output))
+    )
+    index <- DBI::dbGetQuery(con, paste(
+      "SELECT name FROM temp.sqlite_master",
+      "WHERE type = 'index' AND tbl_name = 'facts'"
+    ))
+    expect_identical(nrow(index), 1L, info = output)
+    expect_identical(names(dplyr::collect(computed)), c("g", output))
+    DBI::dbRemoveTable(con, DBI::Id(schema = "temp", table = "facts"))
+  }
+  expect_identical(DBI::dbReadTable(con, "facts"), input)
 })

@@ -488,6 +488,18 @@ finalize_margin_operation <- function(operation, execution,
   result <- reorder_margin_columns(result, margin_cols)
 
   unsorted <- result
+  final_anchor <- length(type_anchor_columns) > 0L &&
+    !live_sqlite_margin_result(operation)
+  if (final_anchor) {
+    # Share staging wraps the SQL union's typed first SELECT. Put a zero-row
+    # source projection at the final result boundary, after all projections.
+    # It joins before the ordering: an ORDER BY trailing the compound reads
+    # only its select list, which holds no staged set identifier (#1768).
+    anchor <- sql_margin_type_anchor(
+      operation$data, result, source_columns = type_anchor_columns
+    )
+    result <- combine_margin_branches(list(anchor, result))
+  }
   result <- order_margin_result(operation, result, execution)
   if (is.data.frame(result) && margin_sorting(operation)) {
     # A subclass arrange method can move columns while ordering rows.
@@ -545,13 +557,6 @@ finalize_margin_operation <- function(operation, execution,
       operation, unsorted, result, execution, type_anchor_columns,
       declared_types
     )
-  } else if (length(type_anchor_columns) > 0L && !needs_unsorted_anchor) {
-    # Share staging wraps the SQL union's typed first SELECT. Put a zero-row
-    # source projection at the final result boundary, after all projections.
-    anchor <- sql_margin_type_anchor(
-      operation$data, result, source_columns = type_anchor_columns
-    )
-    result <- combine_margin_branches(list(anchor, result))
   }
   if (operation$backend$is_sql &&
         (sql_env_column ||

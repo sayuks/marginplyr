@@ -1,7 +1,8 @@
 # Driver-boundary doubles exercise failure/cleanup paths without a server in
 # CRAN checks. tools/postgres-share-transactions.R owns live transaction values.
 postgres_probe_fixture <- function(active = TRUE, probe = "raises", control = 1,
-                                   fail_command = NULL, probe_warning = FALSE) {
+                                   fail_command = NULL, probe_warning = FALSE,
+                                   probe_latency = function() NULL) {
   skip_if_suggest_absent("RPostgres")
   RPostgres::Postgres()
   con <- methods::new("PqConnection")
@@ -28,6 +29,7 @@ postgres_probe_fixture <- function(active = TRUE, probe = "raises", control = 1,
   )
   local_mocked_bindings(collect = function(x, ...) {
     if (grepl("SUM('x')", dbplyr::sql_render(x), fixed = TRUE)) {
+      probe_latency()
       if (probe_warning) warning("probe warning", call. = FALSE)
       if (probe == "raises") {
         state$aborted <- isTRUE(active)
@@ -139,6 +141,38 @@ test_that("a PostgreSQL cleanup failure cannot cache a measured answer", {
     postgres_probe_summary(fixture$source), "transaction control failed"
   )
   expect_length(ls(share_dialect_verdicts), 0L)
+})
+
+# A time limit is not the dialect's answer (#1782): it expires while the
+# question is in flight, inside a caller transaction and in autocommit, and the
+# call ends with an error. Inside the transaction the savepoint is rolled back
+# and released; in autocommit no savepoint statement is sent. The question did
+# raise and the control query did answer, so `"refuses"` is the one verdict
+# that may be recorded, and only if the limit is delivered after the cache is
+# written.
+test_that("a PostgreSQL time limit during the question ends the call", {
+  saved <- share_dialect_snapshot()
+  on.exit(restore_share_dialect_verdicts(saved), add = TRUE)
+  for (active in c(TRUE, FALSE)) {
+    fixture <- postgres_probe_fixture(
+      active = active, probe_latency = expire_time_limit
+    )
+    expect_s3_class(
+      catch_time_limited(postgres_probe_summary(fixture$source)),
+      "error"
+    )
+    expect_false(fixture$aborted)
+    if (active) {
+      expect_match(fixture$statements[[1L]], "^SAVEPOINT ")
+      expect_match(
+        fixture$statements[[length(fixture$statements)]],
+        "^RELEASE SAVEPOINT "
+      )
+    } else {
+      expect_length(fixture$statements, 0L)
+    }
+    expect_in(as.character(as.list(share_dialect_verdicts)), "refuses")
+  }
 })
 
 

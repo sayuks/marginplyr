@@ -128,7 +128,9 @@ render_sent_query_sql <- function(query, entry) {
     )
     on.exit(suspendInterrupts(options(old)), add = TRUE)
   })
-  withRestarts(
+  # The error branch below would keep a time limit local (#1796); suspended
+  # for the reason `probe_share_dialect_answer()` suspends its question.
+  suspendInterrupts(withRestarts(
     withCallingHandlers(
       as.character(dbplyr::sql_render(query)),
       condition = function(cnd) {
@@ -154,7 +156,7 @@ render_sent_query_sql <- function(query, entry) {
     # Bare signals end only this render, never a caller's condition handler.
     muffleWarning = function() NA_character_,
     muffleMessage = function() NA_character_
-  )
+  ))
 }
 
 # Prepares a lazy query or literal row and returns its private update handle.
@@ -425,7 +427,9 @@ with_sent_query <- function(purpose, query, expr,
 #'   of a call that recorded just its result.
 #' - A diagnostic render failed, and its row holds `NA` in `sql`. Recording
 #'   does not raise that render error. The internal backend operation, or a
-#'   later explicit render or collection of the result, may still fail.
+#'   later explicit render or collection of the result, may still fail. A
+#'   time limit or an interrupt arriving during a diagnostic render is not a
+#'   render error: it is delivered when that render ends.
 #'
 #' @section Writing the record out:
 #' Copy or export the tibble before the next tracked call replaces the record.

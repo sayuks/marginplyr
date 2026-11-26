@@ -136,6 +136,16 @@
 #' - one plain integer or double per grouping row, or the database's
 #'   numeric or decimal equivalent.
 #'
+#' An `across()` output is statically named when its name is known before the
+#' call runs, which needs `.fns` to be one function or a literal `list()` of
+#' functions, such as `list(s = sum, m = mean)`. The same functions written
+#' with `c()` or held in a variable produce their columns, but a share cannot
+#' select them. An `across()` written after another summary is evaluated only
+#' once that summary has run, so it qualifies only when what it reads already
+#' holds a value; an argument of your own function holds none until it is
+#' used. Evaluate the argument first with [force()], or write the `across()`
+#' before the other summaries.
+#'
 #' Logical, complex, date, date-time, duration, character, factor, list,
 #' data-frame, and other classes are not converted implicitly. Convert
 #' intentionally in the ordinary summary:
@@ -710,6 +720,14 @@ plan_share_expressions <- function(dots,
     ))
   )
 
+  source_hints <- lapply(seq_along(dots), function(i) {
+    if (length(analyses[[i]]$records) == 0L) {
+      unnamed_across_source_hint(
+        dots[[i]], dot_names[[i]], i, colnames(selection_proxy)
+      )
+    }
+  })
+
   planned_dots <- as.list(dots)
   requests <- list()
   preceding_ordinary <- list()
@@ -720,6 +738,9 @@ plan_share_expressions <- function(dots,
     expr <- rlang::quo_get_expr(quo)
     env <- rlang::quo_get_env(quo)
     output_name <- dot_names[[i]]
+    planning_context["source_hint"] <- list(Find(
+      Negate(is.null), source_hints[seq_len(i - 1L)]
+    ))
 
     if (is_share_helper_call(expr)) {
       request <- plan_direct_share(
@@ -2340,6 +2361,11 @@ validate_share_request <- function(outputs,
           i = "{.var {source}} is a forward reference."
         ))
       }
+      # An earlier `across()` whose outputs are unknown is reported ahead of the
+      # input-column hint, since it may be what produces the name.
+      if (!is.null(context$source_hint)) {
+        abort_share_source_hint(label, output, source, context$source_hint)
+      }
       if (source %in% context$data_vars) {
         abort_share_column_source(label, output, source, preceding)
       }
@@ -2396,6 +2422,187 @@ validate_share_request <- function(outputs,
     ))
   }
   invisible(NULL)
+}
+
+# Why an unnamed `across()` at `position` names no output before the call runs,
+# when the caller can remove the reason: it reads a binding of theirs that has
+# not been evaluated yet, or its `.fns` is neither one function nor a literal
+# `list()`. The caller holds a dot whose outputs are unknown. Only `.fns` is
+# read without forcing in first position, where the selection and `.names` are
+# evaluated; later, all three are.
+unnamed_across_source_hint <- function(dot, name, position, columns) {
+  expr <- rlang::quo_get_expr(dot)
+  if (nzchar(name) || !is_across_call(expr) || contains_share_helper(expr)) {
+    return(NULL)
+  }
+  env <- rlang::quo_get_env(dot)
+  parsed <- parse_across_arguments(expr)
+  fns <- unparenthesized_value(parsed$fns)
+  if (rlang::is_symbol(fns) &&
+        is_unevaluated_binding(rlang::as_string(fns), env)) {
+    return(list(kind = "force", name = rlang::as_string(fns)))
+  }
+  # A function list is the one reason left only when nothing else hides the
+  # outputs: an unpacked `across()` is named after its execution.
+  if (!is.null(fns) && !is_known_function_list_call(fns, env) &&
+        length(known_across_function_names(parsed, env)) == 0L &&
+        across_unpack_is_false(parsed$unpack, env)) {
+    return(list(kind = "fns", name = NULL))
+  }
+  if (position == 1L) {
+    return(NULL)
+  }
+  for (part in list(parsed$cols, parsed$names)) {
+    part_env <- env
+    if (rlang::is_quosure(part)) {
+      part_env <- rlang::quo_get_env(part)
+      part <- rlang::quo_get_expr(part)
+    }
+    if (rlang::is_missing(part)) {
+      next
+    }
+    for (read in setdiff(all.vars(part), columns)) {
+      if (is_unevaluated_binding(read, part_env)) {
+        return(list(kind = "reorder", name = read))
+      }
+    }
+  }
+  NULL
+}
+
+# Whether `name` resolves from `env` to a caller's unforced promise, which
+# `force()` would evaluate. A package environment's promises are read as values
+# by `known_across_function_names()`.
+is_unevaluated_binding <- function(name, env) {
+  while (!identical(env, emptyenv())) {
+    if (exists(name, envir = env, inherits = FALSE)) {
+      return(!bindingIsActive(name, env) &&
+               rlang::env_binding_are_lazy(env, name) &&
+               !identical(env, baseenv()) && !is_package_environment(env))
+    }
+    env <- parent.env(env)
+  }
+  FALSE
+}
+
+# The unknown-source refusal when `unnamed_across_source_hint()` found why an
+# earlier `across()`'s outputs are unknown. A reordered `across()` is evaluated
+# first, which reads its selection and `.names` but not its `.fns`.
+abort_share_source_hint <- function(label, output, source, hint) {
+  # Read only from the cli templates below, which codetools cannot see.
+  # nolint start: object_usage_linter.
+  name <- hint$name
+  # nolint end
+  if (identical(hint$kind, "fns")) {
+    abort_marginplyr(c(
+      paste0(
+        "{label} {.var {output}} refers to unknown preceding ordinary ",
+        "summary {.var {source}}."
+      ),
+      i = paste0(
+        "A preceding {.fun across} has a {.arg .fns} whose function names ",
+        "are not known before the call runs."
+      ),
+      i = paste0(
+        "Write its functions as a literal {.code list()}, such as ",
+        "{.code list(s = sum, m = mean)}."
+      )
+    ))
+  }
+  if (identical(hint$kind, "reorder")) {
+    abort_marginplyr(c(
+      paste0(
+        "{label} {.var {output}} refers to unknown preceding ordinary ",
+        "summary {.var {source}}."
+      ),
+      i = paste0(
+        "A preceding {.fun across} reads {.var {name}}, which is not ",
+        "evaluated before the call runs, so its output names are not known."
+      ),
+      i = paste0(
+        "Evaluate {.var {name}} before the call, as {.code force({name})} ",
+        "does, or write that {.fun across} before the other summaries."
+      )
+    ))
+  }
+  abort_marginplyr(c(
+    paste0(
+      "{label} {.var {output}} refers to unknown preceding ordinary ",
+      "summary {.var {source}}."
+    ),
+    i = paste0(
+      "A preceding {.fun across} reads {.var {name}}, which is not ",
+      "evaluated before the call runs, so its output names are not known."
+    ),
+    i = "Evaluate {.var {name}} before the call, as {.code force({name})} does."
+  ))
+}
+
+# `abort_share_source_hint()` for a column-wise share's selection.
+abort_share_across_source_hint <- function(source, kind, hint) {
+  # Read only from the cli templates below, which codetools cannot see.
+  # nolint start: object_usage_linter.
+  helper <- share_helper_name(kind)
+  name <- hint$name
+  # nolint end
+  if (identical(hint$kind, "fns")) {
+    abort_marginplyr(
+      c(
+        paste0(
+          "{.fun across} refers to unknown summary {.var {source}} for ",
+          "{.fun {helper}}."
+        ),
+        i = paste0(
+          "A preceding {.fun across} has a {.arg .fns} whose function names ",
+          "are not known before the call runs."
+        ),
+        i = paste0(
+          "Write its functions as a literal {.code list()}, such as ",
+          "{.code list(s = sum, m = mean)}."
+        )
+      ),
+      class = "marginplyr_share_source_unknown_error",
+      source_summary = source
+    )
+  }
+  if (identical(hint$kind, "reorder")) {
+    abort_marginplyr(
+      c(
+        paste0(
+          "{.fun across} refers to unknown summary {.var {source}} for ",
+          "{.fun {helper}}."
+        ),
+        i = paste0(
+          "A preceding {.fun across} reads {.var {name}}, which is not ",
+          "evaluated before the call runs, so its output names are not known."
+        ),
+        i = paste0(
+          "Evaluate {.var {name}} before the call, as {.code force({name})} ",
+          "does, or write that {.fun across} before the other summaries."
+        )
+      ),
+      class = "marginplyr_share_source_unknown_error",
+      source_summary = source
+    )
+  }
+  abort_marginplyr(
+    c(
+      paste0(
+        "{.fun across} refers to unknown summary {.var {source}} for ",
+        "{.fun {helper}}."
+      ),
+      i = paste0(
+        "A preceding {.fun across} reads {.var {name}}, which is not ",
+        "evaluated before the call runs, so its output names are not known."
+      ),
+      i = paste0(
+        "Evaluate {.var {name}} before the call, as {.code force({name})} ",
+        "does."
+      )
+    ),
+    class = "marginplyr_share_source_unknown_error",
+    source_summary = source
+  )
 }
 
 # A share's source names a column of the input rather than a summary. The
@@ -2764,7 +2971,11 @@ bind_duckdb_share_values <- function(result) {
     "WITH ", dbplyr::ident(name), " AS MATERIALIZED (", query,
     ") SELECT * FROM ", dbplyr::ident(name), con = con
   )
-  dplyr::tbl(con, sql, vars = vars)
+  # A tbl built from SQL text carries no window ordering, so the staged
+  # result's is restored on it (ADR 0018's `.sort = "none"` amendment, #1791).
+  restore_input_window_order(
+    dplyr::tbl(con, sql, vars = vars), dbplyr::op_sort(result)
+  )
 }
 
 # Refuse a staged dtplyr result with more than one row per occurrence and
@@ -3199,20 +3410,25 @@ probe_share_dialect_answer <- function(con, expr, purpose, control = FALSE) {
   # binds its number outside its own: what each of them reads as something the
   # connection did is an error.
   scaffold <- share_probe_scaffold()$sql
-  query <- tryCatch(
+  # Suspended for the reason the question's handler below is.
+  query <- suspendInterrupts(tryCatch(
     dplyr::summarize(dplyr::tbl(con, scaffold, vars = "z"), p = !!expr),
     error = function(cnd) NULL
-  )
+  ))
   if (is.null(query)) {
     return("unanswerable")
   }
-  answer <- tryCatch(
+  # R delivers a time limit as an unclassed error, which this handler would
+  # read as the dialect's answer, clearing the limit for the rest of the call
+  # (#1782). Suspended, R delivers neither a limit nor an interrupt inside it,
+  # so both reach the caller after the question instead.
+  answer <- suspendInterrupts(tryCatch(
     list(value = suppressMessages(suppressWarnings(with_sent_query(
       purpose, query, dplyr::collect(query),
       error_handling = "handled", warning_handling = "suppressed"
     )))),
     error = function(cnd) NULL
-  )
+  ))
   if (is.null(answer)) {
     return("raised")
   }
@@ -4295,6 +4511,9 @@ abort_share_source_name <- function(source, preceding, context, kind) {
     )
   }
 
+  if (!is.null(context$source_hint)) {
+    abort_share_across_source_hint(source, kind, context$source_hint)
+  }
   preceding_candidates <- unique(vapply(
     preceding,
     `[[`,

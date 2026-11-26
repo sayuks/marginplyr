@@ -1322,6 +1322,85 @@ test_that("portable window ordering keeps only summary columns", {
   expect_match(windowed, "OVER (ORDER BY `region` DESC", fixed = TRUE)
 })
 
+# DuckDB binds a share result through a materialized CTE, a `tbl()` built from
+# SQL text, which carries no window ordering of its own (ADR 0014, #1141). The
+# share result keeps the terms the share-less one does, as SQLite's does, and
+# nothing in its rendered statement changes (#1791).
+test_that("`.sort = \"none\"` keeps window ordering through a DuckDB share", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  table <- dplyr::copy_to(con, data.frame(
+    k = c("p", "p", "q", "q", "p", "q", "p"),
+    a = c("x", "y", "x", "y", "z", "z", "x"),
+    v = c(1, 2, 3, 4, 5, 6, 7)
+  ), "share_window_order")
+  # The symbols are columns and summary names in the public data mask.
+  # nolint start: object_usage_linter.
+  summary <- function(input, share, ...) {
+    switch(share,
+      none = summarize_with_margins(input, n = sum(v, na.rm = TRUE), ...),
+      total = summarize_with_margins(
+        input, n = sum(v, na.rm = TRUE), p = share_of_total(n), ...
+      ),
+      parent = summarize_with_margins(
+        input, n = sum(v, na.rm = TRUE), p = share_of_parent(n), ...
+      )
+    )
+  }
+  # nolint end
+  # `share_of_parent()` takes only a pure `rollup()`. `v` is not a result
+  # column, so its term is dropped from both sides.
+  shapes <- list(
+    list(input = dbplyr::window_order(table, a), shares = c("total", "parent"),
+         .grouping = rollup(a)),
+    list(input = dbplyr::window_order(table, dplyr::desc(a), v),
+         shares = "total", .grouping = cube(a)),
+    list(input = dbplyr::window_order(table, k, a),
+         shares = c("total", "parent"), .grouping = rollup(a), .by = "k")
+  )
+  for (shape in shapes) {
+    for (duplicates in c("error", "drop", "keep")) {
+      arguments <- c(shape[-(1:2)], list(.duplicates = duplicates))
+      expected <- dbplyr::op_sort(
+        do.call(summary, c(list(shape$input, "none"), arguments))
+      )
+      expect_true(length(expected) > 0L)
+      for (share in shape$shares) {
+        result <- do.call(summary, c(list(shape$input, share), arguments))
+        expect_identical(dbplyr::op_sort(result), expected)
+        expect_identical(
+          dbplyr::sql_render(result),
+          dbplyr::sql_render(do.call(summary, c(
+            list(dbplyr::window_order(table), share), arguments
+          )))
+        )
+      }
+    }
+  }
+
+  shared <- summary(
+    dbplyr::window_order(table, a), "total", .grouping = rollup(a)
+  )
+  running <- expect_no_warning(dplyr::collect(
+    dplyr::mutate(shared, r = cumsum(n))
+  ))
+  expect_identical(
+    running[order(running$r), c("a", "r")],
+    dplyr::tibble(a = c("Total", "x", "y", "z"), r = c(28, 39, 45, 56))
+  )
+  expect_identical(
+    dbplyr::op_sort(dplyr::compute(shared)), dbplyr::op_sort(shared)
+  )
+
+  for (sort in c("first", "last")) {
+    expect_length(dbplyr::op_sort(summary(
+      dbplyr::window_order(table, a), "total", .grouping = rollup(a),
+      .sort = sort
+    )), 0L)
+  }
+})
+
 # The live backend contracts follow.
 #
 # Everything above proves the order against a local data frame or against a

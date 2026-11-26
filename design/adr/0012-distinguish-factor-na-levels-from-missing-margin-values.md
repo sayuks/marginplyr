@@ -277,3 +277,14 @@ and nesting paths, repeated execution and backend controls. Public help and
 release notes describing the runtime change land with that implementation.
 
 [factor-schema-acceptance]: ../specs/grouping-context-and-factor-schema-boundaries.md#3-construction-time-schema-and-safe-factor-processing
+
+## Amendment: the reference states the factor rule once in prose (2026-11-26)
+
+*Documentation consequences* above says the reference will include the
+complete eight-case table and that `vignettes/grouping_identity.qmd` will link
+to it. The reference states the rule in the prose of *Display labels and
+grouping identity* in `?margin_verbs` alone (#1720), and the article points at
+those rules rather than at a table (#1788). The eight cases are held
+as an executable table, `factor_contract_cases()` in
+`tests/testthat/test-margin-label.R`, which the local and dtplyr tests there
+assert row by row.

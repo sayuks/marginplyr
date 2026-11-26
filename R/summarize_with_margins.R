@@ -516,6 +516,10 @@ summarize_with_margins <- function(.data,
     call = call
   )
 
+  # Whether the plan-name hook below is yet to make its call from names alone,
+  # the one ahead of typed metadata.
+  plan_names <- new.env(parent = emptyenv())
+  plan_names$pass_pending <- TRUE
   operation <- prepare_margin_operation(
     .data,
     by_quo = by_quo,
@@ -546,6 +550,21 @@ summarize_with_margins <- function(.data,
           grouping_name_proxy(setdiff(data_vars, c(fixed$columns, dimensions)))
         )
       }
+      # The helper-call check runs on the call from names alone, after the
+      # `.grouping` and `.by` checks that names decide. An input whose metadata
+      # sends a statement runs it there even on an unsettled plan, so no
+      # statement precedes a refusal the call alone decides (ADR 0005); a
+      # `.by` or `.grouping` refusal that only typed metadata decides then
+      # follows it. Any other input runs it there only on a settled plan and
+      # otherwise leaves it to `check_grouping_helper_calls()` in
+      # `execute_margin_summary()`, after every `.grouping` and `.by` refusal.
+      if (
+        plan_names$pass_pending &&
+          (complete || metadata_sends_statements(.data))
+      ) {
+        check_grouping_helper_args(dots)
+      }
+      plan_names$pass_pending <- FALSE
     },
     call = call
   )
@@ -725,17 +744,18 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
       # ADR 0005 places them ahead of the label query below; staging rewrites
       # the same dots again, per branch.
       check_grouping_helper_calls(dots, plan)
-      validate_margin_operation(
-        operation,
-        on_observed_collision = abort_summary_label_collision
-      )
-
+      # The Arrow share refusal needs only the planned requests, so it too
+      # precedes the label query (ADR 0005).
       if (
         has_shares &&
           identical(operation$backend$kind, "arrow")
       ) {
         abort_arrow_shares(share_request_kinds(summary_plan$requests))
       }
+      validate_margin_operation(
+        operation,
+        on_observed_collision = abort_summary_label_collision
+      )
 
       staged_result <- stage_margin_summaries(
         operation,

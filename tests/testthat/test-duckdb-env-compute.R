@@ -71,8 +71,11 @@ test_that("invalid DuckDB expansion indexes leave destinations untouched", {
               overwrite = existing, analyze = FALSE
             )
             args[[arg]] <- list(c("v", "absent_column"))
-            expect_error(do.call(dplyr::compute, args), "absent_column",
-                         info = name)
+            expect_error(
+              do.call(dplyr::compute, args),
+              paste0("Missing columns in `", arg, "`: `absent_column`"),
+              fixed = TRUE, info = name
+            )
             expect_identical(DBI::dbExistsTable(con, name), existing,
                              info = name)
             if (existing) {
@@ -253,4 +256,87 @@ test_that("DuckDB expansion index validation accepts dbplyr argument forms", {
     args[[arg]] <- "g"
     expect_duckdb_compute_rows(do.call(dplyr::compute, args), case$expected)
   }
+})
+
+test_that("DuckDB pronoun results accept compute()'s deprecated cte argument", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  input <- dplyr::copy_to(
+    con, data.frame(g = c("a", "b"), v = c(1L, 2L), .env = c("x", "y"))
+  )
+  rlang::local_options(lifecycle_verbosity = "warning")
+  shapes <- list(
+    # An identifier keeps the expansion outside dbplyr's bare-query CTE
+    # limitation, which an ordinary expansion meets too.
+    expansion = expand_with_margins(
+      input, .grouping = rollup("g"), .margin_label = NULL, .id = "sid"
+    ),
+    summary = summarize_with_margins(
+      input, n = dplyr::n(), .by = tidyselect::all_of(".env"),
+      .grouping = rollup("g")
+    )
+  )
+  for (shape in names(shapes)) {
+    query <- shapes[[shape]]
+    expect_s3_class(query, "marginplyr_duckdb_env")
+    for (cte in c(TRUE, FALSE)) {
+      expected <- dplyr::compute(
+        query, sql_options = dbplyr::sql_options(cte = cte)
+      )
+      expect_warning(
+        actual <- dplyr::compute(query, cte = cte),
+        class = "lifecycle_warning_deprecated"
+      )
+      expect_duckdb_compute_rows(
+        actual, as.data.frame(dplyr::collect(expected))
+      )
+    }
+    expect_error(
+      dplyr::compute(query, cte = TRUE,
+                     sql_options = dbplyr::sql_options(cte = TRUE)),
+      "Exactly one", info = shape
+    )
+  }
+})
+
+test_that("DuckDB pronoun results validate temporary before using it", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  case <- duckdb_env_compute_case(con, "payload", FALSE)
+  for (temporary in list(NA, "yes")) {
+    for (name in list(NULL, "named_destination")) {
+      expect_error(
+        dplyr::compute(case$query, name = name, temporary = temporary),
+        "`temporary` must be TRUE or FALSE", class = "marginplyr_error"
+      )
+    }
+  }
+  expect_false(DBI::dbExistsTable(con, "named_destination"))
+})
+
+test_that("DuckDB pronoun-result refusals blame the compute() call written", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  query <- duckdb_env_compute_case(con, "payload", FALSE)$query
+  forward <- function(x, ...) dplyr::compute(x, ...)
+  blamed <- function(expr) {
+    conditionCall(expect_error(expr, class = "marginplyr_error"))
+  }
+  expect_identical(
+    blamed(dplyr::compute(query, temporary = FALSE)),
+    quote(dplyr::compute(query, temporary = FALSE))
+  )
+  expect_identical(
+    blamed(forward(query, temporary = NA)), quote(dplyr::compute(x, ...))
+  )
+  expect_identical(
+    blamed(dplyr::compute(query, indexes = list("zz"))),
+    quote(dplyr::compute(query, indexes = list("zz")))
+  )
+  expect_identical(
+    blamed(forward(query, unique_indexes = 1L)), quote(dplyr::compute(x, ...))
+  )
 })

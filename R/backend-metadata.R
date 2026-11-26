@@ -254,7 +254,7 @@ dtplyr_value_stable_arithmetic <- function(expr, columns, env) {
   }
   if (is.call(expr) && is.symbol(expr[[1L]])) {
     head <- as.character(expr[[1L]])
-    if (head %in% c("+", "-", "*", "/") &&
+    if (head %in% c("+", "-", "*", "/", "(", "^", "%%", "%/%") &&
           dtplyr_function_binding(head, env, get(head, envir = baseenv()))) {
       args <- as.list(expr)[-1L]
       return(length(args) %in% c(1L, 2L) && all(vapply(args, function(arg) {
@@ -265,7 +265,13 @@ dtplyr_value_stable_arithmetic <- function(expr, columns, env) {
   FALSE
 }
 
-# A join or set over plain atomic roots has no factor levels or class-specific
+# Whether `x` is an unclassed logical, integer, double or character vector.
+dtplyr_plain_column <- function(x) {
+  is.atomic(x) && !is.object(x) && is.null(dim(x)) &&
+    typeof(x) %in% c("logical", "integer", "double", "character")
+}
+
+# A set over plain atomic roots has no factor levels or class-specific
 # coercion to infer from matched rows. Derived expressions are checked by the
 # step predicate before this condition is used.
 dtplyr_plain_roots <- function(step) {
@@ -275,14 +281,14 @@ dtplyr_plain_roots <- function(step) {
       dtplyr_plain_roots(step[[field]])
     }, logical(1))))
   }
-  all(vapply(step[["parent"]], function(x) {
-    is.atomic(x) && !is.object(x) && is.null(dim(x)) &&
-      typeof(x) %in% c("logical", "integer", "double", "character")
-  }, logical(1)))
+  all(vapply(step[["parent"]], dtplyr_plain_column, logical(1)))
 }
 
 # Even plain join keys can promote from integer to double when real rows
 # match. Require matching input types before using an empty-input result.
+# A join pairs only its keys, which must be plain: a non-key column passes
+# through with its own class and levels, while a classed key could reach class
+# methods or merge levels from matched rows.
 dtplyr_join_set_types_match <- function(step, env = step[["env"]]) {
   tryCatch({
     left <- dtplyr_selection_proxy(step[["parent"]], env = env)
@@ -291,15 +297,27 @@ dtplyr_join_set_types_match <- function(step, env = step[["env"]]) {
     )
     if (inherits(step, "dtplyr_step_join")) {
       on <- step[["on"]]
-      if (!is.list(on) || length(on[["x"]]) != length(on[["y"]]) ||
-            !all(on[["x"]] %in% names(left)) ||
-            !all(on[["y"]] %in% names(right))) {
+      if (!is.list(on)) {
         return(FALSE)
       }
-      left_types <- vapply(on[["x"]], function(col) {
+      # dtplyr's `on$x` names `parent`'s keys only in a full join; in every
+      # other style it names `parent2`'s.
+      full <- identical(step[["style"]], "full")
+      left_keys <- if (full) on[["x"]] else on[["y"]]
+      right_keys <- if (full) on[["y"]] else on[["x"]]
+      if (length(left_keys) != length(right_keys) ||
+            !all(left_keys %in% names(left)) ||
+            !all(right_keys %in% names(right))) {
+        return(FALSE)
+      }
+      keys <- c(as.list(left)[left_keys], as.list(right)[right_keys])
+      if (!all(vapply(keys, dtplyr_plain_column, logical(1)))) {
+        return(FALSE)
+      }
+      left_types <- vapply(left_keys, function(col) {
         typeof(left[[col]])
       }, character(1), USE.NAMES = FALSE)
-      right_types <- vapply(on[["y"]], function(col) {
+      right_types <- vapply(right_keys, function(col) {
         typeof(right[[col]])
       }, character(1), USE.NAMES = FALSE)
       return(identical(left_types, right_types))
@@ -493,7 +511,10 @@ dtplyr_metadata_safe_step <- function(step, env = step[["env"]]) {
   if (inherits(step, "dtplyr_step_subset")) {
     return(!is.null(dtplyr_metadata_subset_columns(step)))
   }
-  if (inherits(step, c("dtplyr_step_join", "dtplyr_step_set"))) {
+  if (inherits(step, "dtplyr_step_join")) {
+    return(dtplyr_join_set_types_match(step, env))
+  }
+  if (inherits(step, "dtplyr_step_set")) {
     return(dtplyr_plain_roots(step) && dtplyr_join_set_types_match(step, env))
   }
   FALSE
@@ -615,8 +636,9 @@ grouping_selection_proxy <- function(.data,
     # The simulated dialect carries the class name on an S3 object.
     if (isS4(con) && inherits(con, "duckdb_connection")) {
       catalog <- NULL
-      read_catalog <- function() {
-        if (is.null(catalog)) catalog <<- duckdb_metadata_catalog(con)
+      # `read = FALSE` returns the snapshot only if one was already read.
+      read_catalog <- function(read = TRUE) {
+        if (is.null(catalog) && read) catalog <<- duckdb_metadata_catalog(con)
         catalog
       }
       validate_duckdb_csv_query(query$lazy_query, read_catalog)

@@ -2836,6 +2836,157 @@ test_that("a join with promoted key types refuses metadata", {
   expect_s3_class(error, "marginplyr_error")
 })
 
+# Each Margin verb on the step returns what it returns on the collected join.
+# A nested result compares its keys and its nested rows, whatever frame class
+# each backend nests them in.
+test_that("a join on differently named keys compares the keys it pairs", {
+  skip_if_suggest_absent("dtplyr")
+  x <- data.frame(a = c(1L, 2L, 3L), b = c("p", "q", "r"), k = c(7L, 8L, 9L))
+  joins <- list(
+    single = list(
+      y = data.frame(b = c(1L, 2L, 9L), w = c("u", "v", "t")),
+      by = c("a" = "b")
+    ),
+    multi = list(
+      y = data.frame(
+        c = c(1L, 2L, 9L), d = c(7L, 8L, 0L), w = c("u", "v", "t")
+      ),
+      by = c("a" = "c", "k" = "d")
+    )
+  )
+  nested <- function(result) {
+    result <- tibble::as_tibble(dplyr::collect(result))
+    result$data <- lapply(result$data, tibble::as_tibble)
+    result
+  }
+  grouping <- rollup(where(is.integer))
+  styles <- c("inner", "left", "right", "full", "semi", "anti")
+  for (keys in names(joins)) {
+    for (style in styles) {
+      info <- paste(keys, style)
+      join <- get(paste0(style, "_join"), envir = asNamespace("dplyr"))
+      step <- join(
+        dtplyr::lazy_dt(x), dtplyr::lazy_dt(joins[[keys]]$y),
+        by = joins[[keys]]$by
+      )
+      collected <- tibble::as_tibble(dplyr::collect(step))
+      expect_identical(
+        inspect_grouping(step, .grouping = grouping)$included,
+        inspect_grouping(collected, .grouping = grouping)$included,
+        info = info
+      )
+      expect_identical(
+        tibble::as_tibble(dplyr::collect(summarize_with_margins(
+          step, n = dplyr::n(), .grouping = grouping
+        ))),
+        summarize_with_margins(collected, n = dplyr::n(), .grouping = grouping),
+        info = info
+      )
+      expect_identical(
+        tibble::as_tibble(dplyr::collect(
+          expand_with_margins(step, .grouping = grouping)
+        )),
+        expand_with_margins(collected, .grouping = grouping),
+        info = info
+      )
+      for (verb in list(nest_with_margins, nest_by_with_margins)) {
+        expect_identical(
+          nested(verb(step, .grouping = grouping)),
+          nested(verb(collected, .grouping = grouping)),
+          info = info
+        )
+      }
+    }
+  }
+})
+
+test_that("a join whose paired keys differ in type refuses metadata", {
+  skip_if_suggest_absent("dtplyr")
+  x <- data.frame(a = c(1L, 2L, 3L), b = c("p", "q", "r"), k = c(7L, 8L, 9L))
+  # Both tables hold both key names, so only the paired columns differ.
+  cross <- data.frame(b = c(1, 2, 9), a = c("u", "v", "t"))
+  # The second pair of a two-key join is the mismatched one.
+  multi <- data.frame(c = c(1L, 2L, 9L), d = c(7, 8, 0))
+  styles <- c("inner", "left", "right", "full", "semi", "anti")
+  for (style in styles) {
+    join <- get(paste0(style, "_join"), envir = asNamespace("dplyr"))
+    crosswise <- join(
+      dtplyr::lazy_dt(x), dtplyr::lazy_dt(cross), by = c("a" = "b")
+    )
+    two_keys <- join(
+      dtplyr::lazy_dt(x), dtplyr::lazy_dt(multi), by = c("a" = "c", "k" = "d")
+    )
+    for (step in list(crosswise, two_keys)) {
+      error <- expect_error(
+        inspect_grouping(step, .grouping = rollup(where(is.integer))),
+        class = "marginplyr_error",
+        info = style
+      )
+      expect_match(
+        conditionMessage(error), "dplyr::collect()", fixed = TRUE,
+        info = style
+      )
+    }
+  }
+})
+
+test_that("a join admits classed columns that are not keys", {
+  skip_if_suggest_absent("dtplyr")
+  sales <- data.frame(
+    store = c("a", "a", "b", "d"), revenue = c(4, 1, 3, 2),
+    day = as.Date("2026-01-01") + 0:3,
+    lag = as.difftime(c(1, 2, 3, 4), units = "days"),
+    channel = factor(c("web", "shop", "web", "web"), levels = c("shop", "web"))
+  )
+  stores <- data.frame(
+    store = c("a", "b", "c"), region = c("east", "west", "east"),
+    tier = factor(c("gold", "basic", "gold"), levels = c("basic", "gold")),
+    opened = as.POSIXct("2026-01-01 09:00:00", tz = "UTC") + 0:2
+  )
+  styles <- c("inner", "left", "right", "full", "semi", "anti")
+  for (style in styles) {
+    join <- get(paste0(style, "_join"), envir = asNamespace("dplyr"))
+    step <- join(dtplyr::lazy_dt(sales), dtplyr::lazy_dt(stores), by = "store")
+    collected <- tibble::as_tibble(dplyr::collect(step))
+    for (selection in list(
+      rollup(where(is.character)), rollup(where(is.factor))
+    )) {
+      expect_identical(
+        inspect_grouping(step, .grouping = selection)$included,
+        inspect_grouping(collected, .grouping = selection)$included,
+        info = style
+      )
+    }
+    expect_identical(
+      tibble::as_tibble(dplyr::collect(summarize_with_margins(
+        step, revenue = sum(revenue),
+        .grouping = rollup(where(is.character))
+      ))),
+      summarize_with_margins(
+        collected, revenue = sum(revenue),
+        .grouping = rollup(where(is.character))
+      ),
+      info = style
+    )
+  }
+})
+
+test_that("a join on classed keys refuses metadata", {
+  skip_if_suggest_absent("dtplyr")
+  left <- dtplyr::lazy_dt(data.frame(
+    day = as.Date("2026-01-01") + 0:1, v = 1:2
+  ))
+  right <- dtplyr::lazy_dt(data.frame(
+    day = as.Date("2026-01-01") + 0:1, w = c("a", "b")
+  ))
+  step <- dplyr::left_join(left, right, by = "day")
+
+  expect_error(
+    inspect_grouping(step, .grouping = rollup(where(is.character))),
+    class = "marginplyr_error"
+  )
+})
+
 test_that("unrecognized dtplyr subset forms cannot certify column metadata", {
   skip_if_suggest_absent("dtplyr")
   root <- dtplyr::lazy_dt(data.frame(region = c("a", "b"), value = 1:2))
@@ -2881,6 +3032,10 @@ test_that("unrecognized dtplyr subset forms cannot certify column metadata", {
   unknown_join <- dplyr::full_join(root, root, by = "region")
   unknown_join$on <- NULL
   expect_false(dtplyr_join_set_types_match(unknown_join))
+
+  absent_key <- dplyr::full_join(root, root, by = "region")
+  absent_key$on$x <- "missing_column"
+  expect_false(dtplyr_join_set_types_match(absent_key))
 })
 
 test_that("set operations with derived factor levels refuse unsafe metadata", {

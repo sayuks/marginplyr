@@ -262,25 +262,6 @@ sql_render.marginplyr_sqlite_typed_result <- function(query, ...,
   dbplyr::sql(paste0(sql, "\nORDER BY ", paste(quoted, collapse = ", ")))
 }
 
-# Answer the SQL options a `verb` method's `sql_options` and dbplyr's
-# deprecated `cte` argument stand for, refusing both together as dbplyr's own
-# method does. A supplied `cte` carries dbplyr 2.6.0's deprecation warning.
-# The caller passes its own two formals, either possibly missing.
-sqlite_resolve_sql_options <- function(verb, sql_options, cte,
-                                       frame = rlang::caller_env(),
-                                       user_env = rlang::caller_env(2)) {
-  rlang::check_exclusive(sql_options, cte, .require = FALSE, .frame = frame)
-  if (missing(cte)) {
-    return(sql_options)
-  }
-  lifecycle::deprecate_warn(
-    "2.4.0", paste0(verb, "(cte)"),
-    with = I(paste0(verb, "(sql_options = sql_options(cte = TRUE))")),
-    env = asNamespace("dbplyr"), user_env = user_env
-  )
-  dbplyr::sql_options(cte = cte)
-}
-
 # Direct collection keeps a source anchor outermost and drops internal
 # sort columns after reading. Boolean-word outputs also avoid a finite
 # collection subquery. Other unsorted results delegate to dbplyr. All paths
@@ -293,7 +274,7 @@ collect.marginplyr_sqlite_typed_result <- function(x, ..., n = Inf,
   if (!sqlite_typed_result_direct(x)) {
     return(NextMethod())
   }
-  sql_options <- sqlite_resolve_sql_options("collect", sql_options, cte)
+  sql_options <- margin_resolve_sql_options("collect", sql_options, cte)
   boolean_output <- length(attr(x, "marginplyr_boolean_aliases")) > 0L
   anchor_only <- isTRUE(attr(x, "marginplyr_anchored_source")) &&
     length(attr(x, "marginplyr_order_keys")) == 0L && !boolean_output
@@ -365,7 +346,7 @@ sqlite_compute_destination <- function(con, name, temporary, overwrite) {
           "A temporary table shadows the persistent destination; ",
           "use an explicit schema or another name."
         ),
-        call = rlang::caller_call()
+        call = rlang::caller_env()
       )
     }
     if (temporary && overwrite && !temp_exists &&
@@ -375,7 +356,7 @@ sqlite_compute_destination <- function(con, name, temporary, overwrite) {
           "A temporary overwrite would target a table in main; ",
           "use an explicit schema or another name."
         ),
-        call = rlang::caller_call()
+        call = rlang::caller_env()
       )
     }
   }
@@ -557,15 +538,17 @@ sqlite_new_compute_name <- function(con) {
   }
 }
 
-# Check deferred indexes against the columns of the type anchor.
-# The caller has already mapped requested columns to their private aliases.
-sqlite_check_compute_indexes <- function(anchor, indexes, arg) {
+# Check deferred indexes against the columns of the type anchor before any
+# write, where no dbplyr compute() call is left to refuse them (ADR 0015).
+# The caller has already mapped requested columns to their private aliases
+# and passes the compute() method's frame as `call`.
+sqlite_check_compute_indexes <- function(anchor, indexes, arg, call) {
   missing <- setdiff(unlist(indexes, use.names = FALSE), colnames(anchor))
   if (length(missing) > 0L) {
-    rlang::abort(c(
-      paste0("All columns specified through `", arg, "` must exist in `x`."),
-      i = paste("Missing columns:", paste(missing, collapse = ", "))
-    ))
+    abort_marginplyr(c(
+      "All columns specified through {.arg {arg}} must exist in {.arg x}.",
+      i = "Missing columns in {.arg {arg}}: {.var {missing}}."
+    ), call = call)
   }
 }
 
@@ -699,7 +682,7 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
   if (!direct && length(sqlite_boolean_columns(public)) == 0L) {
     return(NextMethod())
   }
-  sql_options <- sqlite_resolve_sql_options("compute", sql_options, cte)
+  sql_options <- margin_resolve_sql_options("compute", sql_options, cte)
   if (direct) {
     public_query <- attr(x, "marginplyr_public_query")
     anchor <- attr(x, "marginplyr_public_anchor")
@@ -724,26 +707,26 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
   # result's own grouping and window ordering are restored after the INSERT.
   anchor$lazy_query$order_vars <- list()
   if (!rlang::is_bool(temporary)) {
-    abort_marginplyr("`temporary` must be TRUE or FALSE.",
-                     call = rlang::caller_call())
+    abort_marginplyr("{.arg temporary} must be TRUE or FALSE.",
+                     call = rlang::current_env())
   }
   if (!rlang::is_bool(overwrite)) {
-    abort_marginplyr("`overwrite` must be TRUE or FALSE.",
-                     call = rlang::caller_call())
+    abort_marginplyr("{.arg overwrite} must be TRUE or FALSE.",
+                     call = rlang::current_env())
   }
   if (!rlang::is_bool(analyze)) {
-    abort_marginplyr("`analyze` must be TRUE or FALSE.",
-                     call = rlang::caller_call())
+    abort_marginplyr("{.arg analyze} must be TRUE or FALSE.",
+                     call = rlang::current_env())
   }
   if (!rlang::is_bool(in_transaction)) {
-    abort_marginplyr("`in_transaction` must be TRUE or FALSE.",
-                     call = rlang::caller_call())
+    abort_marginplyr("{.arg in_transaction} must be TRUE or FALSE.",
+                     call = rlang::current_env())
   }
   con <- x$con
   pronoun_output <- any(c(".data", ".env") %in% public)
   if (pronoun_output && is.null(name) && !temporary) {
     abort_marginplyr("`name` must be provided when `temporary = FALSE`.",
-                     call = rlang::caller_call())
+                     call = rlang::current_env())
   }
   private_indexes <- function(index) {
     positions <- match(tolower(index), tolower(names(boolean_aliases)))
@@ -760,14 +743,14 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
         "Can't materialize this SQLite Margin order: result columns shadow ",
         "all three rowid aliases (`rowid`, `oid`, `_rowid_`)."
       ),
-      call = rlang::caller_call()
+      call = rlang::current_env()
     )
   }
   destination <- sqlite_compute_destination(con, name, temporary, overwrite)
   insert_from <- sqlite_direct_execution_sql(
     public_query, sql_options = sql_options
   )
-  call <- rlang::caller_call()
+  call <- rlang::current_env()
   sqlite_with_compute_savepoint(con, destination, function(destination) {
     # Delay the public name until the last source read has finished. The
     # populated table itself is renamed, so rows are inserted only once.
@@ -784,13 +767,13 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
             "Can't preserve the SQLite source under this temporary name. ",
             "Choose a different destination name."
           ),
-          call = rlang::caller_call()
+          call = call
         )
       }
-      if (!pronoun_output) {
-        sqlite_check_compute_indexes(anchor, indexes, "indexes")
-        sqlite_check_compute_indexes(anchor, unique_indexes, "unique_indexes")
-      }
+      sqlite_check_compute_indexes(anchor, indexes, "indexes", call)
+      sqlite_check_compute_indexes(
+        anchor, unique_indexes, "unique_indexes", call
+      )
       destination <- sqlite_new_compute_name(con)
     } else if (temporary && is.null(destination)) {
       destination <- sqlite_new_compute_name(con)

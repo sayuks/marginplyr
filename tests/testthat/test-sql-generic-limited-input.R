@@ -129,3 +129,165 @@ test_that("a generic SQL connection collects a summary over a limited input", {
     }
   }
 })
+
+# A sorted share summary with a typed-missing Margin label orders by the
+# private set identifier, which the final type anchor's operand does not
+# select (#1768).
+sorted_typed_missing_share <- function(data, share = "total", sort = "last",
+                                       label = list(NULL), grouping = NULL,
+                                       by = NULL, id = NULL) {
+  grouping <- grouping %||% rollup(dplyr::all_of("a"))
+  share_call <- rlang::call2(paste0("share_of_", share), rlang::sym("n"))
+  summarize_with_margins(
+    data, n = sum(.data$v, na.rm = TRUE), p = !!share_call,
+    .by = dplyr::all_of(by), .grouping = grouping,
+    .check_share_source = FALSE, .margin_label = label[[1L]], .sort = sort,
+    .id = id
+  )
+}
+
+test_that("a sorted typed-missing share collects in Margin order", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  duck <- duckdb_test_connection(dbdir = ":memory:")
+  on.exit(DBI::dbDisconnect(duck, shutdown = TRUE), add = TRUE)
+  data <- data.frame(
+    k = c(1L, 1L, 1L, 2L, 2L, 2L), a = c("x", "y", "x", "y", "z", "z"),
+    b = c("p", "q", "p", "q", "p", "q"), v = c(1, 2, 3, 4, 5, 6)
+  )
+  DBI::dbWriteTable(duck, "df", data)
+  source <- dplyr::tbl(generic_forwarding_connection(duck), "df")
+
+  # Per-grain sums divided by the grand total by hand, in Margin order.
+  result <- dplyr::collect(sorted_typed_missing_share(source))
+  expect_equal(
+    as.data.frame(result),
+    data.frame(
+      a = c("x", "y", "z", NA), n = c(4, 6, 11, 21),
+      p = c(4, 6, 11, 21) / 21
+    )
+  )
+  first <- dplyr::collect(
+    sorted_typed_missing_share(source, share = "parent", sort = "first",
+                               label = list(NA_character_))
+  )
+  expect_equal(first$a, c(NA, "x", "y", "z"))
+  expect_equal(first$p, c(1, 4 / 21, 6 / 21, 11 / 21))
+
+  # The data frame computes the same rows in the same Margin order.
+  specs <- list(rollup = rollup(a, b), cube = cube(a, b))
+  labels <- list(
+    null = list(NULL), na = list(NA_character_),
+    mixed = list(list(a = NULL, b = "All"))
+  )
+  for (spec in names(specs)) {
+    # A Parent share is defined for a pure rollup() only.
+    for (share in c("total", if (spec == "rollup") "parent")) {
+      for (label in names(labels)) {
+        for (by in list(NULL, "k")) {
+          for (id in list(NULL, "set")) {
+            for (sort in c("last", "first")) {
+              run <- function(input) {
+                sorted_typed_missing_share(
+                  input, share = share, sort = sort, label = labels[[label]],
+                  grouping = specs[[spec]], by = by, id = id
+                )
+              }
+              expect_equal(
+                as.data.frame(dplyr::collect(run(source))),
+                as.data.frame(run(data)),
+                ignore_attr = TRUE,
+                info = paste(spec, share, label, by, id, sort)
+              )
+            }
+          }
+        }
+      }
+    }
+  }
+})
+
+test_that("a sorted typed-missing share computes and takes later verbs", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  duck <- duckdb_test_connection(dbdir = ":memory:")
+  on.exit(DBI::dbDisconnect(duck, shutdown = TRUE), add = TRUE)
+  data <- data.frame(
+    a = c("x", "y", "x", "y", "z", "z"), v = c(1, 2, 3, 4, 5, 6)
+  )
+  DBI::dbWriteTable(duck, "df", data)
+  source <- dplyr::tbl(generic_forwarding_connection(duck), "df")
+  for (sort in c("none", "last")) {
+    query <- sorted_typed_missing_share(source, sort = sort)
+    computed <- dplyr::collect(dplyr::arrange(
+      dplyr::compute(query), is.na(.data$a), .data$a
+    ))
+    expect_equal(computed$n, c(4, 6, 11, 21), info = sort)
+    later <- dplyr::collect(dplyr::filter(query, .data$n > 5))
+    expect_setequal(later$n, c(6, 11, 21))
+  }
+})
+
+test_that("a typed-missing dimension keeps its source type under a sort", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  duck <- duckdb_test_connection(dbdir = ":memory:")
+  on.exit(DBI::dbDisconnect(duck, shutdown = TRUE), add = TRUE)
+  data <- data.frame(a = c(2L, 1L, 2L, 3L), v = c(1, 2, 3, 4))
+  DBI::dbWriteTable(duck, "df", data)
+  source <- dplyr::tbl(generic_forwarding_connection(duck), "df")
+  result <- dplyr::collect(sorted_typed_missing_share(source))
+  expect_identical(result$a, c(1L, 2L, 3L, NA))
+})
+
+# The clause text of a rendered query outside every parenthesised subquery.
+top_level_sql <- function(query) {
+  sql <- gsub("\\s+", " ", as.character(dbplyr::sql_render(query)))
+  repeat {
+    stripped <- gsub("\\([^()]*\\)", "", sql)
+    if (identical(stripped, sql)) break
+    sql <- stripped
+  }
+  sql
+}
+
+# The identifiers a rendered clause names, in each quoting style the simulated
+# dialects use.
+quoted_identifiers <- function(sql) {
+  ids <- regmatches(sql, gregexpr('"[^"]+"|`[^`]+`|\\[[^]]+\\]', sql))[[1L]]
+  unique(substr(ids, 2L, nchar(ids) - 1L))
+}
+
+test_that("a sorted compound orders only by columns its operands select", {
+  for (simulate in c("simulate_dbi", "simulate_mssql", "simulate_mysql",
+                     "simulate_oracle", "simulate_snowflake",
+                     "simulate_redshift")) {
+    con <- getExportedValue("dbplyr", simulate)()
+    source <- dbplyr::lazy_frame(a = "x", v = 1, con = con, .name = "df")
+    for (sort in c("last", "first")) {
+      info <- paste(simulate, sort)
+      query <- sorted_typed_missing_share(source, sort = sort)
+      # The ORDER BY belongs to an outer SELECT over the compound, not to the
+      # compound itself, whose columns are those its first operand selects.
+      expect_no_match(top_level_sql(query), "UNION ALL", info = info)
+      sql <- gsub("\\s+", " ", as.character(dbplyr::sql_render(query)))
+      order_by <- quoted_identifiers(sub(".*ORDER BY ", "", sql))
+      anchor <- non_final_union_operands(query)[[1L]]
+      anchor <- sub(" FROM .*", "", sub("^SELECT ", "", anchor))
+      selected <- vapply(
+        strsplit(anchor, ", ", fixed = TRUE)[[1L]],
+        function(item) utils::tail(quoted_identifiers(item), 1L),
+        character(1), USE.NAMES = FALSE
+      )
+      expect_true(length(order_by) > 0L, info = info)
+      expect_in(order_by, selected)
+    }
+  }
+  source <- dbplyr::lazy_frame(
+    a = "x", v = 1, con = dbplyr::simulate_mssql(), .name = "df"
+  )
+  sql <- gsub("\\s+", " ", as.character(dbplyr::sql_render(
+    sorted_typed_missing_share(source)
+  )))
+  # Every ORDER BY in a subquery is bounded by its SELECT's TOP (#994).
+  selects <- strsplit(sql, "SELECT ", fixed = TRUE)[[1L]]
+  ordered <- grep("ORDER BY", selects[-length(selects)], value = TRUE)
+  expect_true(all(grepl("^TOP ", ordered)))
+})
