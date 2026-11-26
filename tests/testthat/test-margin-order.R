@@ -1379,14 +1379,12 @@ test_that("`.sort = \"none\"` keeps window ordering through a DuckDB share", {
     }
   }
 
-  # nolint start: object_usage_linter.
   shared <- summary(
     dbplyr::window_order(table, a), "total", .grouping = rollup(a)
   )
   running <- expect_no_warning(dplyr::collect(
     dplyr::mutate(shared, r = cumsum(n))
   ))
-  # nolint end
   expect_identical(
     running[order(running$r), c("a", "r")],
     dplyr::tibble(a = c("Total", "x", "y", "z"), r = c(28, 39, 45, 56))
