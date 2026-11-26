@@ -2836,33 +2836,67 @@ test_that("a join with promoted key types refuses metadata", {
   expect_s3_class(error, "marginplyr_error")
 })
 
+# Each Margin verb on the step returns what it returns on the collected join.
+# A nested result compares its keys and its nested rows, whatever frame class
+# each backend nests them in.
 test_that("a join on differently named keys compares the keys it pairs", {
   skip_if_suggest_absent("dtplyr")
   x <- data.frame(a = c(1L, 2L, 3L), b = c("p", "q", "r"), k = c(7L, 8L, 9L))
-  named <- data.frame(b = c(1L, 2L, 9L), w = c("u", "v", "t"))
-  styles <- c("inner", "left", "right", "full", "semi", "anti")
-  for (style in styles) {
-    join <- get(paste0(style, "_join"), envir = asNamespace("dplyr"))
-    step <- join(
-      dtplyr::lazy_dt(x), dtplyr::lazy_dt(named), by = c("a" = "b")
-    )
-    collected <- tibble::as_tibble(dplyr::collect(step))
-    expect_identical(
-      inspect_grouping(step, .grouping = rollup(where(is.integer)))$included,
-      inspect_grouping(
-        collected, .grouping = rollup(where(is.integer))
-      )$included,
-      info = style
-    )
-    expect_identical(
-      tibble::as_tibble(dplyr::collect(summarize_with_margins(
-        step, n = dplyr::n(), .grouping = rollup(where(is.integer))
-      ))),
-      summarize_with_margins(
-        collected, n = dplyr::n(), .grouping = rollup(where(is.integer))
+  joins <- list(
+    single = list(
+      y = data.frame(b = c(1L, 2L, 9L), w = c("u", "v", "t")),
+      by = c("a" = "b")
+    ),
+    multi = list(
+      y = data.frame(
+        c = c(1L, 2L, 9L), d = c(7L, 8L, 0L), w = c("u", "v", "t")
       ),
-      info = style
+      by = c("a" = "c", "k" = "d")
     )
+  )
+  nested <- function(result) {
+    result <- tibble::as_tibble(dplyr::collect(result))
+    result$data <- lapply(result$data, tibble::as_tibble)
+    result
+  }
+  grouping <- rollup(where(is.integer))
+  styles <- c("inner", "left", "right", "full", "semi", "anti")
+  for (keys in names(joins)) {
+    for (style in styles) {
+      info <- paste(keys, style)
+      join <- get(paste0(style, "_join"), envir = asNamespace("dplyr"))
+      step <- join(
+        dtplyr::lazy_dt(x), dtplyr::lazy_dt(joins[[keys]]$y),
+        by = joins[[keys]]$by
+      )
+      collected <- tibble::as_tibble(dplyr::collect(step))
+      expect_identical(
+        inspect_grouping(step, .grouping = grouping)$included,
+        inspect_grouping(collected, .grouping = grouping)$included,
+        info = info
+      )
+      expect_identical(
+        tibble::as_tibble(dplyr::collect(summarize_with_margins(
+          step, n = dplyr::n(), .grouping = grouping
+        ))),
+        summarize_with_margins(collected, n = dplyr::n(), .grouping = grouping),
+        info = info
+      )
+      expect_identical(
+        tibble::as_tibble(dplyr::collect(
+          expand_with_margins(step, .grouping = grouping)
+        )),
+        expand_with_margins(collected, .grouping = grouping),
+        info = info
+      )
+      for (verb in list(nest_with_margins, nest_by_with_margins)) {
+        expect_identical(
+          nested(verb(step, .grouping = grouping)),
+          nested(verb(collected, .grouping = grouping)),
+          info = info
+        )
+      }
+    }
   }
 })
 
