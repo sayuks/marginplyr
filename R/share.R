@@ -137,7 +137,10 @@
 #'   numeric or decimal equivalent.
 #'
 #' An `across()` output is statically named when its name is known before the
-#' call runs. An `across()` written after another summary is evaluated only
+#' call runs, which needs `.fns` to be one function or a literal `list()` of
+#' functions, such as `list(s = sum, m = mean)`. The same functions written
+#' with `c()` or held in a variable produce their columns, but a share cannot
+#' select them. An `across()` written after another summary is evaluated only
 #' once that summary has run, so it qualifies only when what it reads already
 #' holds a value; an argument of your own function holds none until it is
 #' used. Evaluate the argument first with [force()], or write the `across()`
@@ -2421,9 +2424,10 @@ validate_share_request <- function(outputs,
 
 # Why an unnamed `across()` at `position` names no output before the call runs,
 # when the caller can remove the reason: it reads a binding of theirs that has
-# not been evaluated yet. The caller holds a dot whose outputs are unknown.
-# Only `.fns` is read without forcing in first position, where the selection
-# and `.names` are evaluated; later, all three are.
+# not been evaluated yet, or its `.fns` is neither one function nor a literal
+# `list()`. The caller holds a dot whose outputs are unknown. Only `.fns` is
+# read without forcing in first position, where the selection and `.names` are
+# evaluated; later, all three are.
 unnamed_across_source_hint <- function(dot, name, position, columns) {
   expr <- rlang::quo_get_expr(dot)
   if (nzchar(name) || !is_across_call(expr) || contains_share_helper(expr)) {
@@ -2438,6 +2442,13 @@ unnamed_across_source_hint <- function(dot, name, position, columns) {
   if (rlang::is_symbol(fns) &&
         is_unevaluated_binding(rlang::as_string(fns), env)) {
     return(list(kind = "force", name = rlang::as_string(fns)))
+  }
+  # A function list is the one reason left only when nothing else hides the
+  # outputs: an unpacked `across()` is named after its execution.
+  if (!is.null(fns) && !is_known_function_list_call(fns, env) &&
+        length(known_across_function_names(parsed, env)) == 0L &&
+        across_unpack_is_false(parsed$unpack, env)) {
+    return(list(kind = "fns", name = NULL))
   }
   if (position == 1L) {
     return(NULL)
@@ -2475,14 +2486,30 @@ is_unevaluated_binding <- function(name, env) {
   FALSE
 }
 
-# The unknown-source refusal when an unevaluated binding hides an earlier
-# `across()`'s outputs. A reordered `across()` is evaluated first, which reads
-# its selection and `.names` but not its `.fns`.
+# The unknown-source refusal when `unnamed_across_source_hint()` found why an
+# earlier `across()`'s outputs are unknown. A reordered `across()` is evaluated
+# first, which reads its selection and `.names` but not its `.fns`.
 abort_share_source_hint <- function(label, output, source, hint) {
   # Read only from the cli templates below, which codetools cannot see.
   # nolint start: object_usage_linter.
   name <- hint$name
   # nolint end
+  if (identical(hint$kind, "fns")) {
+    abort_marginplyr(c(
+      paste0(
+        "{label} {.var {output}} refers to unknown preceding ordinary ",
+        "summary {.var {source}}."
+      ),
+      i = paste0(
+        "A preceding {.fun across} has a {.arg .fns} whose function names ",
+        "are not known before the call runs."
+      ),
+      i = paste0(
+        "Write its functions as a literal {.code list()}, such as ",
+        "{.code list(s = sum, m = mean)}."
+      )
+    ))
+  }
   if (identical(hint$kind, "reorder")) {
     abort_marginplyr(c(
       paste0(
@@ -2519,6 +2546,26 @@ abort_share_across_source_hint <- function(source, kind, hint) {
   helper <- share_helper_name(kind)
   name <- hint$name
   # nolint end
+  if (identical(hint$kind, "fns")) {
+    abort_marginplyr(
+      c(
+        paste0(
+          "{.fun across} refers to unknown summary {.var {source}} for ",
+          "{.fun {helper}}."
+        ),
+        i = paste0(
+          "A preceding {.fun across} has a {.arg .fns} whose function names ",
+          "are not known before the call runs."
+        ),
+        i = paste0(
+          "Write its functions as a literal {.code list()}, such as ",
+          "{.code list(s = sum, m = mean)}."
+        )
+      ),
+      class = "marginplyr_share_source_unknown_error",
+      source_summary = source
+    )
+  }
   if (identical(hint$kind, "reorder")) {
     abort_marginplyr(
       c(

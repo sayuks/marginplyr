@@ -463,8 +463,8 @@ test_that("authored namespace outputs keep static share provenance", {
             .margin_label = NULL
           )
         }
-        expect_error(run(ordinary, quote(x_s)), "eligible preceding ordinary",
-                     class = "marginplyr_error")
+        expect_error(run(ordinary, quote(x_s)), "unknown summary `x_s`",
+                     class = "marginplyr_share_source_unknown_error")
         expect_identical(fixture$hits, 0L)
         result <- run(ordinary, quote(dplyr::starts_with("x")))
         expect_identical(fixture$hits, if (grouped) 2L else 1L)

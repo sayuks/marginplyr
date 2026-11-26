@@ -579,3 +579,69 @@ test_that("the unevaluated-binding hint needs a later across() reading one", {
   after_refused <- expect_error(after(data, cols), "summary `absent`")
   expect_no_match(conditionMessage(after_refused), hint, fixed = TRUE)
 })
+
+# The share planner reads `.fns` as one function or a literal `list()`; any
+# other spelling produces columns the planner has not proven (#1772).
+test_that("an unread `.fns` hints at a literal list()", {
+  data <- data.frame(g = c("a", "a", "b"), x = c(1, 2, 5), y = c(10, 20, 30))
+  hint <- "Write its functions as a literal `list()`"
+  fns <- list(s = sum, m = mean)
+  for (across in rlang::exprs(
+    dplyr::across(c(x, y), c(s = sum, m = mean)),
+    dplyr::across(c(x, y), base::c(s = sum, m = mean)),
+    dplyr::across(c(x, y), rlang::list2(s = sum, m = mean)),
+    dplyr::across(c(x, y), fns)
+  )) {
+    label <- rlang::expr_deparse(across)
+    direct <- expect_error(summarize_with_margins(
+      data, !!across, sh = share_of_total(y_s), .grouping = rollup(g)
+    ), "unknown preceding ordinary summary `y_s`", info = label)
+    expect_match(conditionMessage(direct), hint, fixed = TRUE, info = label)
+    columnwise <- expect_error(summarize_with_margins(
+      data, !!across, dplyr::across(y_s, share_of_total, .names = "sh"),
+      .grouping = rollup(g)
+    ), class = "marginplyr_share_source_unknown_error", info = label)
+    expect_match(
+      conditionMessage(columnwise), hint, fixed = TRUE, info = label
+    )
+  }
+
+  listed <- summarize_with_margins(
+    data, dplyr::across(c(x, y), list(s = sum, m = mean)),
+    sh = share_of_total(y_s), .grouping = rollup(g)
+  )
+  expect_equal(listed$sh, c(0.5, 0.5, 1))
+
+  unrelated <- expect_error(summarize_with_margins(
+    data, dplyr::across(c(x, y), list(s = sum)), sh = share_of_total(y_m),
+    .grouping = rollup(g)
+  ), "unknown preceding ordinary summary `y_m`")
+  expect_no_match(conditionMessage(unrelated), hint, fixed = TRUE)
+  after <- expect_error(summarize_with_margins(
+    data, sh = share_of_total(y_s), dplyr::across(c(x, y), c(s = sum)),
+    .grouping = rollup(g)
+  ), "summary `y_s`")
+  expect_no_match(conditionMessage(after), hint, fixed = TRUE)
+})
+
+test_that("an unread `.fns` hints at list() on DuckDB", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  data <- dplyr::copy_to(con, data.frame(
+    g = c("a", "a", "b"), x = c(1, 2, 5), y = c(10, 20, 30)
+  ), "unread_fns")
+  refused <- expect_error(summarize_with_margins(
+    data, dplyr::across(c(x, y), c(s = sum, m = mean)),
+    sh = share_of_total(y_s), .grouping = rollup(g)
+  ), "unknown preceding ordinary summary `y_s`")
+  expect_match(
+    conditionMessage(refused), "Write its functions as a literal `list()`",
+    fixed = TRUE
+  )
+  listed <- dplyr::collect(summarize_with_margins(
+    data, dplyr::across(c(x, y), list(s = sum, m = mean)),
+    sh = share_of_total(y_s), .grouping = rollup(g)
+  ))
+  expect_equal(listed$sh[match(c("a", "b", "Total"), listed$g)], c(0.5, 0.5, 1))
+})
