@@ -152,6 +152,13 @@ not evaluate;
 numeric or decimal equivalent.
 }
 
+An \code{across()} output is statically named when its name is known before the
+call runs. An \code{across()} written after another summary is evaluated only
+once that summary has run, so it qualifies only when what it reads already
+holds a value; an argument of your own function holds none until it is
+used. Evaluate the argument first with \code{\link[=force]{force()}}, or write the \code{across()}
+before the other summaries.
+
 Logical, complex, date, date-time, duration, character, factor, list,
 data-frame, and other classes are not converted implicitly. Convert
 intentionally in the ordinary summary:

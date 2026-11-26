@@ -410,3 +410,172 @@ test_that("unresolved later and wrapped sources retain static admission", {
   }
   expect_identical(state$calls, 0L)
 })
+
+# A closure's constant argument reaches it as a value once R has compiled the
+# caller and as a promise before then; a promise whose expression is that
+# constant runs no caller code, so the two read alike (#1773).
+constant_argument_cases <- rlang::exprs(
+  all_of = dplyr::across(dplyr::all_of(arg), sum, .names = "{.col}_t"),
+  any_of = dplyr::across(dplyr::any_of(arg), sum, .names = "{.col}_t"),
+  one_of = dplyr::across(dplyr::one_of(arg), sum, .names = "{.col}_t"),
+  number = dplyr::across(dplyr::num_range("x", arg), sum, .names = "{.col}_t"),
+  ignore_case = dplyr::across(
+    dplyr::starts_with("X", ignore.case = arg), sum, .names = "{.col}_t"
+  ),
+  names = dplyr::across(x, sum, .names = arg),
+  null_names = dplyr::across(x, sum, .names = arg),
+  null_fns = dplyr::across(x, arg, .names = "{.col}_t")
+)
+constant_argument_values <- list(
+  all_of = "x", any_of = "x", one_of = "x", number = 1, ignore_case = TRUE,
+  names = "{.col}_t", null_names = NULL, null_fns = NULL
+)
+
+test_that("a constant argument names a later across() on its first call", {
+  data <- data.frame(
+    g = c("a", "a", "b"), x = c(1, 2, 5), x1 = c(1, 2, 5), y = c(10, 20, 30)
+  )
+  outcome <- function(call) {
+    tryCatch(round(call()$share, 3), error = conditionMessage)
+  }
+  for (label in names(constant_argument_cases)) {
+    source <- switch(label,
+      null_names = quote(x), number = quote(x1_t), quote(x_t)
+    )
+    verb <- rlang::expr(summarize_with_margins(
+      data, n = dplyr::n(), !!constant_argument_cases[[label]],
+      share = share_of_total(!!source), .grouping = rollup(g)
+    ))
+    report <- rlang::new_function(rlang::pairlist2(arg = ), verb)
+    caller <- rlang::new_function(NULL, rlang::expr(
+      report(!!constant_argument_values[[label]])
+    ))
+    first <- outcome(caller)
+    expect_identical(outcome(caller), first, info = label)
+    expect_identical(outcome(caller), first, info = label)
+    if (label == "null_fns") {
+      expect_match(first, "unknown preceding ordinary summary", info = label)
+    } else {
+      expect_equal(first, c(0.375, 0.625, 1), info = label)
+    }
+
+    lazy <- rlang::new_function(NULL, rlang::expr({
+      delayedAssign("arg", !!constant_argument_values[[label]])
+      !!verb
+    }))
+    expect_identical(outcome(lazy), first, info = label)
+  }
+})
+
+# A caller's own argument is a promise the planner does not force, so a later
+# `across()` that reads one names no output before the call runs (#1773).
+test_that("an unevaluated argument read by a later across() is named", {
+  data <- data.frame(g = c("a", "a", "b"), x = c(1, 2, 5), y = c(10, 20, 30))
+  cols <- c("x", "y")
+  direct <- function(data, measures) {
+    summarize_with_margins(
+      data, n = dplyr::n(),
+      dplyr::across(dplyr::all_of(measures), sum, .names = "{.col}_t"),
+      share = share_of_total(x_t), .grouping = rollup(g)
+    )
+  }
+  columnwise <- function(data, measures) {
+    summarize_with_margins(
+      data, n = dplyr::n(),
+      dplyr::across(dplyr::all_of(measures), sum, .names = "{.col}_t"),
+      dplyr::across(x_t, share_of_total, .names = "share"),
+      .grouping = rollup(g)
+    )
+  }
+  remedy <- paste0(
+    "Evaluate `measures` before the call, as `force(measures)` does, or ",
+    "write that `across()` before the other summaries."
+  )
+  refused <- expect_error(
+    direct(data, cols), "unknown preceding ordinary summary `x_t`",
+    class = "marginplyr_error"
+  )
+  expect_match(conditionMessage(refused), "reads `measures`", fixed = TRUE)
+  expect_match(conditionMessage(refused), remedy, fixed = TRUE)
+  refused <- expect_error(
+    columnwise(data, cols), class = "marginplyr_share_source_unknown_error"
+  )
+  expect_match(conditionMessage(refused), remedy, fixed = TRUE)
+
+  forced <- function(data, measures) {
+    force(measures)
+    summarize_with_margins(
+      data, n = dplyr::n(),
+      dplyr::across(dplyr::all_of(measures), sum, .names = "{.col}_t"),
+      share = share_of_total(x_t), .grouping = rollup(g)
+    )
+  }
+  reordered <- function(data, measures) {
+    summarize_with_margins(
+      data, dplyr::across(dplyr::all_of(measures), sum, .names = "{.col}_t"),
+      n = dplyr::n(), share = share_of_total(x_t), .grouping = rollup(g)
+    )
+  }
+  expect_equal(forced(data, cols)$share, c(0.375, 0.625, 1))
+  expect_equal(reordered(data, cols)$share, c(0.375, 0.625, 1))
+})
+
+test_that("an unevaluated `.fns` argument is named with its one remedy", {
+  data <- data.frame(g = c("a", "a", "b"), x = c(1, 2, 5))
+  report <- function(data, fn) {
+    summarize_with_margins(
+      data, dplyr::across(x, fn, .names = "{.col}_t"),
+      share = share_of_total(x_t), .grouping = rollup(g)
+    )
+  }
+  refused <- expect_error(report(data, sum), class = "marginplyr_error")
+  message <- conditionMessage(refused)
+  expect_match(message, "reads `fn`", fixed = TRUE)
+  expect_match(
+    message, "Evaluate `fn` before the call, as `force(fn)` does.",
+    fixed = TRUE
+  )
+  expect_no_match(message, "before the other summaries", fixed = TRUE)
+  forced <- function(data, fn) {
+    force(fn)
+    summarize_with_margins(
+      data, dplyr::across(x, fn, .names = "{.col}_t"),
+      share = share_of_total(x_t), .grouping = rollup(g)
+    )
+  }
+  expect_equal(forced(data, sum)$share, c(0.375, 0.625, 1))
+})
+
+test_that("the unevaluated-binding hint needs a later across() reading one", {
+  data <- data.frame(g = c("a", "a", "b"), x = c(1, 2, 5), y = c(10, 20, 30))
+  cols <- "x"
+  hint <- "before the call"
+  unrelated <- expect_error(summarize_with_margins(
+    data, n = dplyr::n(), share = share_of_total(absent),
+    .grouping = rollup(g)
+  ), "unknown preceding ordinary summary `absent`")
+  expect_no_match(conditionMessage(unrelated), hint, fixed = TRUE)
+  first <- function(data, measures) {
+    summarize_with_margins(
+      data, dplyr::across(dplyr::all_of(measures), sum, .names = "{.col}_t"),
+      n = dplyr::n(), share = share_of_total(absent), .grouping = rollup(g)
+    )
+  }
+  first_refused <- expect_error(first(data, cols), "summary `absent`")
+  expect_no_match(conditionMessage(first_refused), hint, fixed = TRUE)
+  global <- expect_error(summarize_with_margins(
+    data, n = dplyr::n(),
+    dplyr::across(dplyr::all_of(cols), sum, .names = "{.col}_t"),
+    share = share_of_total(absent), .grouping = rollup(g)
+  ), "summary `absent`")
+  expect_no_match(conditionMessage(global), hint, fixed = TRUE)
+  after <- function(data, measures) {
+    summarize_with_margins(
+      data, n = dplyr::n(), share = share_of_total(absent),
+      dplyr::across(dplyr::all_of(measures), sum, .names = "{.col}_t"),
+      .grouping = rollup(g)
+    )
+  }
+  after_refused <- expect_error(after(data, cols), "summary `absent`")
+  expect_no_match(conditionMessage(after_refused), hint, fixed = TRUE)
+})

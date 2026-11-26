@@ -1797,7 +1797,8 @@ cached_local_across_names <- function(dots) {
 }
 
 # Reads a literal or an existing plain caller constant without forcing a
-# promise or active binding. Mask names remain owned by local execution.
+# promise or active binding; a promise counts only when its expression is
+# such a constant. Mask names remain owned by local execution.
 known_context_constant <- function(expr, lookup) {
   if (rlang::is_missing(expr)) return(NULL)
   if (rlang::is_quosure(expr)) {
@@ -1820,9 +1821,14 @@ known_context_constant <- function(expr, lookup) {
   current <- lookup$env
   while (!identical(current, emptyenv())) {
     if (exists(name, envir = current, inherits = FALSE)) {
-      if (bindingIsActive(name, current) ||
-            rlang::env_binding_are_lazy(current, name)) return(NULL)
-      value <- get(name, envir = current, inherits = FALSE)
+      if (bindingIsActive(name, current)) return(NULL)
+      value <- if (rlang::env_binding_are_lazy(current, name)) {
+        # Interpreted code passes a constant argument as a promise of that
+        # constant, which compiled code passes as its value.
+        eval(call("substitute", as.name(name), current), envir = baseenv())
+      } else {
+        get(name, envir = current, inherits = FALSE)
+      }
       if (is.null(value) || (is.atomic(value) && !is.object(value))) {
         return(list(value = value))
       }
