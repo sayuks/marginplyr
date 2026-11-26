@@ -187,3 +187,35 @@ test_that("DuckDB refuses a helper wrong on its face before any statement", {
     class = "marginplyr_error"
   )
 })
+
+# A `.by` refusal precedes a helper refusal whether names decide it before
+# typed metadata, as an overlap with `.grouping` is, or only afterwards, as a
+# computed expression is.
+test_that("a `.by` error keeps its precedence over a helper refusal", {
+  by_errors <- rlang::exprs(
+    "cannot appear in both `.by` and `.grouping`" = g,
+    "`.by` selects existing columns, not computed expressions" = g + 1
+  )
+  expect_by_refused_first <- function(data) {
+    for (message in names(by_errors)) {
+      expect_error(
+        summarize_with_margins(
+          data, s = grouping_bit(g, h), .by = !!by_errors[[message]],
+          .grouping = rollup(g)
+        ),
+        message,
+        fixed = TRUE,
+        class = "marginplyr_error",
+        info = message
+      )
+    }
+  }
+  local <- data.frame(g = c("a", "a", "b"), h = c("x", "y", "x"), v = 1:3)
+  expect_by_refused_first(local)
+
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  DBI::dbWriteTable(con, "helper_by", local)
+  expect_by_refused_first(dplyr::tbl(con, "helper_by"))
+})

@@ -516,6 +516,8 @@ summarize_with_margins <- function(.data,
     call = call
   )
 
+  # Whether the plan-name hook below has yet to run its pass before metadata.
+  before_metadata <- TRUE
   operation <- prepare_margin_operation(
     .data,
     by_quo = by_quo,
@@ -547,8 +549,14 @@ summarize_with_margins <- function(.data,
         )
       }
       # After the `.grouping` and `.by` checks, which keep their precedence,
-      # and ahead of typed metadata (ADR 0005).
-      check_grouping_helper_args(dots)
+      # and ahead of typed metadata (ADR 0005). Only on the pass before that
+      # metadata, and only once names have settled the plan: a `.by` or
+      # `.grouping` refusal still undecided there is reached afterwards, ahead
+      # of `check_grouping_helper_calls()` in `execute_margin_summary()`.
+      if (before_metadata && complete) {
+        check_grouping_helper_args(dots)
+      }
+      before_metadata <<- FALSE
     },
     call = call
   )
