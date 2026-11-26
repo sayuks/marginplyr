@@ -1,38 +1,20 @@
 with_foreign_selection_package <- function(code) {
   root <- tempfile()
-  dir.create(root)
-  pkg <- file.path(root, "foreignselect")
-  dir.create(pkg)
-  dir.create(file.path(pkg, "R"))
   helpers <- c(
     "all_of", "any_of", "starts_with", "ends_with", "contains", "matches",
     "num_range", "everything", "last_col", "one_of", "character_columns"
   )
-  writeLines(c(
-    "Package: foreignselect", "Version: 0.0.1", "Title: Fixture",
-    "Description: Fixture package.", "License: MIT",
-    paste0("Authors@R: person('A', 'B', email = 'a@example.com', ",
-           "role = c('aut', 'cre'))")
-  ), file.path(pkg, "DESCRIPTION"))
-  writeLines(paste0("export(", helpers, ")"), file.path(pkg, "NAMESPACE"))
-  writeLines(c(
-    "character_columns <- function(predicate = FALSE, ...) {",
-    "  if (predicate) return(tidyselect::where(is.character))",
-    "  data <- tidyselect::peek_data()",
-    "  names(data)[vapply(data, is.character, logical(1))]",
-    "}",
-    paste0(helpers[-length(helpers)], " <- character_columns")
-  ), file.path(pkg, "R", "helpers.R"))
-  lib <- file.path(root, "lib")
-  dir.create(lib)
-  status <- system2(
-    file.path(R.home("bin"), "R"),
-    c("CMD", "INSTALL", "--no-byte-compile", "-l", shQuote(lib), shQuote(pkg)),
-    stdout = TRUE, stderr = TRUE
-  )
-  if (!is.null(attr(status, "status"))) {
-    stop(paste(status, collapse = "\n"))
-  }
+  lib <- install_fixture_packages(root, list(foreignselect = list(
+    namespace = paste0("export(", helpers, ")"),
+    code = c(
+      "character_columns <- function(predicate = FALSE, ...) {",
+      "  if (predicate) return(tidyselect::where(is.character))",
+      "  data <- tidyselect::peek_data()",
+      "  names(data)[vapply(data, is.character, logical(1))]",
+      "}",
+      paste0(helpers[-length(helpers)], " <- character_columns")
+    )
+  )))
   old <- .libPaths()
   .libPaths(c(lib, old))
   on.exit({

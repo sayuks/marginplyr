@@ -681,52 +681,24 @@ lazy_load_fixture_lib <- function() {
   if (!is.null(lazy_load_fixture$lib)) {
     return(lazy_load_fixture$lib)
   }
-  root <- tempfile("lazyacross")
-  dir.create(root)
-  lib <- file.path(root, "lib")
-  dir.create(lib)
   share_call <- paste0(
     "marginplyr::summarize_with_margins(data, ",
     "dplyr::across(c(x, y), n_distinct, .names = '{.col}_n'), ",
     "s = marginplyr::share_of_total(y_n), ",
     ".grouping = marginplyr::rollup(g))"
   )
-  write_fixture <- function(name, namespace, code, imports = character()) {
-    pkg <- file.path(root, name)
-    dir.create(file.path(pkg, "R"), recursive = TRUE)
-    writeLines(c(
-      paste("Package:", name), "Version: 0.0.1", "Title: Fixture",
-      "Description: Fixture package.", "License: MIT",
-      # `R CMD check --as-cran` sets `_R_CHECK_INSTALL_DEPENDS_`, under which
-      # INSTALL lazy-loads with only DESCRIPTION's declared dependencies
-      # visible, so an importFrom() needs its Imports entry.
-      if (length(imports)) paste("Imports:", imports),
-      paste0("Authors@R: person('A', 'B', email = 'a@example.com', ",
-             "role = c('aut', 'cre'))")
-    ), file.path(pkg, "DESCRIPTION"))
-    writeLines(namespace, file.path(pkg, "NAMESPACE"))
-    writeLines(code, file.path(pkg, "R", "fixture.R"))
-    status <- system2(
-      file.path(R.home("bin"), "R"),
-      c("CMD", "INSTALL", "--no-byte-compile", "-l", shQuote(lib),
-        shQuote(pkg)),
-      stdout = TRUE, stderr = TRUE, env = paste0("R_LIBS=", shQuote(lib))
+  lib <- install_fixture_packages(tempfile("lazyacross"), list(
+    lazyacrossa = list(
+      namespace = c("export(n_distinct)", "export(own_share)"),
+      code = c("n_distinct <- function(x) length(unique(x))",
+               paste0("own_share <- function(data) ", share_call))
+    ),
+    lazyacrossb = list(
+      namespace = c("importFrom(lazyacrossa, n_distinct)",
+                    "export(imported_share)"),
+      code = paste0("imported_share <- function(data) ", share_call)
     )
-    if (!is.null(attr(status, "status"))) {
-      stop(paste(status, collapse = "\n"))
-    }
-  }
-  write_fixture(
-    "lazyacrossa", c("export(n_distinct)", "export(own_share)"),
-    c("n_distinct <- function(x) length(unique(x))",
-      paste0("own_share <- function(data) ", share_call))
-  )
-  write_fixture(
-    "lazyacrossb",
-    c("importFrom(lazyacrossa, n_distinct)", "export(imported_share)"),
-    paste0("imported_share <- function(data) ", share_call),
-    imports = "lazyacrossa"
-  )
+  ))
   lazy_load_fixture$lib <- lib
   lib
 }
@@ -745,11 +717,7 @@ with_fresh_lazy_load_fixture <- function(code) {
   }
   unload()
   on.exit(unload(), add = TRUE)
-  # A literal name here reads to R CMD check's package-usage scan as an
-  # undeclared dependency; the fixture is installed above into a temporary
-  # library.
-  fixture <- "lazyacrossb"
-  loadNamespace(fixture, lib.loc = c(lib, .libPaths()))
+  load_fixture_package("lazyacrossb", lib)
   code()
 }
 
