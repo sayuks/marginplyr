@@ -144,24 +144,34 @@ test_that("a PostgreSQL cleanup failure cannot cache a measured answer", {
 })
 
 # A time limit is not the dialect's answer (#1782): it expires while the
-# question is in flight inside a caller transaction, and the call ends with an
-# error with the savepoint rolled back and released. The question did raise
-# and the control did answer, so `"refuses"` is the one verdict that may be
+# question is in flight, inside a caller transaction and in autocommit, and the
+# call ends with an error. Inside the transaction the savepoint is rolled back
+# and released; in autocommit no control is sent. The question did raise and
+# the control did answer, so `"refuses"` is the one verdict that may be
 # recorded, and only if the limit is delivered after the cache is written.
 test_that("a PostgreSQL time limit during the question ends the call", {
   saved <- share_dialect_snapshot()
   on.exit(restore_share_dialect_verdicts(saved), add = TRUE)
-  fixture <- postgres_probe_fixture(probe_latency = expire_time_limit)
-  expect_s3_class(
-    catch_time_limited(postgres_probe_summary(fixture$source)),
-    "error"
-  )
-  expect_false(fixture$aborted)
-  expect_match(fixture$statements[[1L]], "^SAVEPOINT ")
-  expect_match(
-    fixture$statements[[length(fixture$statements)]], "^RELEASE SAVEPOINT "
-  )
-  expect_in(as.character(as.list(share_dialect_verdicts)), "refuses")
+  for (active in c(TRUE, FALSE)) {
+    fixture <- postgres_probe_fixture(
+      active = active, probe_latency = expire_time_limit
+    )
+    expect_s3_class(
+      catch_time_limited(postgres_probe_summary(fixture$source)),
+      "error"
+    )
+    expect_false(fixture$aborted)
+    if (active) {
+      expect_match(fixture$statements[[1L]], "^SAVEPOINT ")
+      expect_match(
+        fixture$statements[[length(fixture$statements)]],
+        "^RELEASE SAVEPOINT "
+      )
+    } else {
+      expect_length(fixture$statements, 0L)
+    }
+    expect_in(as.character(as.list(share_dialect_verdicts)), "refuses")
+  }
 })
 
 
