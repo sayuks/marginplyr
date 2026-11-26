@@ -8,8 +8,7 @@ where #1799's lanes lost both.
 
 Point each implementer at its ticket and at this section.
 
-- **Tests.** Run one test file at a time. The complete suite runs once, in the
-  integration branch's `full` check.
+- **Tests.** Run one test file at a time.
 - **Before reporting done**, after merging the integration tip, commit and run
   `Rscript tools/review-ready.R --scope source --reason '...'` from the
   worktree root. This is development feedback, not the branch's Review-ready,
