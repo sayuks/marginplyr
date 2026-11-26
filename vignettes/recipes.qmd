@@ -1527,19 +1527,21 @@ select. Evaluate the argument first with `force()`, or write the `across()`
 before the other summaries:
 
 ```{r}
-report_measure_shares <- function(data, measures) {
+report_measure_shares <- function(data, measures, source, outer) {
   force(measures)
   data |>
     summarize_with_margins(
       orders = n(),
       across(all_of(measures), sum, .names = "{.col}_total"),
-      share = share_of_parent(revenue_total),
-      .grouping = rollup(region),
+      share = share_of_parent({{ source }}),
+      .grouping = rollup({{ outer }}),
       .sort = "last"
     )
 }
 
-report_measure_shares(retail_sales, c("revenue", "units"))
+report_measure_shares(
+  retail_sales, c("revenue", "units"), revenue_total, region
+)
 ```
 
 Dots forwarded into a specification constructor take what the caller wrote,
