@@ -1,26 +1,24 @@
 # Installs throwaway packages into `<root>/lib` and returns that library, for a
-# test that needs what only an installed namespace has: exports and imports
-# that stay lazy-load promises until forced, or a foreign namespace exporting
-# tidyselect's helper names. `packages` is a named list in installation order,
-# so a package follows the fixtures it imports; each element holds `namespace`,
-# the NAMESPACE lines, and `code`, the lines of its one R file. The caller owns
-# `root`: it loads the fixtures with `load_fixture_package()` or by putting the
-# library on `.libPaths()`, and unloads and deletes them.
+# test that needs a real installed namespace. `packages` is a named list in
+# installation order, so a package follows the fixtures it imports; each
+# element holds `namespace`, the NAMESPACE lines, and `code`, the lines of its
+# one R file. The caller owns `root` and loads the fixtures, with
+# `load_fixture_package()` or by putting the library on `.libPaths()`.
 install_fixture_packages <- function(root, packages) {
   lib <- file.path(root, "lib")
   dir.create(lib, recursive = TRUE)
   for (name in names(packages)) {
     pkg <- file.path(root, name)
     dir.create(file.path(pkg, "R"), recursive = TRUE)
-    namespace <- packages[[name]]$namespace
+    writeLines(packages[[name]]$namespace, file.path(pkg, "NAMESPACE"))
     # `R CMD check --as-cran` sets `_R_CHECK_INSTALL_DEPENDS_`, under which
     # INSTALL lazy-loads with only DESCRIPTION's declared dependencies
-    # visible, so every package an import directive names is declared.
-    directives <- regmatches(
-      namespace, regexec("^\\s*import(From)?\\(\\s*([^,)[:space:]]+)", namespace)
-    )
+    # visible, so every package an import directive names is declared. Each
+    # parsed directive holds its package first.
+    parsed <- parseNamespaceFile(name, root)
     imports <- unique(vapply(
-      Filter(length, directives), function(match) match[[3L]], character(1)
+      c(parsed$imports, parsed$importClasses, parsed$importMethods),
+      function(directive) directive[[1L]], character(1)
     ))
     writeLines(c(
       paste("Package:", name), "Version: 0.0.1", "Title: Fixture",
@@ -29,7 +27,6 @@ install_fixture_packages <- function(root, packages) {
       paste0("Authors@R: person('A', 'B', email = 'a@example.com', ",
              "role = c('aut', 'cre'))")
     ), file.path(pkg, "DESCRIPTION"))
-    writeLines(namespace, file.path(pkg, "NAMESPACE"))
     writeLines(packages[[name]]$code, file.path(pkg, "R", "fixture.R"))
     status <- system2(
       file.path(R.home("bin"), "R"),
