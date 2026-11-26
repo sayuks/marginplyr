@@ -3411,10 +3411,11 @@ probe_share_dialect_answer <- function(con, expr, purpose, control = FALSE) {
   # binds its number outside its own: what each of them reads as something the
   # connection did is an error.
   scaffold <- share_probe_scaffold()$sql
-  query <- tryCatch(
+  # Suspended for the reason the question's handler below is.
+  query <- suspendInterrupts(tryCatch(
     dplyr::summarize(dplyr::tbl(con, scaffold, vars = "z"), p = !!expr),
     error = function(cnd) NULL
-  )
+  ))
   if (is.null(query)) {
     return("unanswerable")
   }

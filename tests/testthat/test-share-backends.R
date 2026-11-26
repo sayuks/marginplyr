@@ -2332,6 +2332,32 @@ test_that("a time limit during a refused dialect question ends the call", {
   expect_in(as.character(as.list(share_dialect_verdicts)), "refuses")
 })
 
+# The question's query is built under a handler too, which reads an error as a
+# connection the question cannot be put to. A limit expiring there is still
+# pending once the question returns: evaluating R afterwards delivers it.
+test_that("a time limit while a dialect question is built is not consumed", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  tbl <- dplyr::tbl
+  local_mocked_bindings(
+    tbl = function(...) {
+      expire_time_limit()
+      tbl(...)
+    },
+    .package = "dplyr"
+  )
+  error <- catch_time_limited({
+    answer <- probe_share_dialect_answer(
+      con, quote(sum(z, na.rm = TRUE)),
+      purpose = "share_dialect_control", control = TRUE
+    )
+    for (i in seq_len(1e4)) NULL
+  })
+  expect_s3_class(error, "error")
+  expect_false(inherits(error, "marginplyr_error"))
+})
+
 # An unrecognized kind is a marginplyr defect and not something a caller can
 # rewrite, so it stops bare rather than raising a Package condition
 # (ADR 0015). The class assertion is the load-bearing half: a defect caught by
