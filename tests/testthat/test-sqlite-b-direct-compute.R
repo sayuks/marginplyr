@@ -1429,7 +1429,7 @@ test_that("SQLite shadowing compute refuses a missing index column itself", {
     before <- temp_schema()
     error <- expect_error(
       dplyr::compute(query, name = "facts", indexes = list(c("g", "zz"))),
-      "Missing columns in `indexes`: zz", class = "marginplyr_error"
+      "Missing columns in `indexes`: `zz`", class = "marginplyr_error"
     )
     expect_identical(
       conditionCall(error),
@@ -1437,7 +1437,7 @@ test_that("SQLite shadowing compute refuses a missing index column itself", {
     )
     error <- expect_error(
       dplyr::compute(query, name = "facts", unique_indexes = list("zz")),
-      "Missing columns in `unique_indexes`: zz", class = "marginplyr_error"
+      "Missing columns in `unique_indexes`: `zz`", class = "marginplyr_error"
     )
     expect_identical(
       conditionCall(error),

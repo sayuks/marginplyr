@@ -547,7 +547,7 @@ sqlite_check_compute_indexes <- function(anchor, indexes, arg, call) {
   if (length(missing) > 0L) {
     abort_marginplyr(c(
       "All columns specified through {.arg {arg}} must exist in {.arg x}.",
-      i = "Missing columns in {.arg {arg}}: {.field {missing}}."
+      i = "Missing columns in {.arg {arg}}: {.var {missing}}."
     ), call = call)
   }
 }

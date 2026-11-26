@@ -71,8 +71,11 @@ test_that("invalid DuckDB expansion indexes leave destinations untouched", {
               overwrite = existing, analyze = FALSE
             )
             args[[arg]] <- list(c("v", "absent_column"))
-            expect_error(do.call(dplyr::compute, args), "absent_column",
-                         info = name)
+            expect_error(
+              do.call(dplyr::compute, args),
+              paste0("Missing columns in `", arg, "`: `absent_column`"),
+              fixed = TRUE, info = name
+            )
             expect_identical(DBI::dbExistsTable(con, name), existing,
                              info = name)
             if (existing) {

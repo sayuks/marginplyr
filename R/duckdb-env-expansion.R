@@ -12,7 +12,7 @@ compute.marginplyr_duckdb_env <- function(x, name = NULL,
                                           sql_options = NULL, cte) {
   sql_options <- margin_resolve_sql_options("compute", sql_options, cte)
   if (!rlang::is_bool(temporary)) {
-    abort_marginplyr("`temporary` must be TRUE or FALSE.",
+    abort_marginplyr("{.arg temporary} must be TRUE or FALSE.",
                      call = rlang::current_env())
   }
   if (is.null(name)) {
@@ -53,7 +53,7 @@ duckdb_check_indexes <- function(indexes, vars, arg,
   if (length(missing) > 0L) {
     abort_marginplyr(c(
       "All columns specified through {.arg {arg}} must exist in {.arg x}.",
-      i = "Missing columns in {.arg {arg}}: {.field {missing}}."
+      i = "Missing columns in {.arg {arg}}: {.var {missing}}."
     ), call = call)
   }
   invisible(NULL)
