@@ -334,8 +334,9 @@ second exemption.
 ## Amendment (#1506): CSV auto-detection is source work during DuckDB binding
 
 The first exemption does not permit CSV auto-detection to sample source values
-while DuckDB binds a zero-row query. Captured SQL `read_csv()` and
-`read_csv_auto()` calls must explicitly disable auto-detection with a literal
+while DuckDB binds a zero-row query. Captured SQL calls to the CSV readers,
+`read_csv()`, `read_csv_auto()` and DuckDB 2.0's `read_single_csv_file()`
+(#1776), must explicitly disable auto-detection with a literal
 `auto_detect = false` before marginplyr requests typed metadata. An explicit
 schema alone does not disable dialect or header inference. If that opt-out is
 absent, a Package condition directs the caller to supply an established schema
@@ -361,14 +362,15 @@ The accepted suffixes follow `ReadCSVReplacement` in the
 ## Amendment (#1516): JSON schema and record inference are source work
 
 The first exemption also excludes JSON sampling during DuckDB binding, for
-`read_json`, `read_json_auto`, `read_ndjson`, `read_ndjson_auto` and JSON file
-replacement scans. JSON requires established types and an established record
-mode. A literal schema disables type inference; more than one literal column
-also establishes record mode. With a single column, record mode must be
-explicit, even with `auto_detect = false`: automatic record detection still
-samples objects. Unresolved readers are refused before binding and direct the
-caller to established metadata or explicit collection. Name-only inspection
-continues to use captured names.
+`read_json`, `read_json_auto`, `read_ndjson`, `read_ndjson_auto`, DuckDB 2.0's
+`read_single_json_file` (#1776) and JSON file replacement scans. JSON requires
+established types and an established record mode. A literal schema disables
+type inference; more than one literal column also establishes record mode.
+With a single column, record mode must be explicit, even with
+`auto_detect = false`: automatic record detection still samples objects.
+Unresolved readers are refused before binding and direct the caller to
+established metadata or explicit collection. Name-only inspection continues to
+use captured names.
 
 DuckDB's [JSON loading reference][json-loading] documents its inference options.
 The additional record-mode boundary is implemented by

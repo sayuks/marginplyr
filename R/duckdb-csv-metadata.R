@@ -788,8 +788,12 @@ validate_duckdb_csv_metadata <- function(
   ))) {
     abort_duckdb_reader_metadata("JSON")
   }
-  json <- c("read_json", "read_json_auto", "read_ndjson", "read_ndjson_auto")
-  readers <- which(tokens %in% c("read_csv", "read_csv_auto", json) &
+  # DuckDB 2.0's multi-file readers bind one file through the read_single_*
+  # functions, which infer as their multi-file readers do.
+  json <- c("read_json", "read_json_auto", "read_ndjson", "read_ndjson_auto",
+            "read_single_json_file")
+  csv <- c("read_csv", "read_csv_auto", "read_single_csv_file")
+  readers <- which(tokens %in% c(csv, json) &
                      c(tokens[-1L], "") == "(")
   for (reader in readers) {
     family <- if (tokens[[reader]] %in% json) "JSON" else "CSV"

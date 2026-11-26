@@ -136,6 +136,17 @@ duckdb_test_json_extension <- function(con) {
   invisible(NULL)
 }
 
+# Which of `names` the DuckDB under test provides as table functions, in their
+# given order. A reader DuckDB added later, such as 2.0's
+# `read_single_csv_file()`, is absent before that version.
+duckdb_test_table_functions <- function(con, names) {
+  present <- DBI::dbGetQuery(con, paste(
+    "SELECT function_name FROM duckdb_functions()",
+    "WHERE function_type = 'table'"
+  ))$function_name
+  intersect(names, present)
+}
+
 # A replacement-scan refusal may read catalog names, never bind its source.
 # The public audit exposes that complete, successful internal operation.
 expect_duckdb_catalog_only <- function() {

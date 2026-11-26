@@ -123,7 +123,8 @@ inspection that needs them is refused before they are requested:
 \itemize{
 \item A derived dtplyr step whose types depend on processing source rows. Call
 \code{\link[dplyr:collect]{dplyr::collect()}} on it explicitly and pass the resulting data frame.
-\item A DuckDB CSV reader that uses auto-detection, including filename
+\item A DuckDB CSV reader -- \code{read_csv()}, \code{read_csv_auto()} or
+\code{read_single_csv_file()} -- that uses auto-detection, including filename
 replacement scans such as \verb{FROM 'path.csv'}, because binding even a
 zero-row query can sample CSV values. Supply an explicit CSV schema
 with \code{auto_detect = false}, or collect explicitly first.
