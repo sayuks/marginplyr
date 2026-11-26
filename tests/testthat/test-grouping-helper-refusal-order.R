@@ -136,7 +136,7 @@ call_only_helper_calls <- function() {
 }
 
 # The second `.grouping` is settled only by typed metadata, which a lazy input
-# still does not acquire before the helper refusal.
+# does not acquire before the helper refusal.
 expect_helper_sends_nothing <- function(data) {
   counter <- duckdb_query_counter()
   on.exit(counter$untrace(), add = TRUE)
@@ -193,10 +193,10 @@ test_that("DuckDB refuses a helper wrong on its face before any statement", {
 
 # A `.by` refusal precedes a helper refusal when names decide it before typed
 # metadata, as an overlap with `.grouping` is. One decided only afterwards, as
-# a computed expression is, still precedes it on a data frame, which acquires
-# no metadata; a lazy input refuses the helper first, before any statement
+# a computed expression is, precedes it on a data frame, which acquires no
+# metadata; a SQL input refuses the helper first, before any statement
 # (ADR 0005).
-test_that("a `.by` error keeps its precedence over a helper refusal", {
+test_that("a `.by` error precedes a helper refusal unless metadata decides", {
   by_errors <- rlang::exprs(
     "cannot appear in both `.by` and `.grouping`" = g,
     "`.by` selects existing columns, not computed expressions" = g + 1
@@ -229,6 +229,21 @@ test_that("a `.by` error keeps its precedence over a helper refusal", {
       lazy, s = grouping_bit(g, h), .by = g + 1, .grouping = rollup(g)
     ),
     "requires exactly one column",
+    fixed = TRUE,
+    class = "marginplyr_error"
+  )
+})
+
+# dtplyr reads its metadata in R, so it keeps the data frame's order.
+test_that("a computed `.by` precedes a helper refusal on dtplyr", {
+  skip_if_suggest_absent("dtplyr")
+  local <- data.frame(g = c("a", "a", "b"), h = c("x", "y", "x"), v = 1:3)
+  expect_error(
+    summarize_with_margins(
+      dtplyr::lazy_dt(local), s = grouping_bit(g, h), .by = g + 1,
+      .grouping = rollup(g)
+    ),
+    "`.by` selects existing columns, not computed expressions",
     fixed = TRUE,
     class = "marginplyr_error"
   )

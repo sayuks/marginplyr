@@ -520,7 +520,10 @@ summarize_with_margins <- function(.data,
   # the one ahead of typed metadata.
   plan_names <- new.env(parent = emptyenv())
   plan_names$pass_pending <- TRUE
-  lazy_input <- !is.data.frame(.data)
+  # Whether typed metadata comes from outside R: a SQL or Arrow input.
+  reads_backend_metadata <- inherits(
+    .data, c("tbl_lazy", arrow_input_classes())
+  ) && !inherits(.data, "dtplyr_step")
   operation <- prepare_margin_operation(
     .data,
     by_quo = by_quo,
@@ -551,15 +554,15 @@ summarize_with_margins <- function(.data,
           grouping_name_proxy(setdiff(data_vars, c(fixed$columns, dimensions)))
         )
       }
-      # On the call from names alone, after the `.grouping` and `.by` checks
-      # names decide. A lazy input runs it there even when names leave the plan
-      # unsettled, so a `.by` or `.grouping` refusal that only typed metadata
-      # decides comes after it: no statement precedes a refusal the call alone
-      # decides (ADR 0005). A data frame sends no statement, so it runs it there
-      # only on a settled plan, and otherwise leaves it to
-      # `check_grouping_helper_calls()` in `execute_margin_summary()`, after
-      # every `.grouping` and `.by` refusal.
-      if (plan_names$pass_pending && (complete || lazy_input)) {
+      # The helper-call check runs on the call from names alone, after the
+      # `.grouping` and `.by` checks that names decide. An input whose metadata
+      # comes from outside R runs it there even on an unsettled plan, so no
+      # statement precedes a refusal the call alone decides (ADR 0005); a
+      # `.by` or `.grouping` refusal that only typed metadata decides then
+      # follows it. Any other input runs it there only on a settled plan and
+      # otherwise leaves it to `check_grouping_helper_calls()` in
+      # `execute_margin_summary()`, after every `.grouping` and `.by` refusal.
+      if (plan_names$pass_pending && (complete || reads_backend_metadata)) {
         check_grouping_helper_args(dots)
       }
       plan_names$pass_pending <- FALSE

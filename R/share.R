@@ -2361,8 +2361,8 @@ validate_share_request <- function(outputs,
           i = "{.var {source}} is a forward reference."
         ))
       }
-      # Ahead of the input-column hint: the `across()` whose outputs are unknown
-      # may produce this very name.
+      # An earlier `across()` whose outputs are unknown is reported ahead of the
+      # input-column hint.
       if (!is.null(context$source_hint)) {
         abort_share_source_hint(label, output, source, context$source_hint)
       }
