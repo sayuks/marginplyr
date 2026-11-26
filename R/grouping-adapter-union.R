@@ -1046,7 +1046,8 @@ summarize_margin_union <- function(.data,
             share_sources = frame_state$share_sources,
             source_definitions = frame_state$source_definitions,
             type_states = type_states,
-            alias_state = alias_state
+            alias_state = alias_state,
+            source_reads = frame_state$source_reads
           )
           branch_dots <- separate_local_across_labels(branch_dots)
         }
