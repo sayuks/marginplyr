@@ -242,9 +242,8 @@ There is no third place, and that is the point (#93).
 
 Every `verify-*.R` under `.github/scripts/` is reached by a workflow step or by
 a script that is, and `verify-verifier-invocation.R` fails when one is reached
-by neither. It derives the set from the directory, so a verifier added tomorrow
-is covered without an edit here. `check-tarball.R` sources it, and the script's
-own header says why it is not a step of its own. Run it locally with
+by neither. `check-tarball.R` sources it, and the script's own header says why
+it is not a step of its own. Run it locally with
 `Rscript .github/scripts/verify-verifier-invocation.R`.
 
 ### Queries against a lazy input
@@ -342,6 +341,10 @@ standards sources. Review against the merge-base with `main`, and push the
 branch and open the pull request before writing the record, which goes there. A
 branch that ran no review records that instead. `design/agents/code-review.md`
 maps the rest of what the skill expects onto this repository.
+
+### Implementing a spec
+
+Brief `implement-spec`'s implementers with `design/agents/implement-spec.md`.
 
 ### Main compatibility and conflicts
 
