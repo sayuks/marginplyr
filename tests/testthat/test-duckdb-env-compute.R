@@ -254,3 +254,61 @@ test_that("DuckDB expansion index validation accepts dbplyr argument forms", {
     expect_duckdb_compute_rows(do.call(dplyr::compute, args), case$expected)
   }
 })
+
+test_that("DuckDB pronoun results accept compute()'s deprecated cte argument", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  input <- dplyr::copy_to(
+    con, data.frame(g = c("a", "b"), v = c(1L, 2L), .env = c("x", "y"))
+  )
+  rlang::local_options(lifecycle_verbosity = "warning")
+  shapes <- list(
+    # An identifier keeps the expansion outside dbplyr's bare-query CTE
+    # limitation, which an ordinary expansion meets too.
+    expansion = expand_with_margins(
+      input, .grouping = rollup("g"), .margin_label = NULL, .id = "sid"
+    ),
+    summary = summarize_with_margins(
+      input, n = dplyr::n(), .by = tidyselect::all_of(".env"),
+      .grouping = rollup("g")
+    )
+  )
+  for (shape in names(shapes)) {
+    query <- shapes[[shape]]
+    expect_s3_class(query, "marginplyr_duckdb_env")
+    for (cte in c(TRUE, FALSE)) {
+      expected <- dplyr::compute(
+        query, sql_options = dbplyr::sql_options(cte = cte)
+      )
+      expect_warning(
+        actual <- dplyr::compute(query, cte = cte),
+        class = "lifecycle_warning_deprecated"
+      )
+      expect_duckdb_compute_rows(
+        actual, as.data.frame(dplyr::collect(expected))
+      )
+    }
+    expect_error(
+      dplyr::compute(query, cte = TRUE,
+                     sql_options = dbplyr::sql_options(cte = TRUE)),
+      "Exactly one", info = shape
+    )
+  }
+})
+
+test_that("DuckDB pronoun results validate temporary before using it", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  case <- duckdb_env_compute_case(con, "payload", FALSE)
+  for (temporary in list(NA, "yes")) {
+    for (name in list(NULL, "named_destination")) {
+      expect_error(
+        dplyr::compute(case$query, name = name, temporary = temporary),
+        "`temporary` must be TRUE or FALSE", class = "marginplyr_error"
+      )
+    }
+  }
+  expect_false(DBI::dbExistsTable(con, "named_destination"))
+})

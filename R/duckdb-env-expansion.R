@@ -9,7 +9,12 @@ compute.marginplyr_duckdb_env <- function(x, name = NULL,
                                           unique_indexes = list(),
                                           indexes = list(),
                                           analyze = TRUE, ...,
-                                          sql_options = NULL) {
+                                          sql_options = NULL, cte) {
+  sql_options <- margin_resolve_sql_options("compute", sql_options, cte)
+  if (!rlang::is_bool(temporary)) {
+    abort_marginplyr("`temporary` must be TRUE or FALSE.",
+                     call = rlang::caller_call())
+  }
   if (is.null(name)) {
     if (!temporary) {
       abort_marginplyr("`name` must be provided when `temporary = FALSE`.",
