@@ -707,19 +707,19 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
   # result's own grouping and window ordering are restored after the INSERT.
   anchor$lazy_query$order_vars <- list()
   if (!rlang::is_bool(temporary)) {
-    abort_marginplyr("`temporary` must be TRUE or FALSE.",
+    abort_marginplyr("{.arg temporary} must be TRUE or FALSE.",
                      call = rlang::current_env())
   }
   if (!rlang::is_bool(overwrite)) {
-    abort_marginplyr("`overwrite` must be TRUE or FALSE.",
+    abort_marginplyr("{.arg overwrite} must be TRUE or FALSE.",
                      call = rlang::current_env())
   }
   if (!rlang::is_bool(analyze)) {
-    abort_marginplyr("`analyze` must be TRUE or FALSE.",
+    abort_marginplyr("{.arg analyze} must be TRUE or FALSE.",
                      call = rlang::current_env())
   }
   if (!rlang::is_bool(in_transaction)) {
-    abort_marginplyr("`in_transaction` must be TRUE or FALSE.",
+    abort_marginplyr("{.arg in_transaction} must be TRUE or FALSE.",
                      call = rlang::current_env())
   }
   con <- x$con

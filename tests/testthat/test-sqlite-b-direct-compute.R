@@ -851,17 +851,21 @@ test_that("SQLite compute invalid flags leave the destination untouched", {
   for (value in list(NA, 1L, "yes", c(TRUE, FALSE))) {
     expect_error(dplyr::compute(query, name = "invalid_report",
                                 in_transaction = value),
-                 "in_transaction", class = "marginplyr_error")
+                 "`in_transaction` must be TRUE or FALSE.", fixed = TRUE,
+                 class = "marginplyr_error")
   }
   expect_error(dplyr::compute(query, name = "invalid_report",
                               temporary = NA),
-               "temporary", class = "marginplyr_error")
+               "`temporary` must be TRUE or FALSE.", fixed = TRUE,
+               class = "marginplyr_error")
   expect_error(dplyr::compute(query, name = "invalid_report",
                               overwrite = NA),
-               "overwrite", class = "marginplyr_error")
+               "`overwrite` must be TRUE or FALSE.", fixed = TRUE,
+               class = "marginplyr_error")
   expect_error(dplyr::compute(query, name = "invalid_report",
                               analyze = NA),
-               "analyze", class = "marginplyr_error")
+               "`analyze` must be TRUE or FALSE.", fixed = TRUE,
+               class = "marginplyr_error")
   expect_false(DBI::dbExistsTable(con, "invalid_report"))
   with_options <- dplyr::compute(
     query, name = "with_options",
