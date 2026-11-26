@@ -605,6 +605,12 @@ test_that("an unread `.fns` hints at a literal list()", {
     expect_match(
       conditionMessage(columnwise), hint, fixed = TRUE, info = label
     )
+    # A source that is a column of the input gets that hint instead.
+    column <- expect_error(summarize_with_margins(
+      data, n = sum(x), !!across, sh = share_of_total(y),
+      .grouping = rollup(g)
+    ), "`y` is a column of the input", info = label)
+    expect_no_match(conditionMessage(column), hint, fixed = TRUE, info = label)
   }
 
   listed <- summarize_with_margins(
