@@ -126,13 +126,18 @@ check_masked_constructor <- function(quo) {
 }
 
 # The columns a `.grouping` expression names when it is a bare name or a `c()`
-# of bare names that are all columns of `.data`, as the caller wrote them, and
-# `NULL` otherwise. The names are read as the plan reads them below, from the
-# input's metadata, so this sends no query (ADR 0020); an input they cannot be
-# read from is left to the refusal that already owns it.
+# of bare names that are all columns of `.data`, at least one of them unbound
+# where the expression is evaluated, as the caller wrote them, and `NULL`
+# otherwise. Only an unbound name is a failed lookup; a bound one raised its
+# own failure. `exists()` neither forces a promise nor calls an active binding.
+# The names are read as the plan reads them below, from the input's metadata,
+# so this sends no query (ADR 0020); an input they cannot be read from is left
+# to the refusal that already owns it.
 written_grouping_columns <- function(grouping_quo, .data) {
+  env <- rlang::quo_get_env(grouping_quo)
   expr <- rlang::quo_get_expr(grouping_quo)
   while (rlang::is_quosure(expr)) {
+    env <- rlang::quo_get_env(expr)
     expr <- rlang::quo_get_expr(expr)
   }
   symbols <- if (rlang::is_symbol(expr)) {
@@ -146,6 +151,9 @@ written_grouping_columns <- function(grouping_quo, .data) {
     return(NULL)
   }
   columns <- vapply(symbols, rlang::as_string, character(1))
+  if (all(vapply(columns, exists, logical(1), envir = env))) {
+    return(NULL)
+  }
   data_vars <- tryCatch(
     get_col_names(.data, dplyr::everything()),
     error = function(cnd) NULL
@@ -2026,7 +2034,9 @@ admitted_nested_kinds <- local({
             )
             TRUE
           },
-          error = function(cnd) FALSE
+          # Only the rule's own refusal is an answer; anything else
+          # propagates and leaves nothing stored.
+          marginplyr_error = function(cnd) FALSE
         )
       },
       logical(1)

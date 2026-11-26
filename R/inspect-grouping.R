@@ -83,11 +83,16 @@
 #'
 #' @section Lazy inputs:
 #' Inspecting a lazy `.data` reads none of its rows and returns a local
-#' tibble. Selecting columns by name sends no query. A type predicate such as
+#' tibble. Names written in the call, or held in a vector passed as
+#' `all_of(dims)`, send no query. A type predicate such as
 #' `where(is.character)` needs column types: on DuckDB, inspection sends
 #' metadata queries that read no rows, a system-catalog check and a zero-row
 #' read; Arrow and dtplyr inputs answer from their schema; other SQL
-#' connections refuse the predicate.
+#' connections refuse the predicate. A name selection that calls another
+#' function inside a helper, such as `all_of(sort(dims))`, can be resolved
+#' against column types too: on DuckDB it can send those metadata queries,
+#' and the inputs listed below can refuse it. Compute the vector first and
+#' pass the name: `dims <- sort(dims)`, then `all_of(dims)`.
 #' *[Fixed columns and Margin dimensions][margin_verbs]* in [margin_verbs]
 #' covers predicates by backend and those that depend on values, and
 #' [last_sent_queries()] reads back the queries an inspection sent.

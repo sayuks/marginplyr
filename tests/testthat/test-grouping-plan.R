@@ -650,6 +650,58 @@ test_that("a nested position admits nested kinds by its own parent rule", {
   expect_identical(asked, length(kinds))
 })
 
+# Only a kind rule's own refusal answers "not admitted". Anything else raised
+# while a kind is tried -- a time limit, a one-off failure -- is not the fixed
+# table the memo keeps, so it propagates and nothing is stored (#1797).
+test_that("a failure that is not a rule's refusal is not memoized", {
+  kinds <- names(grouping_kind_rules())
+  failures <- 1L
+  probe_rule <- list(
+    validate_nested = function(parent, nested) {
+      if (failures > 0L) {
+        failures <<- failures - 1L
+        stop("one-off failure")
+      }
+      invisible(NULL)
+    }
+  )
+  probe_parent <- list(type = basename(tempfile("probe-kind-")))
+  expect_error(
+    admitted_nested_kinds(probe_parent, probe_rule),
+    "one-off failure",
+    fixed = TRUE
+  )
+  expect_identical(admitted_nested_kinds(probe_parent, probe_rule), kinds)
+
+  # The same failure during a real parent kind's first derivation leaves the
+  # ADR 0026 refusal to the next call.
+  memo <- environment(admitted_nested_kinds)
+  kept <- memo$admitted
+  withr::defer(assign("admitted", kept, envir = memo))
+  memo$admitted[["rollup"]] <- NULL
+  build <- new_grouping_spec
+  fail_once <- TRUE
+  testthat::local_mocked_bindings(new_grouping_spec = function(type, args) {
+    if (fail_once && length(args) == 1L && rlang::quo_is_null(args[[1L]])) {
+      fail_once <<- FALSE
+      stop("one-off failure")
+    }
+    build(type, args)
+  })
+  data <- data.frame(a = c("x", "y"), b = c("p", "q"), s = c("m", "n"))
+  s <- grouping_set(a, b)
+  expect_error(
+    inspect_grouping(data, .grouping = rollup(s)),
+    "one-off failure",
+    fixed = TRUE
+  )
+  error <- expect_error(
+    inspect_grouping(data, .grouping = rollup(s)),
+    class = "marginplyr_error"
+  )
+  expect_identical(conditionMessage(error), ambiguous_s_message)
+})
+
 test_that("a nested name the input and a binding both claim is refused", {
   data_vars <- c("s", "grade", "value")
   # Derived from the kind table, so a sixth kind arrives here as a cell rather
