@@ -116,3 +116,74 @@ test_that("a dtplyr input reports the helper refusal before a collision", {
 
   expect_helper_refused_first(dtplyr::lazy_dt(helper_refusal_data()))
 })
+
+# A helper call wrong on its face -- its arity, a non-bare argument, a repeated
+# column -- needs neither the plan nor the input, so ADR 0005 also places it
+# ahead of typed metadata acquisition, which on DuckDB is two statements.
+call_only_helper_calls <- function() {
+  list(
+    list(call = quote(grouping_bit(g, h)),
+         message = "requires exactly one column"),
+    list(call = quote(grouping_bit(g + 1)),
+         message = "only accepts bare grouping columns"),
+    list(call = quote(grouping_id(g, g)),
+         message = "does not accept duplicate columns"),
+    list(
+      call = quote(dplyr::across(dplyr::everything(), ~ grouping_bit(g, h))),
+      message = "requires exactly one column"
+    )
+  )
+}
+
+expect_helper_sends_nothing <- function(data) {
+  counter <- duckdb_query_counter()
+  on.exit(counter$untrace(), add = TRUE)
+  for (case in call_only_helper_calls()) {
+    info <- deparse1(case$call)
+    counter$queries <- 0L
+    error <- expect_error(
+      summarize_with_margins(data, s = !!case$call, .grouping = rollup("g")),
+      case$message,
+      fixed = TRUE,
+      class = "marginplyr_error",
+      info = info
+    )
+    expect_identical(
+      rlang::call_name(conditionCall(error)), "summarize_with_margins",
+      info = info
+    )
+    expect_identical(nrow(last_sent_queries(details = TRUE)), 0L, info = info)
+    expect_identical(counter$queries, 0L, info = info)
+  }
+}
+
+test_that("DuckDB refuses a helper wrong on its face before any statement", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  withr::local_options(marginplyr.audit_sql = TRUE)
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  DBI::dbWriteTable(con, "helper_call", data.frame(
+    g = c("a", "a", "b"), h = c("x", "y", "x"), v = 1:3
+  ))
+  data <- dplyr::tbl(con, "helper_call")
+
+  expect_helper_sends_nothing(data)
+
+  # A dynamic `PIVOT` cannot give its columns safely, so a metadata refusal
+  # advising collection would otherwise answer instead.
+  pivot <- dplyr::tbl(con, dbplyr::sql(paste(
+    "PIVOT (SELECT g, h, v FROM helper_call) ON h USING sum(v)"
+  )), vars = c("g", "x", "y"))
+  expect_helper_sends_nothing(pivot)
+
+  # Neither can a relation that no longer exists.
+  DBI::dbRemoveTable(con, "helper_call")
+  expect_helper_sends_nothing(data)
+
+  # A `.grouping` grammar error keeps its precedence over the helper's.
+  expect_error(
+    summarize_with_margins(data, s = grouping_bit(g, h), .grouping = rollup()),
+    "requires at least one dimension",
+    class = "marginplyr_error"
+  )
+})

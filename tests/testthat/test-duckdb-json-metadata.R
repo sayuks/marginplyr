@@ -123,7 +123,8 @@ test_that("typed JSON inspection refuses before source type inference", {
 
   for (reader in c(
     "read_json", "read_json_auto", "read_ndjson", "read_ndjson_auto",
-    '"read_json"'
+    '"read_json"',
+    duckdb_test_table_functions(con, "read_single_json_file")
   )) {
     for (sampling in c("", ", sample_size = -1")) {
       source <- dplyr::tbl(con, dbplyr::sql(paste0(
@@ -382,7 +383,8 @@ test_that("established JSON schemas retain metadata without sampling", {
     con, tibble::tibble(k = 101L, label = "east"), "json_control"
   )
   for (reader in c(
-    "read_json", "read_json_auto", "read_ndjson", "read_ndjson_auto"
+    "read_json", "read_json_auto", "read_ndjson", "read_ndjson_auto",
+    duckdb_test_table_functions(con, "read_single_json_file")
   )) {
     for (schema in c(
       "columns = {'k': 'INTEGER'}, records = true, auto_detect = false",

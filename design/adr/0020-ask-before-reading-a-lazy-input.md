@@ -334,8 +334,9 @@ second exemption.
 ## Amendment (#1506): CSV auto-detection is source work during DuckDB binding
 
 The first exemption does not permit CSV auto-detection to sample source values
-while DuckDB binds a zero-row query. Captured SQL `read_csv()` and
-`read_csv_auto()` calls must explicitly disable auto-detection with a literal
+while DuckDB binds a zero-row query. Captured SQL calls to the CSV readers,
+`read_csv()`, `read_csv_auto()` and DuckDB 2.0's `read_single_csv_file()`
+(#1776), must explicitly disable auto-detection with a literal
 `auto_detect = false` before marginplyr requests typed metadata. An explicit
 schema alone does not disable dialect or header inference. If that opt-out is
 absent, a Package condition directs the caller to supply an established schema
@@ -361,14 +362,15 @@ The accepted suffixes follow `ReadCSVReplacement` in the
 ## Amendment (#1516): JSON schema and record inference are source work
 
 The first exemption also excludes JSON sampling during DuckDB binding, for
-`read_json`, `read_json_auto`, `read_ndjson`, `read_ndjson_auto` and JSON file
-replacement scans. JSON requires established types and an established record
-mode. A literal schema disables type inference; more than one literal column
-also establishes record mode. With a single column, record mode must be
-explicit, even with `auto_detect = false`: automatic record detection still
-samples objects. Unresolved readers are refused before binding and direct the
-caller to established metadata or explicit collection. Name-only inspection
-continues to use captured names.
+`read_json`, `read_json_auto`, `read_ndjson`, `read_ndjson_auto`, DuckDB 2.0's
+`read_single_json_file` (#1776) and JSON file replacement scans. JSON requires
+established types and an established record mode. A literal schema disables
+type inference; more than one literal column also establishes record mode.
+With a single column, record mode must be explicit, even with
+`auto_detect = false`: automatic record detection still samples objects.
+Unresolved readers are refused before binding and direct the caller to
+established metadata or explicit collection. Name-only inspection continues to
+use captured names.
 
 DuckDB's [JSON loading reference][json-loading] documents its inference options.
 The additional record-mode boundary is implemented by
@@ -482,6 +484,19 @@ relation, reader and call checks still read. A finer rule, admitting unless a
 caller macro's name occurs in the system macro's stored definition, would
 refuse less for callers who define macros; it is not adopted.
 
+The name match is position-blind on purpose (#1781). DuckDB binds a table
+macro only from a relation position, so `histogram(v)` in a select list binds
+the aggregate, yet it is refused because the system `histogram` table macro is
+that call's first catalog match. Matching a head outside a relation position
+against scalar macros only would admit the aggregate, but it would rest the
+table-macro refusal on `duckdb_metadata_relations()` recognising every relation
+position. That scan is a lexical approximation with known gaps, and a position
+it missed would then admit a table macro such as `histogram`, which reaches
+`query_table()`. One aggregate that returns a `MAP`, with `compute()` as its
+remedy, does not justify trading a match that fails closed for one that
+depends on the scan. For the same reason a caller table macro named like a
+built-in, such as `sum`, refuses every call of that name.
+
 ## Amendment (#1650): the rendered statement is checked too
 
 The checks above read only the captured lazy query's `sql()` fragments and
@@ -510,6 +525,22 @@ returns no typed metadata, as `mutate(y = sql("add_one(v)"))` did not;
 Narrowing the documented guarantee to authored SQL was rejected, because the
 sampling is marginplyr's own query and passing an unknown function through is
 how dplyr calls a database function.
+
+A caller macro named after a function DuckDB binds from syntax rather than
+from a call head has no head for the scan to see (#1780): an operator such as
+`+`, or `~~` behind `LIKE`, or a name its parser emits, such as `count_star`
+for `COUNT(*)` or `struct_pack` for `{...}`. While the operation's catalog
+snapshot holds such a macro, typed metadata is refused for the connection,
+whatever the statement, with the DuckDB call condition; this is the shape the
+value-function names of #1647 took. The names are one hand-kept constant,
+`duckdb_implicit_functions`, which a test asserts each reached without a call
+head on the DuckDB under test, so a name DuckDB adds later is admitted until it
+is listed. The check reads only a snapshot the operation already took and adds
+no query, so a statement that names no relation and no call head binds without
+it. Refusing a caller macro named like any built-in function was rejected:
+it also refuses statements that never reach the macro. Recognising each syntax
+form in the scan was rejected: it mirrors DuckDB's grammar and still admits
+forms it does not know.
 
 ## Amendment (#640): SQLite typed-order execution follows an explicit request
 

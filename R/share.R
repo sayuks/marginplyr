@@ -2972,7 +2972,11 @@ bind_duckdb_share_values <- function(result) {
     "WITH ", dbplyr::ident(name), " AS MATERIALIZED (", query,
     ") SELECT * FROM ", dbplyr::ident(name), con = con
   )
-  dplyr::tbl(con, sql, vars = vars)
+  # A tbl built from SQL text carries no window ordering, so the staged
+  # result's is restored on it (ADR 0018's `.sort = "none"` amendment, #1791).
+  restore_input_window_order(
+    dplyr::tbl(con, sql, vars = vars), dbplyr::op_sort(result)
+  )
 }
 
 # Refuse a staged dtplyr result with more than one row per occurrence and
@@ -3414,13 +3418,17 @@ probe_share_dialect_answer <- function(con, expr, purpose, control = FALSE) {
   if (is.null(query)) {
     return("unanswerable")
   }
-  answer <- tryCatch(
+  # R delivers a time limit as an unclassed error, which this handler would
+  # read as the dialect's answer, clearing the limit for the rest of the call
+  # (#1782). Suspended, R delivers neither a limit nor an interrupt inside it,
+  # so both reach the caller after the question instead.
+  answer <- suspendInterrupts(tryCatch(
     list(value = suppressMessages(suppressWarnings(with_sent_query(
       purpose, query, dplyr::collect(query),
       error_handling = "handled", warning_handling = "suppressed"
     )))),
     error = function(cnd) NULL
-  )
+  ))
   if (is.null(answer)) {
     return("raised")
   }
