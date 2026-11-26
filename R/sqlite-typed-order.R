@@ -538,15 +538,17 @@ sqlite_new_compute_name <- function(con) {
   }
 }
 
-# Check deferred indexes against the columns of the type anchor.
-# The caller has already mapped requested columns to their private aliases.
-sqlite_check_compute_indexes <- function(anchor, indexes, arg) {
+# Check deferred indexes against the columns of the type anchor before any
+# write, where no dbplyr compute() call is left to refuse them (ADR 0015).
+# The caller has already mapped requested columns to their private aliases
+# and passes the compute() method's frame as `call`.
+sqlite_check_compute_indexes <- function(anchor, indexes, arg, call) {
   missing <- setdiff(unlist(indexes, use.names = FALSE), colnames(anchor))
   if (length(missing) > 0L) {
-    rlang::abort(c(
-      paste0("All columns specified through `", arg, "` must exist in `x`."),
-      i = paste("Missing columns:", paste(missing, collapse = ", "))
-    ))
+    abort_marginplyr(c(
+      "All columns specified through {.arg {arg}} must exist in {.arg x}.",
+      i = "Missing columns in {.arg {arg}}: {.field {missing}}."
+    ), call = call)
   }
 }
 
@@ -768,10 +770,10 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
           call = call
         )
       }
-      if (!pronoun_output) {
-        sqlite_check_compute_indexes(anchor, indexes, "indexes")
-        sqlite_check_compute_indexes(anchor, unique_indexes, "unique_indexes")
-      }
+      sqlite_check_compute_indexes(anchor, indexes, "indexes", call)
+      sqlite_check_compute_indexes(
+        anchor, unique_indexes, "unique_indexes", call
+      )
       destination <- sqlite_new_compute_name(con)
     } else if (temporary && is.null(destination)) {
       destination <- sqlite_new_compute_name(con)

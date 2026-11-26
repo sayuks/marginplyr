@@ -1411,3 +1411,49 @@ test_that("SQLite compute refusals blame the compute() call written", {
     quote(dplyr::compute(x, ...))
   )
 })
+
+test_that("SQLite shadowing compute refuses a missing index column itself", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  input <- data.frame(g = c("b", "a"), v = 1:2)
+  DBI::dbWriteTable(con, "facts", input)
+  temp_schema <- function() {
+    DBI::dbGetQuery(con, "SELECT * FROM temp.sqlite_master ORDER BY name")
+  }
+  for (output in c(".env", "n")) {
+    query <- summarize_with_margins(
+      dplyr::tbl(con, "facts"), !!output := dplyr::n(),
+      .grouping = rollup(g), .sort = "last"
+    )
+    before <- temp_schema()
+    error <- expect_error(
+      dplyr::compute(query, name = "facts", indexes = list(c("g", "zz"))),
+      "Missing columns in `indexes`: zz", class = "marginplyr_error"
+    )
+    expect_identical(
+      conditionCall(error),
+      quote(dplyr::compute(query, name = "facts", indexes = list(c("g", "zz"))))
+    )
+    error <- expect_error(
+      dplyr::compute(query, name = "facts", unique_indexes = list("zz")),
+      "Missing columns in `unique_indexes`: zz", class = "marginplyr_error"
+    )
+    expect_identical(
+      conditionCall(error),
+      quote(dplyr::compute(query, name = "facts", unique_indexes = list("zz")))
+    )
+    expect_identical(temp_schema(), before, info = output)
+    computed <- dplyr::compute(
+      query, name = "facts", indexes = list(c("g", output))
+    )
+    index <- DBI::dbGetQuery(con, paste(
+      "SELECT name FROM temp.sqlite_master",
+      "WHERE type = 'index' AND tbl_name = 'facts'"
+    ))
+    expect_identical(nrow(index), 1L, info = output)
+    expect_identical(names(dplyr::collect(computed)), c("g", output))
+    DBI::dbRemoveTable(con, DBI::Id(schema = "temp", table = "facts"))
+  }
+  expect_identical(DBI::dbReadTable(con, "facts"), input)
+})
