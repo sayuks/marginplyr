@@ -161,6 +161,22 @@ check_empty_summaries <- function(dots) {
   ))
 }
 
+# Whether `symbol`, looked up from `env` as ordinary lookup finds it, is bound
+# to a value that reading returns without running code: not an unforced
+# promise and not an active binding. An unbound name answers `FALSE`.
+binding_is_evaluated <- function(env, symbol) {
+  while (!identical(env, emptyenv())) {
+    if (rlang::env_has(env, symbol)) {
+      return(
+        !rlang::env_binding_are_lazy(env, symbol) &&
+          !rlang::env_binding_are_active(env, symbol)
+      )
+    }
+    env <- rlang::env_parent(env)
+  }
+  FALSE
+}
+
 # The refusal for a Grouping specification written into `...` rather than
 # `.grouping` (#1699). A local input would refuse it as a non-vector summary
 # that never names `.grouping`, and a lazy one would translate the constructor
@@ -171,8 +187,12 @@ check_empty_summaries <- function(dots) {
 # refused only where it resolves to marginplyr's own constructor, and a caller's
 # own `rollup()` still runs. A bare name is refused where it is bound to a
 # specification and no column of that name would win the data-mask lookup.
+# On a data-frame input that column is an input column or a strictly earlier
+# named summary; a lazy backend cannot reuse the earlier alias (#1778).
 check_grouping_spec_summaries <- function(dots, data) {
   exprs <- lapply(dots, rlang::quo_get_expr)
+  dot_names <- rlang::names2(dots)
+  local_input <- is.data.frame(data)
   # An Arrow Table or Dataset has no `dplyr::tbl_vars()` method, and this runs
   # before the input is normalized; its `names()` are its columns.
   data_vars <- if (!any(vapply(exprs, rlang::is_symbol, logical(1)))) {
@@ -182,7 +202,8 @@ check_grouping_spec_summaries <- function(dots, data) {
   } else {
     margin_col_names(data)
   }
-  is_spec_dot <- function(dot) {
+  is_spec_dot <- function(position) {
+    dot <- dots[[position]]
     expr <- rlang::quo_get_expr(dot)
     env <- rlang::quo_get_env(dot)
     if (!is.null(static_spelling_name(expr, "grouping_constructor"))) {
@@ -195,15 +216,20 @@ check_grouping_spec_summaries <- function(dots, data) {
     if (symbol %in% data_vars) {
       return(FALSE)
     }
-    # An unbound name, or one whose promise fails, is left for the data mask
-    # to report as it would without this check.
-    value <- tryCatch(
-      rlang::env_get(env, symbol, default = NULL, inherit = TRUE),
-      error = function(cnd) NULL
-    )
+    if (local_input && symbol %in% dot_names[seq_len(position - 1L)]) {
+      return(FALSE)
+    }
+    # On a data-frame input a binding that would run caller code to read is
+    # left to the data mask, which evaluates it in summary order (#1790). A
+    # lazy backend reads the name while the query is built in any case, so
+    # there it is read here, and what it raises leaves the call.
+    if (local_input && !binding_is_evaluated(env, symbol)) {
+      return(FALSE)
+    }
+    value <- rlang::env_get(env, symbol, default = NULL, inherit = TRUE)
     inherits(value, "margin_grouping_spec")
   }
-  spec_dots <- which(vapply(dots, is_spec_dot, logical(1), USE.NAMES = FALSE))
+  spec_dots <- which(vapply(seq_along(dots), is_spec_dot, logical(1)))
   if (length(spec_dots) == 0L) {
     return(invisible(NULL))
   }
@@ -213,7 +239,7 @@ check_grouping_spec_summaries <- function(dots, data) {
   # else, which `codetools` cannot follow into.
   position <- spec_dots[[1L]]
   spelled <- call_part_label(exprs[[position]])
-  name <- rlang::names2(dots)[[position]]
+  name <- dot_names[[position]]
   prefix <- if (nzchar(name)) paste0(name, " = ") else ""
   written <- paste0(prefix, spelled) # nolint: object_usage_linter.
   rewrite <- paste0(".grouping = ", spelled) # nolint: object_usage_linter.
@@ -342,7 +368,8 @@ wrap_assigned_local_summaries <- function(dots, assigned_names, group_vars,
                                           share_sources,
                                           source_definitions,
                                           type_states,
-                                          alias_state = NULL) {
+                                          alias_state = NULL,
+                                          source_reads = NULL) {
   for (i in which(!is.na(assigned_names))) {
     dot <- dots[[i]]
     dots[[i]] <- local_summary_value_quo(
@@ -350,7 +377,7 @@ wrap_assigned_local_summaries <- function(dots, assigned_names, group_vars,
       assigned_names[[i]], group_vars, internal_names, set_id_name,
       set_id_is_internal,
       setdiff(share_sources, source_definitions[[i]]), type_states[[i]],
-      alias_state, i
+      alias_state, i, source_reads[[i]]
     )
     names(dots)[[i]] <- ""
   }
@@ -361,16 +388,18 @@ wrap_assigned_local_summaries <- function(dots, assigned_names, group_vars,
 # environment its expression is evaluated from and `position` the dot's own.
 # The call's head is a binding of this position's own that closes over the
 # wrapper's other arguments, as ADR 0022's amendment *each wrapped local
-# summary labels apart* decides.
+# summary labels apart* decides. `source_reads` holds the reads of the share
+# sources written after this position.
 local_summary_value_quo <- function(dot, env, name, group_vars,
                                     internal_names, set_id_name,
                                     set_id_is_internal, protected_sources,
-                                    type_state, alias_state, position) {
+                                    type_state, alias_state, position,
+                                    source_reads = NULL) {
   # The arguments are promises over the caller's loop index, which has moved on
   # by the time the wrapper runs.
   rlang::list2(
     name, group_vars, internal_names, set_id_name, set_id_is_internal,
-    protected_sources, type_state, alias_state, position
+    protected_sources, type_state, alias_state, position, source_reads
   )
   wrapper <- function(value) {
     # `value` is forced in this call's frame, which R blames for a condition
@@ -378,7 +407,8 @@ local_summary_value_quo <- function(dot, env, name, group_vars,
     # parenthesised head as no call at all, as native dplyr's mask has none.
     (local_assigned_summary_value)(
       value, name, group_vars, internal_names, set_id_name,
-      set_id_is_internal, protected_sources, type_state, alias_state, position
+      set_id_is_internal, protected_sources, type_state, alias_state, position,
+      source_reads
     )
   }
   expr <- rlang::quo_get_expr(dot)
@@ -500,14 +530,16 @@ local_argument_thunk <- function(arg) {
 # Return a frame so dplyr places the output in its mask immediately. An actual
 # frame keeps its own checked column names; a scalar takes the caller-facing
 # name; `NULL` keeps dplyr's omission behavior.
-# The caller supplies the evaluated value, its Assigned summary name, and a
-# type state shared by this dot's groups within one branch.
+# The caller supplies the evaluated value, its Assigned summary name, a type
+# state shared by this dot's groups within one branch, and the reads of the
+# share sources written after this dot.
 local_assigned_summary_value <- function(value, name, group_vars,
                                          internal_names, set_id_name,
                                          set_id_is_internal,
                                          protected_sources,
                                          type_state,
-                                         alias_state = NULL, position = NULL) {
+                                         alias_state = NULL, position = NULL,
+                                         source_reads = NULL) {
   # dplyr's own result check refuses a non-vector, which vctrs would otherwise
   # refuse here with its scalar-type error.
   if (is.null(value) || !vctrs::obj_is_vector(value)) {
@@ -526,6 +558,9 @@ local_assigned_summary_value <- function(value, name, group_vars,
   output_names <- if (frame) attr(value, "names", exact = TRUE) else name
   record_local_summary_aliases(output_names, alias_state, position)
   if (frame) {
+    # The produced names, not the constructor's argument names, are the
+    # earlier aliases a later share source may not read (ADR 0010).
+    check_share_alias_reads(output_names, source_reads)
     check_local_frame_output_names(
       output_names, group_vars, internal_names, set_id_name,
       set_id_is_internal, protected_sources
@@ -674,7 +709,7 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
       auto_names[[i]], group_vars, internal_names, set_id_name,
       set_id_is_internal,
       setdiff(share_sources, source_definitions[[i]]), type_states[[i]],
-      alias_state, i
+      alias_state, i, source_reads[[i]]
     )
   }
   dots
