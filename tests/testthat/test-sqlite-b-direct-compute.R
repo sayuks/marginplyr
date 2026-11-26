@@ -1380,3 +1380,34 @@ test_that("SQLite compute materializes a sorted result over an ordered input", {
     }
   }
 })
+
+test_that("SQLite compute refusals blame the compute() call written", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  DBI::dbWriteTable(con, "t", data.frame(g = c("a", "b"), v = 1:2))
+  DBI::dbExecute(con, "CREATE TEMP TABLE shadowed (a INTEGER)")
+  query <- summarize_with_margins(
+    dplyr::tbl(con, "t"), n = dplyr::n(), .grouping = rollup(g),
+    .sort = "last"
+  )
+  forward <- function(x, ...) dplyr::compute(x, ...)
+  blamed <- function(expr) {
+    conditionCall(expect_error(expr, class = "marginplyr_error"))
+  }
+  expect_identical(
+    blamed(dplyr::compute(query, temporary = NA)),
+    quote(dplyr::compute(query, temporary = NA))
+  )
+  expect_identical(
+    blamed(forward(query, temporary = NA)), quote(dplyr::compute(x, ...))
+  )
+  expect_identical(
+    blamed(dplyr::compute(query, name = "shadowed", temporary = FALSE)),
+    quote(dplyr::compute(query, name = "shadowed", temporary = FALSE))
+  )
+  expect_identical(
+    blamed(forward(query, name = "shadowed", temporary = FALSE)),
+    quote(dplyr::compute(x, ...))
+  )
+})

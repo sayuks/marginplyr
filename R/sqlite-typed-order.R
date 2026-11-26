@@ -346,7 +346,7 @@ sqlite_compute_destination <- function(con, name, temporary, overwrite) {
           "A temporary table shadows the persistent destination; ",
           "use an explicit schema or another name."
         ),
-        call = rlang::caller_call()
+        call = rlang::caller_env()
       )
     }
     if (temporary && overwrite && !temp_exists &&
@@ -356,7 +356,7 @@ sqlite_compute_destination <- function(con, name, temporary, overwrite) {
           "A temporary overwrite would target a table in main; ",
           "use an explicit schema or another name."
         ),
-        call = rlang::caller_call()
+        call = rlang::caller_env()
       )
     }
   }
@@ -706,25 +706,25 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
   anchor$lazy_query$order_vars <- list()
   if (!rlang::is_bool(temporary)) {
     abort_marginplyr("`temporary` must be TRUE or FALSE.",
-                     call = rlang::caller_call())
+                     call = rlang::current_env())
   }
   if (!rlang::is_bool(overwrite)) {
     abort_marginplyr("`overwrite` must be TRUE or FALSE.",
-                     call = rlang::caller_call())
+                     call = rlang::current_env())
   }
   if (!rlang::is_bool(analyze)) {
     abort_marginplyr("`analyze` must be TRUE or FALSE.",
-                     call = rlang::caller_call())
+                     call = rlang::current_env())
   }
   if (!rlang::is_bool(in_transaction)) {
     abort_marginplyr("`in_transaction` must be TRUE or FALSE.",
-                     call = rlang::caller_call())
+                     call = rlang::current_env())
   }
   con <- x$con
   pronoun_output <- any(c(".data", ".env") %in% public)
   if (pronoun_output && is.null(name) && !temporary) {
     abort_marginplyr("`name` must be provided when `temporary = FALSE`.",
-                     call = rlang::caller_call())
+                     call = rlang::current_env())
   }
   private_indexes <- function(index) {
     positions <- match(tolower(index), tolower(names(boolean_aliases)))
@@ -741,14 +741,14 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
         "Can't materialize this SQLite Margin order: result columns shadow ",
         "all three rowid aliases (`rowid`, `oid`, `_rowid_`)."
       ),
-      call = rlang::caller_call()
+      call = rlang::current_env()
     )
   }
   destination <- sqlite_compute_destination(con, name, temporary, overwrite)
   insert_from <- sqlite_direct_execution_sql(
     public_query, sql_options = sql_options
   )
-  call <- rlang::caller_call()
+  call <- rlang::current_env()
   sqlite_with_compute_savepoint(con, destination, function(destination) {
     # Delay the public name until the last source read has finished. The
     # populated table itself is renamed, so rows are inserted only once.
@@ -765,7 +765,7 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
             "Can't preserve the SQLite source under this temporary name. ",
             "Choose a different destination name."
           ),
-          call = rlang::caller_call()
+          call = call
         )
       }
       if (!pronoun_output) {

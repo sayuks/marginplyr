@@ -312,3 +312,28 @@ test_that("DuckDB pronoun results validate temporary before using it", {
   }
   expect_false(DBI::dbExistsTable(con, "named_destination"))
 })
+
+test_that("DuckDB pronoun-result refusals blame the compute() call written", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  query <- duckdb_env_compute_case(con, "payload", FALSE)$query
+  forward <- function(x, ...) dplyr::compute(x, ...)
+  blamed <- function(expr) {
+    conditionCall(expect_error(expr, class = "marginplyr_error"))
+  }
+  expect_identical(
+    blamed(dplyr::compute(query, temporary = FALSE)),
+    quote(dplyr::compute(query, temporary = FALSE))
+  )
+  expect_identical(
+    blamed(forward(query, temporary = NA)), quote(dplyr::compute(x, ...))
+  )
+  expect_identical(
+    blamed(dplyr::compute(query, indexes = list("zz"))),
+    quote(dplyr::compute(query, indexes = list("zz")))
+  )
+  expect_identical(
+    blamed(forward(query, unique_indexes = 1L)), quote(dplyr::compute(x, ...))
+  )
+})

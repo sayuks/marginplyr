@@ -13,12 +13,12 @@ compute.marginplyr_duckdb_env <- function(x, name = NULL,
   sql_options <- margin_resolve_sql_options("compute", sql_options, cte)
   if (!rlang::is_bool(temporary)) {
     abort_marginplyr("`temporary` must be TRUE or FALSE.",
-                     call = rlang::caller_call())
+                     call = rlang::current_env())
   }
   if (is.null(name)) {
     if (!temporary) {
       abort_marginplyr("`name` must be provided when `temporary = FALSE`.",
-                       call = rlang::caller_call())
+                       call = rlang::current_env())
     }
     name <- basename(tempfile(pattern = "marginplyr_result_"))
   }
@@ -39,7 +39,7 @@ compute.marginplyr_duckdb_env <- function(x, name = NULL,
 # Reject index columns absent from the public result before a destination write.
 # The caller supplies the lazy result's names, without executing its query.
 duckdb_check_indexes <- function(indexes, vars, arg,
-                                 call = rlang::caller_call(2)) {
+                                 call = rlang::caller_env()) {
   if (is.null(indexes)) {
     return(invisible(NULL))
   }
