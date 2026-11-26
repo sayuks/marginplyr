@@ -171,8 +171,12 @@ check_empty_summaries <- function(dots) {
 # refused only where it resolves to marginplyr's own constructor, and a caller's
 # own `rollup()` still runs. A bare name is refused where it is bound to a
 # specification and no column of that name would win the data-mask lookup.
+# On a data-frame input that column is an input column or a strictly earlier
+# named summary; a lazy backend cannot reuse the earlier alias (#1778).
 check_grouping_spec_summaries <- function(dots, data) {
   exprs <- lapply(dots, rlang::quo_get_expr)
+  dot_names <- rlang::names2(dots)
+  local_input <- is.data.frame(data)
   # An Arrow Table or Dataset has no `dplyr::tbl_vars()` method, and this runs
   # before the input is normalized; its `names()` are its columns.
   data_vars <- if (!any(vapply(exprs, rlang::is_symbol, logical(1)))) {
@@ -182,7 +186,8 @@ check_grouping_spec_summaries <- function(dots, data) {
   } else {
     margin_col_names(data)
   }
-  is_spec_dot <- function(dot) {
+  is_spec_dot <- function(position) {
+    dot <- dots[[position]]
     expr <- rlang::quo_get_expr(dot)
     env <- rlang::quo_get_env(dot)
     if (!is.null(static_spelling_name(expr, "grouping_constructor"))) {
@@ -195,6 +200,9 @@ check_grouping_spec_summaries <- function(dots, data) {
     if (symbol %in% data_vars) {
       return(FALSE)
     }
+    if (local_input && symbol %in% dot_names[seq_len(position - 1L)]) {
+      return(FALSE)
+    }
     # An unbound name, or one whose promise fails, is left for the data mask
     # to report as it would without this check.
     value <- tryCatch(
@@ -203,7 +211,7 @@ check_grouping_spec_summaries <- function(dots, data) {
     )
     inherits(value, "margin_grouping_spec")
   }
-  spec_dots <- which(vapply(dots, is_spec_dot, logical(1), USE.NAMES = FALSE))
+  spec_dots <- which(vapply(seq_along(dots), is_spec_dot, logical(1)))
   if (length(spec_dots) == 0L) {
     return(invisible(NULL))
   }
@@ -213,7 +221,7 @@ check_grouping_spec_summaries <- function(dots, data) {
   # else, which `codetools` cannot follow into.
   position <- spec_dots[[1L]]
   spelled <- call_part_label(exprs[[position]])
-  name <- rlang::names2(dots)[[position]]
+  name <- dot_names[[position]]
   prefix <- if (nzchar(name)) paste0(name, " = ") else ""
   written <- paste0(prefix, spelled) # nolint: object_usage_linter.
   rewrite <- paste0(".grouping = ", spelled) # nolint: object_usage_linter.

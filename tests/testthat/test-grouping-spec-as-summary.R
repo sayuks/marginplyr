@@ -116,3 +116,69 @@ test_that("the refusal is raised on a lazy input before any query", {
   expect_identical(counter$queries, 0L)
   expect_identical(last_sent_queries()$purpose, character())
 })
+
+# The data mask reads a strictly earlier summary before the caller's
+# environment, so on a local input a bare name an earlier named summary carries
+# is that summary, whatever the environment binds (#1778).
+for (input_kind in c("data.frame", "tibble", "data.table")) {
+  test_that(paste("an earlier summary's name is computed on", input_kind), {
+    if (input_kind == "data.table") skip_if_suggest_absent("data.table")
+    data <- spec_summary_data()
+    data <- switch(input_kind,
+      tibble = tibble::as_tibble(data),
+      data.table = data.table::as.data.table(data), data
+    )
+    spec <- rollup(g)
+
+    result <- summarize_with_margins(
+      data,
+      spec = dplyr::n(),
+      again = spec,
+      .grouping = spec
+    )
+    expect_identical(result$spec, c(2L, 1L, 3L))
+    expect_identical(result$again, c(2L, 1L, 3L))
+
+    # Written before the summary of that name exists, the mask reads the
+    # environment's specification.
+    before <- rlang::catch_cnd(
+      summarize_with_margins(
+        data,
+        again = spec,
+        spec = dplyr::n(),
+        .grouping = spec
+      ),
+      classes = "marginplyr_error"
+    )
+    expect_match(
+      conditionMessage(before),
+      "Did you mean `.grouping = spec`?",
+      fixed = TRUE
+    )
+  })
+}
+
+test_that("an earlier summary's name is still refused on a lazy input", {
+  # dbplyr cannot reuse an alias of the same `summarise()`, so on a lazy input
+  # the name reaches the environment's specification (#1778).
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  source <- dplyr::copy_to(con, spec_summary_data(), "spec_summary_alias")
+  spec <- rollup(g)
+
+  lazy <- rlang::catch_cnd(
+    summarize_with_margins(
+      source,
+      spec = dplyr::n(),
+      again = spec,
+      .grouping = spec
+    ),
+    classes = "marginplyr_error"
+  )
+  expect_match(
+    conditionMessage(lazy),
+    "Did you mean `.grouping = spec`?",
+    fixed = TRUE
+  )
+})
