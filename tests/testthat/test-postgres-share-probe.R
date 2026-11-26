@@ -146,9 +146,10 @@ test_that("a PostgreSQL cleanup failure cannot cache a measured answer", {
 # A time limit is not the dialect's answer (#1782): it expires while the
 # question is in flight, inside a caller transaction and in autocommit, and the
 # call ends with an error. Inside the transaction the savepoint is rolled back
-# and released; in autocommit no control is sent. The question did raise and
-# the control did answer, so `"refuses"` is the one verdict that may be
-# recorded, and only if the limit is delivered after the cache is written.
+# and released; in autocommit no savepoint statement is sent. The question did
+# raise and the control query did answer, so `"refuses"` is the one verdict
+# that may be recorded, and only if the limit is delivered after the cache is
+# written.
 test_that("a PostgreSQL time limit during the question ends the call", {
   saved <- share_dialect_snapshot()
   on.exit(restore_share_dialect_verdicts(saved), add = TRUE)
