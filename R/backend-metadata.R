@@ -291,15 +291,23 @@ dtplyr_join_set_types_match <- function(step, env = step[["env"]]) {
     )
     if (inherits(step, "dtplyr_step_join")) {
       on <- step[["on"]]
-      if (!is.list(on) || length(on[["x"]]) != length(on[["y"]]) ||
-            !all(on[["x"]] %in% names(left)) ||
-            !all(on[["y"]] %in% names(right))) {
+      if (!is.list(on)) {
         return(FALSE)
       }
-      left_types <- vapply(on[["x"]], function(col) {
+      # dtplyr's `on$x` names `parent`'s keys only in a full join; in every
+      # other style it names `parent2`'s.
+      full <- identical(step[["style"]], "full")
+      left_keys <- if (full) on[["x"]] else on[["y"]]
+      right_keys <- if (full) on[["y"]] else on[["x"]]
+      if (length(left_keys) != length(right_keys) ||
+            !all(left_keys %in% names(left)) ||
+            !all(right_keys %in% names(right))) {
+        return(FALSE)
+      }
+      left_types <- vapply(left_keys, function(col) {
         typeof(left[[col]])
       }, character(1), USE.NAMES = FALSE)
-      right_types <- vapply(on[["y"]], function(col) {
+      right_types <- vapply(right_keys, function(col) {
         typeof(right[[col]])
       }, character(1), USE.NAMES = FALSE)
       return(identical(left_types, right_types))

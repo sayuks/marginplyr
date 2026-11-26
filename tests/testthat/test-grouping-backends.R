@@ -2836,6 +2836,66 @@ test_that("a join with promoted key types refuses metadata", {
   expect_s3_class(error, "marginplyr_error")
 })
 
+test_that("a join on differently named keys compares the keys it pairs", {
+  skip_if_suggest_absent("dtplyr")
+  x <- data.frame(a = c(1L, 2L, 3L), b = c("p", "q", "r"), k = c(7L, 8L, 9L))
+  named <- data.frame(b = c(1L, 2L, 9L), w = c("u", "v", "t"))
+  styles <- c("inner", "left", "right", "full", "semi", "anti")
+  for (style in styles) {
+    join <- get(paste0(style, "_join"), envir = asNamespace("dplyr"))
+    step <- join(
+      dtplyr::lazy_dt(x), dtplyr::lazy_dt(named), by = c("a" = "b")
+    )
+    collected <- tibble::as_tibble(dplyr::collect(step))
+    expect_identical(
+      inspect_grouping(step, .grouping = rollup(where(is.integer)))$included,
+      inspect_grouping(
+        collected, .grouping = rollup(where(is.integer))
+      )$included,
+      info = style
+    )
+    expect_identical(
+      tibble::as_tibble(dplyr::collect(summarize_with_margins(
+        step, n = dplyr::n(), .grouping = rollup(where(is.integer))
+      ))),
+      summarize_with_margins(
+        collected, n = dplyr::n(), .grouping = rollup(where(is.integer))
+      ),
+      info = style
+    )
+  }
+})
+
+test_that("a join whose paired keys differ in type refuses metadata", {
+  skip_if_suggest_absent("dtplyr")
+  x <- data.frame(a = c(1L, 2L, 3L), b = c("p", "q", "r"), k = c(7L, 8L, 9L))
+  # Both tables hold both key names, so only the paired columns differ.
+  cross <- data.frame(b = c(1, 2, 9), a = c("u", "v", "t"))
+  # The second pair of a two-key join is the mismatched one.
+  multi <- data.frame(c = c(1L, 2L, 9L), d = c(7, 8, 0))
+  styles <- c("inner", "left", "right", "full", "semi", "anti")
+  for (style in styles) {
+    join <- get(paste0(style, "_join"), envir = asNamespace("dplyr"))
+    crosswise <- join(
+      dtplyr::lazy_dt(x), dtplyr::lazy_dt(cross), by = c("a" = "b")
+    )
+    two_keys <- join(
+      dtplyr::lazy_dt(x), dtplyr::lazy_dt(multi), by = c("a" = "c", "k" = "d")
+    )
+    for (step in list(crosswise, two_keys)) {
+      error <- expect_error(
+        inspect_grouping(step, .grouping = rollup(where(is.integer))),
+        class = "marginplyr_error",
+        info = style
+      )
+      expect_match(
+        conditionMessage(error), "dplyr::collect()", fixed = TRUE,
+        info = style
+      )
+    }
+  }
+})
+
 test_that("unrecognized dtplyr subset forms cannot certify column metadata", {
   skip_if_suggest_absent("dtplyr")
   root <- dtplyr::lazy_dt(data.frame(region = c("a", "b"), value = 1:2))
