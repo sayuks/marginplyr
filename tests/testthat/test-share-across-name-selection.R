@@ -519,6 +519,21 @@ test_that("an unevaluated argument read by a later across() is named", {
   }
   expect_equal(forced(data, cols)$share, c(0.375, 0.625, 1))
   expect_equal(reordered(data, cols)$share, c(0.375, 0.625, 1))
+
+  # That `across()` may produce an input column's name, so a source of that
+  # name gets the same remedy.
+  same_names <- function(data, measures) {
+    summarize_with_margins(
+      data, n = dplyr::n(),
+      dplyr::across(dplyr::all_of(measures), sum, .names = "{.col}"),
+      share = share_of_total(x), .grouping = rollup(g)
+    )
+  }
+  refused <- expect_error(
+    same_names(data, cols), "unknown preceding ordinary summary `x`",
+    class = "marginplyr_error"
+  )
+  expect_match(conditionMessage(refused), remedy, fixed = TRUE)
 })
 
 test_that("an unevaluated `.fns` argument is named with its one remedy", {
@@ -605,13 +620,14 @@ test_that("an unread `.fns` hints at a literal list()", {
     expect_match(
       conditionMessage(columnwise), hint, fixed = TRUE, info = label
     )
-    # A source that is a column of the input gets that hint instead.
-    column <- expect_error(summarize_with_margins(
-      data, n = sum(x), !!across, sh = share_of_total(y),
-      .grouping = rollup(g)
-    ), "`y` is a column of the input", info = label)
-    expect_no_match(conditionMessage(column), hint, fixed = TRUE, info = label)
   }
+  # The unread `across()` may produce a name an input column also has, so
+  # its hint is the one a source of that name gets.
+  column <- expect_error(summarize_with_margins(
+    data, n = sum(x), dplyr::across(c(x, y), c(sum), .names = "{.col}"),
+    sh = share_of_total(y), .grouping = rollup(g)
+  ), "unknown preceding ordinary summary `y`")
+  expect_match(conditionMessage(column), hint, fixed = TRUE)
 
   listed <- summarize_with_margins(
     data, dplyr::across(c(x, y), list(s = sum, m = mean)),
