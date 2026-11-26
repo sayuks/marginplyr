@@ -546,6 +546,9 @@ summarize_with_margins <- function(.data,
           grouping_name_proxy(setdiff(data_vars, c(fixed$columns, dimensions)))
         )
       }
+      # After the `.grouping` and `.by` checks, which keep their precedence,
+      # and ahead of typed metadata (ADR 0005).
+      check_grouping_helper_args(dots)
     },
     call = call
   )
@@ -725,17 +728,18 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
       # ADR 0005 places them ahead of the label query below; staging rewrites
       # the same dots again, per branch.
       check_grouping_helper_calls(dots, plan)
-      validate_margin_operation(
-        operation,
-        on_observed_collision = abort_summary_label_collision
-      )
-
+      # The Arrow share refusal needs only the planned requests, so it too
+      # precedes the label query (ADR 0005).
       if (
         has_shares &&
           identical(operation$backend$kind, "arrow")
       ) {
         abort_arrow_shares(share_request_kinds(summary_plan$requests))
       }
+      validate_margin_operation(
+        operation,
+        on_observed_collision = abort_summary_label_collision
+      )
 
       staged_result <- stage_margin_summaries(
         operation,

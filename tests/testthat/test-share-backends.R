@@ -966,6 +966,35 @@ test_that("Arrow rejects Parent shares before constructing a query", {
   expect_identical(calls$summarize, 0L)
   expect_identical(calls$collect, 0L)
   expect_snapshot(conditionMessage(error))
+
+  # An opted-in label check is a query too, so ADR 0005 places the refusal
+  # ahead of it, whatever the data holds and on every Arrow input shape.
+  colliding <- arrow::Table$create(data.frame(
+    group = c("Total", "y"),
+    value = 1:2
+  ))
+  inputs <- list(
+    Table = colliding,
+    RecordBatch = arrow::record_batch(as.data.frame(colliding)),
+    Dataset = arrow::InMemoryDataset$create(colliding),
+    query = dplyr::filter(colliding, value > 0L)
+  )
+  for (kind in names(inputs)) {
+    checked <- expect_error(
+      summarize_with_margins(
+        inputs[[kind]],
+        total = sum(value),
+        share = share_of_parent(total),
+        .grouping = rollup(group),
+        .check_margin_label = TRUE
+      ),
+      "Arrow.*Parent share",
+      info = kind
+    )
+    expect_s3_class(checked, "marginplyr_error")
+  }
+  expect_identical(calls$summarize, 0L)
+  expect_identical(calls$collect, 0L)
 })
 
 test_that("Arrow share collection makes collision policy explicit", {
@@ -3334,6 +3363,20 @@ test_that("Arrow rejects Total shares before constructing a query", {
     "Arrow"
   )
   expect_snapshot(conditionMessage(both))
+
+  # With the label check opted into, the refusal still precedes its query.
+  checked <- expect_error(
+    summarize_with_margins(
+      arrow::Table$create(data.frame(group = c("Total", "y"), value = 1:2)),
+      total = sum(value),
+      across(total, share_of_total, .names = "whole"),
+      .grouping = cube(group),
+      .margin_label = "Total",
+      .check_margin_label = TRUE
+    ),
+    "Arrow.*Total share"
+  )
+  expect_s3_class(checked, "marginplyr_error")
 
   expect_identical(calls$summarize, 0L)
   expect_identical(calls$collect, 0L)
