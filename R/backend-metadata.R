@@ -615,8 +615,9 @@ grouping_selection_proxy <- function(.data,
     # The simulated dialect carries the class name on an S3 object.
     if (isS4(con) && inherits(con, "duckdb_connection")) {
       catalog <- NULL
-      read_catalog <- function() {
-        if (is.null(catalog)) catalog <<- duckdb_metadata_catalog(con)
+      # `read = FALSE` returns the snapshot only if one was already read.
+      read_catalog <- function(read = TRUE) {
+        if (is.null(catalog) && read) catalog <<- duckdb_metadata_catalog(con)
         catalog
       }
       validate_duckdb_csv_query(query$lazy_query, read_catalog)

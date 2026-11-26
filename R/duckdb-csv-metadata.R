@@ -571,6 +571,20 @@ duckdb_value_function_heads <- function(tokens) {
           !unquoted(-1L, "as"))
 }
 
+# Functions DuckDB binds from syntax with no call head: operators, literal
+# constructors and keyword forms, as measured on DuckDB 1.5 and 2.0. A caller
+# macro of such a name replaces the function wherever that syntax stands,
+# which a head scan cannot see.
+duckdb_implicit_functions <- c(
+  "+", "-", "*", "/", "%", "//", "^", "**", "||", "<<", ">>", "&", "|", "~",
+  "@", "^@", "&&", "@>", "<@", "<->", "<=>", "~~", "!~~", "~~*", "!~~*", "~~~",
+  "count_star", "list_value", "struct_pack", "row", "map", "date_part",
+  "timezone", "ltrim", "rtrim", "regexp_full_match", "like_escape",
+  "ilike_escape", "list_apply", "contains", "to_millennia", "to_centuries",
+  "to_decades", "to_years", "to_quarters", "to_months", "to_weeks", "to_days",
+  "to_hours", "to_minutes", "to_seconds", "to_milliseconds", "to_microseconds"
+)
+
 # Table functions that bind SQL text passed as a value, refused by name in
 # authored SQL and in stored views alike (ADR 0020). Other table functions are
 # admitted; macros and inferring readers are refused by their own checks.
@@ -663,6 +677,16 @@ validate_duckdb_authored_calls <- function(tokens, catalog) {
       abort_duckdb_call_metadata()
     }
   }
+  # Any statement may hold the syntax that reaches an implicitly bound name,
+  # so a caller macro of one refuses the operation. The check reads only a
+  # snapshot this operation already took (ADR 0020).
+  snapshot <- catalog(read = FALSE)
+  if (!is.null(snapshot) && any(
+    duckdb_caller_macros(snapshot) &
+      sql_ascii_lower(snapshot$relation_name) %in% duckdb_implicit_functions
+  )) {
+    abort_duckdb_call_metadata()
+  }
   invisible(NULL)
 }
 
@@ -748,7 +772,8 @@ abort_duckdb_reader_metadata <- function(family) {
 # CSV and JSON binders can sample values even under LIMIT 0. Admit readers
 # whose literal arguments establish inference is disabled at their own depth.
 # The caller supplies captured SQL, without binding the input (ADR 0020).
-# `catalog` lazily returns this operation's catalog-only name snapshot.
+# `catalog` lazily returns this operation's catalog-only name snapshot, and
+# `catalog(read = FALSE)` returns it only once it has been read.
 # Resolve every relation name before following stored reader dependencies.
 validate_duckdb_csv_metadata <- function(
   sql, catalog, namespace = NULL, seen = integer()) {

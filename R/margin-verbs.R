@@ -317,7 +317,10 @@
 #'   admitted inside a view as they are when written directly.
 #'   A macro you define is refused however the query reaches it: written in
 #'   SQL, or called from a dplyr verb such as `mutate(y = my_macro(x))`,
-#'   including a function dbplyr translates to that macro's name. Call
+#'   including a function dbplyr translates to that macro's name. A macro
+#'   named after an operator or a function DuckDB calls for other syntax,
+#'   such as `+` or `count_star` (behind `COUNT(*)`), refuses typed
+#'   metadata on its connection, since any statement could reach it. Call
 #'   [dplyr::compute()] or [dplyr::collect()] first to use one.
 #'   DuckDB's own scalar macros, such as `nullif()`, are admitted only while
 #'   the database holds no macro you defined, since one could replace a name

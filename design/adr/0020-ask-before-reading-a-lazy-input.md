@@ -513,6 +513,22 @@ Narrowing the documented guarantee to authored SQL was rejected, because the
 sampling is marginplyr's own query and passing an unknown function through is
 how dplyr calls a database function.
 
+A caller macro named after a function DuckDB binds from syntax rather than
+from a call head has no head for the scan to see (#1780): an operator such as
+`+`, or `~~` behind `LIKE`, or a name its parser emits, such as `count_star`
+for `COUNT(*)` or `struct_pack` for `{...}`. While the operation's catalog
+snapshot holds such a macro, typed metadata is refused for the connection,
+whatever the statement, with the DuckDB call condition; this is the shape the
+value-function names of #1647 took. The names are one hand-kept constant,
+`duckdb_implicit_functions`, which a test asserts each reached without a call
+head on the DuckDB under test, so a name DuckDB adds later is admitted until it
+is listed. The check reads only a snapshot the operation already took and adds
+no query, so a statement that names no relation and no call head binds without
+it. Refusing a caller macro named like any built-in function was rejected:
+it also refuses statements that never reach the macro. Recognising each syntax
+form in the scan was rejected: it mirrors DuckDB's grammar and still admits
+forms it does not know.
+
 ## Amendment (#640): SQLite typed-order execution follows an explicit request
 
 ADR 0031's live SQLite result builds its typed compound query without executing

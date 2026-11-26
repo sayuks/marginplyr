@@ -330,7 +330,10 @@ Other table functions, such as \code{read_parquet()} or \code{range()}, are
 admitted inside a view as they are when written directly.
 A macro you define is refused however the query reaches it: written in
 SQL, or called from a dplyr verb such as \code{mutate(y = my_macro(x))},
-including a function dbplyr translates to that macro's name. Call
+including a function dbplyr translates to that macro's name. A macro
+named after an operator or a function DuckDB calls for other syntax,
+such as \code{+} or \code{count_star} (behind \verb{COUNT(*)}), refuses typed
+metadata on its connection, since any statement could reach it. Call
 \code{\link[dplyr:compute]{dplyr::compute()}} or \code{\link[dplyr:collect]{dplyr::collect()}} first to use one.
 DuckDB's own scalar macros, such as \code{nullif()}, are admitted only while
 the database holds no macro you defined, since one could replace a name
