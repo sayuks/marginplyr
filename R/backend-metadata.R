@@ -265,7 +265,13 @@ dtplyr_value_stable_arithmetic <- function(expr, columns, env) {
   FALSE
 }
 
-# A join or set over plain atomic roots has no factor levels or class-specific
+# Whether `x` is an unclassed logical, integer, double or character vector.
+dtplyr_plain_column <- function(x) {
+  is.atomic(x) && !is.object(x) && is.null(dim(x)) &&
+    typeof(x) %in% c("logical", "integer", "double", "character")
+}
+
+# A set over plain atomic roots has no factor levels or class-specific
 # coercion to infer from matched rows. Derived expressions are checked by the
 # step predicate before this condition is used.
 dtplyr_plain_roots <- function(step) {
@@ -275,14 +281,14 @@ dtplyr_plain_roots <- function(step) {
       dtplyr_plain_roots(step[[field]])
     }, logical(1))))
   }
-  all(vapply(step[["parent"]], function(x) {
-    is.atomic(x) && !is.object(x) && is.null(dim(x)) &&
-      typeof(x) %in% c("logical", "integer", "double", "character")
-  }, logical(1)))
+  all(vapply(step[["parent"]], dtplyr_plain_column, logical(1)))
 }
 
 # Even plain join keys can promote from integer to double when real rows
 # match. Require matching input types before using an empty-input result.
+# A join pairs only its keys, which must be plain: a non-key column passes
+# through with its own class and levels, while a classed key could reach class
+# methods or merge levels from matched rows.
 dtplyr_join_set_types_match <- function(step, env = step[["env"]]) {
   tryCatch({
     left <- dtplyr_selection_proxy(step[["parent"]], env = env)
@@ -302,6 +308,10 @@ dtplyr_join_set_types_match <- function(step, env = step[["env"]]) {
       if (length(left_keys) != length(right_keys) ||
             !all(left_keys %in% names(left)) ||
             !all(right_keys %in% names(right))) {
+        return(FALSE)
+      }
+      keys <- c(as.list(left)[left_keys], as.list(right)[right_keys])
+      if (!all(vapply(keys, dtplyr_plain_column, logical(1)))) {
         return(FALSE)
       }
       left_types <- vapply(left_keys, function(col) {
@@ -501,7 +511,10 @@ dtplyr_metadata_safe_step <- function(step, env = step[["env"]]) {
   if (inherits(step, "dtplyr_step_subset")) {
     return(!is.null(dtplyr_metadata_subset_columns(step)))
   }
-  if (inherits(step, c("dtplyr_step_join", "dtplyr_step_set"))) {
+  if (inherits(step, "dtplyr_step_join")) {
+    return(dtplyr_join_set_types_match(step, env))
+  }
+  if (inherits(step, "dtplyr_step_set")) {
     return(dtplyr_plain_roots(step) && dtplyr_join_set_types_match(step, env))
   }
   FALSE
