@@ -161,6 +161,22 @@ check_empty_summaries <- function(dots) {
   ))
 }
 
+# Whether `symbol`, looked up from `env` as ordinary lookup finds it, is bound
+# to a value that reading returns without running code: not an unforced
+# promise and not an active binding. An unbound name answers `FALSE`.
+binding_is_evaluated <- function(env, symbol) {
+  while (!identical(env, emptyenv())) {
+    if (rlang::env_has(env, symbol)) {
+      return(
+        !rlang::env_binding_are_lazy(env, symbol) &&
+          !rlang::env_binding_are_active(env, symbol)
+      )
+    }
+    env <- rlang::env_parent(env)
+  }
+  FALSE
+}
+
 # The refusal for a Grouping specification written into `...` rather than
 # `.grouping` (#1699). A local input would refuse it as a non-vector summary
 # that never names `.grouping`, and a lazy one would translate the constructor
@@ -203,12 +219,14 @@ check_grouping_spec_summaries <- function(dots, data) {
     if (local_input && symbol %in% dot_names[seq_len(position - 1L)]) {
       return(FALSE)
     }
-    # An unbound name, or one whose promise fails, is left for the data mask
-    # to report as it would without this check.
-    value <- tryCatch(
-      rlang::env_get(env, symbol, default = NULL, inherit = TRUE),
-      error = function(cnd) NULL
-    )
+    # On a data-frame input a binding that would run caller code to read is
+    # left to the data mask, which evaluates it in summary order (#1790). A
+    # lazy backend reads the name while the query is built in any case, so
+    # there it is read here, and what it raises leaves the call.
+    if (local_input && !binding_is_evaluated(env, symbol)) {
+      return(FALSE)
+    }
+    value <- rlang::env_get(env, symbol, default = NULL, inherit = TRUE)
     inherits(value, "margin_grouping_spec")
   }
   spec_dots <- which(vapply(seq_along(dots), is_spec_dot, logical(1)))
