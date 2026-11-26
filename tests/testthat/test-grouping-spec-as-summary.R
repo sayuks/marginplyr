@@ -254,6 +254,9 @@ for (input_kind in c("data.frame", "tibble", "data.table")) {
       rlang::catch_cnd(summarize_with_margins(data, k = !!k,
                                               .grouping = rollup(g)), "error")
     }
+    expect_false(
+      binding_is_evaluated(environment(), "spec_summary_unbound_name")
+    )
     absent <- unbound(quote(spec_summary_unbound_name))
     expect_false(inherits(absent, "marginplyr_error"))
     expect_identical(class(absent),
