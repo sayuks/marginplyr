@@ -740,7 +740,11 @@ with_fresh_lazy_load_fixture <- function(code) {
   }
   unload()
   on.exit(unload(), add = TRUE)
-  loadNamespace("lazyacrossb", lib.loc = c(lib, .libPaths()))
+  # A literal name here reads to R CMD check's package-usage scan as an
+  # undeclared dependency; the fixture is installed above into a temporary
+  # library.
+  fixture <- "lazyacrossb"
+  loadNamespace(fixture, lib.loc = c(lib, .libPaths()))
   code()
 }
 
