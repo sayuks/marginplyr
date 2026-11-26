@@ -40,7 +40,7 @@ test_that("inherited and nested active arithmetic is refused before lookup", {
   skip_if_suggest_absent("dtplyr")
   source <- data.table::data.table(value = 1:2, g = c("a", "a"))
   before <- data.table::copy(source)
-  for (operator in c("+", "-", "*", "/")) {
+  for (operator in arithmetic_heads) {
     for (inherited in c(FALSE, TRUE)) {
       for (nested in c(FALSE, TRUE)) {
         lookups <- 0L
@@ -53,7 +53,7 @@ test_that("inherited and nested active arithmetic is refused before lookup", {
         if (inherited) {
           caller <- new.env(parent = operator_env)
         }
-        arithmetic <- as.call(list(as.name(operator), quote(value), 1L))
+        arithmetic <- arithmetic_call(operator, quote(value))
         if (nested) {
           arithmetic <- as.call(list(as.name("*"), arithmetic, 2L))
         }
@@ -92,10 +92,10 @@ test_that("ordinary base arithmetic retains typed plans and nesting cells", {
   for (rows in c(0L, 1L, 3L)) {
     source <- data.table::data.table(value = seq_len(rows))
     before <- data.table::copy(source)
-    for (operator in c("+", "-", "*", "/")) {
+    for (operator in arithmetic_heads) {
       caller <- new.env(parent = environment())
       assign(operator, get(operator, envir = baseenv()), envir = caller)
-      arithmetic <- as.call(list(as.name(operator), quote(value), 1L))
+      arithmetic <- arithmetic_call(operator, quote(value))
       step <- eval(rlang::expr(dplyr::mutate(
         dtplyr::lazy_dt(source), derived = !!arithmetic
       )), caller)
@@ -127,26 +127,89 @@ test_that("ordinary base arithmetic retains typed plans and nesting cells", {
 
 test_that("ordinary value-dependent arithmetic stays refused without running", {
   skip_if_suggest_absent("dtplyr")
-  seen <- integer()
-  `+` <- function(a, b) {
-    seen <<- c(seen, length(a))
-    if (length(a) == 0L) character() else base::`+`(a, b)
-  }
   source <- data.table::data.table(value = 1:2)
   before <- data.table::copy(source)
-  step <- dplyr::mutate(dtplyr::lazy_dt(source), derived = value + 1L)
-  collected <- dplyr::collect(step)
-  expect_identical(collected$derived, 2:3)
   seen <- integer()
-  expect_error(inspect_grouping(step, .by = where(is.character)),
-               class = "marginplyr_error")
-  for (verb in list(summarize_with_margins, expand_with_margins,
-                    nest_with_margins, nest_by_with_margins)) {
-    expect_error(verb(step, .by = where(is.character)),
-                 class = "marginplyr_error")
+  shadow <- function(base_operator) {
+    force(base_operator)
+    function(...) {
+      seen <<- c(seen, length(..1))
+      if (length(..1) == 0L) character() else base_operator(...)
+    }
   }
-  expect_identical(seen, integer())
-  expect_identical(source, before)
+  for (operator in arithmetic_heads) {
+    caller <- new.env(parent = environment())
+    assign(operator, shadow(get(operator, envir = baseenv())), envir = caller)
+    arithmetic <- arithmetic_call(operator, quote(value))
+    step <- eval(rlang::expr(dplyr::mutate(
+      dtplyr::lazy_dt(source), derived = !!arithmetic
+    )), caller)
+    collected <- dplyr::collect(step)
+    expect_true(is.numeric(collected$derived), info = operator)
+    expect_gt(length(seen), 0L)
+    seen <- integer()
+    expect_error(inspect_grouping(step, .by = where(is.character)),
+                 class = "marginplyr_error")
+    for (verb in list(summarize_with_margins, expand_with_margins,
+                      nest_with_margins, nest_by_with_margins)) {
+      expect_error(verb(step, .by = where(is.character)),
+                   class = "marginplyr_error")
+    }
+    expect_identical(seen, integer(), info = operator)
+    expect_identical(source, before)
+  }
+})
+
+test_that("grouped and integral arithmetic keeps the collected plan", {
+  skip_if_suggest_absent("dtplyr")
+  source <- data.frame(
+    region = c("east", "west", "east"), n = c(1L, 2L, 3L), m = c(4L, 5L, 6L)
+  )
+  forms <- list(
+    quote(n + m), quote((n + m)), quote((n + m) * 2L), quote(-(n)),
+    quote(n %/% 2L), quote(n %% m), quote(n^2), quote(n**2)
+  )
+  for (form in forms) {
+    step <- dplyr::mutate(dtplyr::lazy_dt(source), z = !!form)
+    collected <- tibble::as_tibble(dplyr::collect(step))
+    label <- deparse(form)
+    expect_identical(
+      inspect_grouping(step, .grouping = rollup(where(is.integer)))$included,
+      inspect_grouping(
+        collected, .grouping = rollup(where(is.integer))
+      )$included,
+      info = label
+    )
+    # dtplyr orders each grouping set by its keys; the rows are compared.
+    sorted <- function(x) {
+      dplyr::arrange(tibble::as_tibble(x), dplyr::across(dplyr::everything()))
+    }
+    expect_identical(
+      sorted(dplyr::collect(summarize_with_margins(
+        step, total = sum(z), .grouping = rollup(region, where(is.integer))
+      ))),
+      sorted(summarize_with_margins(
+        collected, total = sum(z), .grouping = rollup(region, where(is.integer))
+      )),
+      info = label
+    )
+  }
+})
+
+test_that("arithmetic on a classed column or another function stays refused", {
+  skip_if_suggest_absent("dtplyr")
+  source <- data.frame(
+    region = c("east", "west"), n = c(1L, 2L),
+    day = as.Date("2026-01-01") + 0:1
+  )
+  for (form in list(quote(day %/% 2L), quote(day^2), quote((day)),
+                    quote(abs(n)), quote(n %in% 1L))) {
+    step <- dplyr::mutate(dtplyr::lazy_dt(source), z = !!form)
+    expect_error(
+      inspect_grouping(step, .grouping = rollup(where(is.character))),
+      class = "marginplyr_error", info = deparse(form)
+    )
+  }
 })
 
 test_that("unbound arithmetic cannot establish typed metadata", {

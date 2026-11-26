@@ -254,7 +254,7 @@ dtplyr_value_stable_arithmetic <- function(expr, columns, env) {
   }
   if (is.call(expr) && is.symbol(expr[[1L]])) {
     head <- as.character(expr[[1L]])
-    if (head %in% c("+", "-", "*", "/") &&
+    if (head %in% c("+", "-", "*", "/", "(", "^", "%%", "%/%") &&
           dtplyr_function_binding(head, env, get(head, envir = baseenv()))) {
       args <- as.list(expr)[-1L]
       return(length(args) %in% c(1L, 2L) && all(vapply(args, function(arg) {
