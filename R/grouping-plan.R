@@ -2034,7 +2034,9 @@ admitted_nested_kinds <- local({
             )
             TRUE
           },
-          error = function(cnd) FALSE
+          # Only the rule's own refusal is an answer; anything else
+          # propagates and leaves nothing stored.
+          marginplyr_error = function(cnd) FALSE
         )
       },
       logical(1)
