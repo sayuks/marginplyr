@@ -282,13 +282,9 @@ release notes describing the runtime change land with that implementation.
 
 *Documentation consequences* above says the reference will include the
 complete eight-case table and that `vignettes/grouping_identity.qmd` will link
-to it. The reference no longer carries the table (#1720): six of its eight rows
-read *Allowed*, and the prose of *Display labels and grouping identity* in
-`?margin_verbs` already states the rule they spell out — `NA_character_` on a
-factor with an NA level is refused, and every other combination is allowed.
-
-The reference therefore states the rule in that prose alone, and the article
-points at those rules rather than at a table (#1788). The eight cases are held
+to it. The reference states the rule in the prose of *Display labels and
+grouping identity* in `?margin_verbs` alone (#1720), and the article points at
+those rules rather than at a table (#1788). The eight cases are held
 as an executable table, `factor_contract_cases()` in
 `tests/testthat/test-margin-label.R`, which the local and dtplyr tests there
 assert row by row.
