@@ -2438,9 +2438,6 @@ unnamed_across_source_hint <- function(dot, name, position, columns) {
   env <- rlang::quo_get_env(dot)
   parsed <- parse_across_arguments(expr)
   fns <- unparenthesized_value(parsed$fns)
-  if (rlang::is_missing(fns)) {
-    return(NULL)
-  }
   if (rlang::is_symbol(fns) &&
         is_unevaluated_binding(rlang::as_string(fns), env)) {
     return(list(kind = "force", name = rlang::as_string(fns)))

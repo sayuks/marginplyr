@@ -249,6 +249,19 @@ for (input_kind in c("data.frame", "tibble", "data.table")) {
     expect_match(conditionMessage(warned), "In argument: `k = w`", fixed = TRUE)
     expect_match(conditionMessage(warned), "caller's own warning", fixed = TRUE)
 
+    # An unbound name is the data mask's to report, as for the reference.
+    unbound <- function(k) {
+      rlang::catch_cnd(summarize_with_margins(data, k = !!k,
+                                              .grouping = rollup(g)), "error")
+    }
+    expect_false(
+      binding_is_evaluated(environment(), "spec_summary_unbound_name")
+    )
+    absent <- unbound(quote(spec_summary_unbound_name))
+    expect_false(inherits(absent, "marginplyr_error"))
+    expect_identical(class(absent),
+                     class(unbound(quote((spec_summary_unbound_name)))))
+
     # A refused call evaluates nothing the caller passed.
     seen$trace <- character()
     refused <- function(w) {

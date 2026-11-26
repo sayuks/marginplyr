@@ -350,29 +350,36 @@ deliver_in_audit_render <- function(purpose, deliver = expire_time_limit,
 # limit arriving there looked like: it was recorded as handled, R cleared it,
 # and the call ran on unbounded where the unaudited call ended (#1796). For
 # the `result` row the limit is the caller's, still running when they collect.
-test_that("a time limit in an audited render still ends the call", {
-  check_backend <- function(remote) {
+# Each backend runs in a test of its own, so no test requires more than one
+# member of `optional_backends()`.
+expect_render_limit_ends_call <- function(remote) {
+  check_backend <- function() {
     deliver_in_audit_render("observed_label_collision")
     expect_s3_class(catch_time_limited(detail_label_check(remote)), "error")
   }
-  check_result <- function(remote) {
+  check_result <- function() {
     deliver_in_audit_render("result")
     expect_s3_class(
       catch_time_limited(dplyr::collect(detail_label_check(remote))),
       "error"
     )
   }
-  with_detail_source(check_backend)
-  with_detail_source(check_result)
+  check_backend()
+  check_result()
+}
 
+test_that("a time limit in an audited render still ends the call", {
+  with_detail_source(expect_render_limit_ends_call)
+})
+
+test_that("a time limit in an audited DuckDB render still ends the call", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   old <- options(marginplyr.audit_sql = TRUE)
   on.exit(options(old), add = TRUE)
   remote <- dplyr::copy_to(con, data.frame(g = "a", v = 1), "condition_source")
-  check_backend(remote)
-  check_result(remote)
+  expect_render_limit_ends_call(remote)
 })
 
 # An interrupt raised during the render is deferred as the limit is, and
