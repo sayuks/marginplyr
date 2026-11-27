@@ -429,7 +429,10 @@ Config/testthat/start-first:
     dtplyr-row-call-metadata,
     suggest-guard-scan,
     grouping-selection-deprecation,
-    share-selection-strings
+    share-selection-strings,
+    share-assign-locals,
+    share-glue-templates,
+    share-unplaced-environment-reads
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
