@@ -7701,7 +7701,7 @@ scope_after_removals <- function(expr, scope, lookup) {
       return(scope_after_removals(invocation, scope, lookup))
     }
   }
-  assignment <- scope_local_closure_assignment(expr, scope, lookup)
+  assignment <- scope_local_assignment(expr, scope, lookup)
   if (!is.null(assignment)) {
     retained <- scope_after_removals(assignment$value, scope, lookup)
     return(scope_bind_local(
@@ -7793,9 +7793,14 @@ scope_after_removals <- function(expr, scope, lookup) {
   scope
 }
 
-# A literal base assignment installs a visible closure in the current frame
-# when its evaluation and assignment environments are both that frame.
-scope_local_closure_assignment <- function(expr, scope, lookup) {
+# A literal base `assign()` binds its value, whatever it is, in the current
+# frame when its evaluation and assignment environments are both that frame;
+# a literal `delayedAssign()` binds only a literal function definition. The
+# walk does not model when a promise of another value or an active binding
+# runs, so `delayedAssign()` of a value and `makeActiveBinding()` bind
+# nothing here, nor do `list2env()` and rlang's binders, which would each
+# need their own placement proof (#1833).
+scope_local_assignment <- function(expr, scope, lookup) {
   transfer_lookup <- lookup
   transfer_lookup$rebound <- lookup$function_rebound %||% lookup$rebound
   callee <- static_call_name(expr)
@@ -7821,10 +7826,8 @@ scope_local_closure_assignment <- function(expr, scope, lookup) {
         (length(inherited) > 0L && !identical(inherited[[1L]], FALSE))) {
     return(NULL)
   }
-  if (delayed && is.null(literal_function_definition(value[[1L]]))) {
-    return(NULL)
-  }
-  if (is.null(scope_value_closure(value[[1L]], scope, lookup))) {
+  if (delayed && (is.null(literal_function_definition(value[[1L]])) ||
+                    is.null(scope_value_closure(value[[1L]], scope, lookup)))) {
     return(NULL)
   }
   list(name = name[[1L]], value = value[[1L]])
