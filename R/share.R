@@ -792,7 +792,8 @@ plan_share_expressions <- function(dots,
         vapply(preceding_ordinary, `[[`, character(1), "name"),
         preceding_shares$names
       ),
-      reparented = analyses[[i]]$reparented
+      reparented = analyses[[i]]$reparented,
+      selection_strings = TRUE
     )
     if (length(share_dependency) > 0L) {
       dependency <- share_dependency[[1L]]
@@ -4644,10 +4645,18 @@ abort_share_predicate <- function(kind, parent = NULL) {
 # value into a following `mutate()`, or fold the alias into one expression --
 # and naming the marker instead would put a name no summary has into a message
 # about the caller's own summaries.
+#
+# `selection_strings` also reads a string literal a selection position names,
+# as `selection_string_names()` does. The forward check sets it, because
+# `local_summary_selection()` removes an earlier share from a later selection's
+# proxy and nothing restates the missing column that leaves. Still unread: a
+# name reaching `all_of()` through a variable, and the unnamed top-level
+# `across()` string forms, which fail on another path before this check runs.
 expression_alias_dependencies <- function(expr, aliases, env = emptyenv(),
                                           mask = character(),
                                           reparented = list(),
-                                          deferred_selection = FALSE) {
+                                          deferred_selection = FALSE,
+                                          selection_strings = FALSE) {
   if (length(aliases) == 0L) {
     return(character())
   }
@@ -4657,7 +4666,8 @@ expression_alias_dependencies <- function(expr, aliases, env = emptyenv(),
       function_rebound = lookup_rebound_names(
         expr, env, mask, function_lookup = TRUE
       ),
-      reparented = reparented, deferred_selection = deferred_selection
+      reparented = reparented, deferred_selection = deferred_selection,
+      selection_strings = selection_strings
     )
   ))
   if (unresolved_lookup_name() %in% symbols) {
@@ -4954,7 +4964,8 @@ call_part_symbols <- function(expr, scope, lookup) {
   call_head <- static_call_head(expr)
   call_name <- static_call_name(expr)
   parts <- scope_call_args(expr, call_name, scope_bound_names(scope), lookup)
-  selection <- if (isTRUE(lookup$deferred_selection)) {
+  selection <- if (isTRUE(lookup$deferred_selection) ||
+                     isTRUE(lookup$selection_strings)) {
     static_spelling_name(expr, "selection")
   }
   selection_positions <- if (identical(selection, "pick")) {
@@ -5008,12 +5019,16 @@ call_part_symbols <- function(expr, scope, lookup) {
         is_known_base_frame_call(expr, call_name, scope, lookup)) ||
        !is.null(scope_remapped_closure_list(expr, call_name, scope, lookup)))
   for (index in seq_along(parts)) {
-    read_symbols <- if (index %in% selection_positions) {
+    selects <- index %in% selection_positions
+    read_symbols <- if (selects && isTRUE(lookup$deferred_selection)) {
       selection_dependency_symbols
     } else {
       scoped_data_symbols
     }
     reads <- c(reads, read_symbols(parts[[index]], scope, parts_lookup))
+    if (selects && isTRUE(lookup$selection_strings)) {
+      reads <- c(reads, selection_string_names(parts[[index]]))
+    }
     scope <- scope_after_possible_removals(parts[[index]], scope, lookup)
   }
   unique(c(
@@ -5043,6 +5058,29 @@ selection_dependency_symbols <- function(expr, scope, lookup) {
     ), use.names = FALSE))
   }
   scoped_data_symbols(expr, scope, lookup)
+}
+
+# The column names a selection argument spells as string literals: bare, under
+# an operator tidyselect walks, or as the literal vector `all_of()` is given.
+# `any_of()` is not read, because it selects nothing rather than refusing a
+# name its data lacks (#1619); nor is any other helper's argument, which is a
+# pattern rather than a name.
+selection_string_names <- function(expr) {
+  if (rlang::is_quosure(expr)) {
+    return(selection_string_names(rlang::quo_get_expr(expr)))
+  }
+  if (is.character(expr) && is.null(attributes(expr))) {
+    return(expr[!is.na(expr) & nzchar(expr)])
+  }
+  args <- if (is_selection_walk_call(expr)) {
+    static_call_args(expr)
+  } else if (identical(static_call_name(expr), "all_of") &&
+               (static_call_ns(expr) %||% "dplyr") %in%
+                 c("dplyr", "tidyselect")) {
+    static_call_args(expr)
+  }
+  unlist(lapply(args, selection_string_names), use.names = FALSE) %||%
+    character()
 }
 
 # A statically selected literal branch, without evaluating its selector.
