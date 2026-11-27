@@ -1842,9 +1842,17 @@ promise_expression <- function(name, env) {
   eval(call("substitute", as.name(name), env), envir = baseenv())
 }
 
+# Whether the planner reads a promise bound in `env` as its value: base and a
+# package environment hold lazy-load promises, which run no caller code, and a
+# caller's own delayed binding stays unread (#1793).
+reads_promise_as_value <- function(env) {
+  identical(env, baseenv()) || is_package_environment(env)
+}
+
 # Reads a literal or an existing plain caller constant without forcing a
-# promise or active binding; a promise counts only when its expression is
-# such a constant. Mask names remain owned by local execution.
+# caller's promise or an active binding; a caller's promise counts only when
+# its expression is such a constant, and a base or package promise is read as
+# its value (#1809). Mask names remain owned by local execution.
 known_context_constant <- function(expr, lookup) {
   if (rlang::is_missing(expr)) return(NULL)
   if (rlang::is_quosure(expr)) {
@@ -1868,7 +1876,8 @@ known_context_constant <- function(expr, lookup) {
   while (!identical(current, emptyenv())) {
     if (exists(name, envir = current, inherits = FALSE)) {
       if (bindingIsActive(name, current)) return(NULL)
-      value <- if (rlang::env_binding_are_lazy(current, name)) {
+      value <- if (rlang::env_binding_are_lazy(current, name) &&
+                     !reads_promise_as_value(current)) {
         promise_expression(name, current)
       } else {
         get(name, envir = current, inherits = FALSE)
@@ -3540,9 +3549,7 @@ known_across_function_names <- function(parsed, env) {
           if (bindingIsActive(name, current)) {
             return(character())
           }
-          base_binding <- identical(current, baseenv()) ||
-            identical(current, asNamespace("base"))
-          binding <- if (base_binding || is_package_environment(current) ||
+          binding <- if (reads_promise_as_value(current) ||
                            !rlang::env_binding_are_lazy(current, name)) {
             get(name, envir = current, inherits = FALSE)
           } else {

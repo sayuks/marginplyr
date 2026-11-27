@@ -2471,14 +2471,15 @@ unnamed_across_source_hint <- function(dot, name, position, columns) {
 }
 
 # Whether `name` resolves from `env` to a caller's unforced promise, which
-# `force()` would evaluate. A package environment's promises are read as values
-# by `known_across_function_names()`.
+# `force()` would evaluate. A base or package environment's promises are read
+# as values, by `known_context_constant()` and `known_across_function_names()`
+# alike (`reads_promise_as_value()`).
 is_unevaluated_binding <- function(name, env) {
   while (!identical(env, emptyenv())) {
     if (exists(name, envir = env, inherits = FALSE)) {
       return(!bindingIsActive(name, env) &&
                rlang::env_binding_are_lazy(env, name) &&
-               !identical(env, baseenv()) && !is_package_environment(env))
+               !reads_promise_as_value(env))
     }
     env <- parent.env(env)
   }
