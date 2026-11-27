@@ -324,7 +324,7 @@ explicitly and pass the data frame.
 view names, stored view definitions, macro names, and the search path, to
 check that the input hides no source work behind a view or macro before
 its types are read. It binds no table of yours. Table macros, macros you
-define, \code{query()}, \code{query_table()}, the json extension's
+define, \code{query()}, \code{query_table()}, the JSON extension's
 \code{json_execute_serialized_sql()}, and views without stored SQL are
 refused, except a data frame registered with \code{duckdb::duckdb_register()}.
 A function sharing its name with a table macro is refused as that macro
