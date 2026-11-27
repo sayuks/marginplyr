@@ -110,10 +110,8 @@ static_spelling_rules <- function() {
         names = "data.frame"
       )
     },
-    # A pipe that inserts its left side as the first argument of the call on
-    # its right; `%T>%` does so and then returns the left side. `%$%` exposes
-    # the left side as an environment instead, so it supplies no input and is
-    # absent.
+    # The pipes ADR 0019's *Amendment: independent data-mask ownership* reads
+    # as supplying the input of the operation on their right.
     data_pipe = function() {
       list(
         namespaces = c("magrittr", "dplyr"),
@@ -121,13 +119,9 @@ static_spelling_rules <- function() {
         names = c("%>%", "%!>%", "%T>%")
       )
     },
-    # Every exported dplyr verb that evaluates caller-written arguments against
-    # its own input -- a data mask or a tidyselect selection -- at the dplyr
-    # version DESCRIPTION requires, superseded ones included. Defunct ones are
-    # absent because they never evaluate. The verbs taking a function,
-    # `group_map()`, `group_modify()`, `group_walk()` and `with_groups()`, are
-    # absent too: which mask owns that function's body depends on its value
-    # (#1652). `test-nested-data-masks.R` holds this list against a written set.
+    # The dplyr verbs ADR 0019's *Amendment: independent data-mask ownership*
+    # selects, each with its input formal. `test-nested-data-masks.R` holds
+    # this list against a written set.
     dplyr_mask = function() {
       scoped <- c(
         "mutate", "transmute", "summarise", "summarize", "filter", "arrange",
