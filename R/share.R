@@ -2451,7 +2451,9 @@ validate_share_request <- function(outputs,
 # evaluated; later, all three are. Otherwise, when `outputs_unknown` says the
 # analysis could not name its outputs rather than knew it names none, the hint
 # says so, with the `pattern` of the names a literal `.names` can produce
-# (#1810).
+# (#1810). An `across()` with default names whose selection the column names
+# alone settle, running no caller code, and select none of, names no input
+# column in any position and has no hint.
 unnamed_across_source_hint <- function(dot, name, position, columns,
                                        outputs_unknown) {
   expr <- rlang::quo_get_expr(dot)
@@ -2487,7 +2489,9 @@ unnamed_across_source_hint <- function(dot, name, position, columns,
       }
     }
   }
-  if (!outputs_unknown) {
+  if (!outputs_unknown || (
+    is.null(parsed$names) && selects_no_column(parsed$cols, env, columns)
+  )) {
     return(NULL)
   }
   # Written first, the selection and `.names` are evaluated before the call
@@ -2496,20 +2500,52 @@ unnamed_across_source_hint <- function(dot, name, position, columns,
   unpack_false <- across_unpack_is_false(parsed$unpack, env)
   list(
     kind = "unknown", name = NULL, reorder = position > 1L && unpack_false,
-    pattern = if (unpack_false && is_literal_across_template(parsed$names)) {
+    pattern = if (unpack_false && rlang::is_string(parsed$names)) {
       across_template_pattern(parsed$names)
     }
   )
 }
 
-# The regular expression matching every name a `.names` template interpolating
-# only `{.col}` and `{.fn}` can produce, whatever the columns and functions.
+# Whether `cols`, evaluated in `env`, is a selection tidyselect settles from
+# the column names alone without caller code, and selects none of `columns`.
+# `FALSE` where that is not known.
+selects_no_column <- function(cols, env, columns) {
+  if (rlang::is_quosure(cols)) {
+    env <- rlang::quo_get_env(cols)
+    cols <- rlang::quo_get_expr(cols)
+  }
+  if (rlang::is_missing(cols) ||
+        !is_name_only_expr(cols, env, columns, allow_caller_code = FALSE)) {
+    return(FALSE)
+  }
+  tryCatch(
+    length(tidyselect::eval_select(
+      rlang::new_quosure(cols, env), grouping_name_proxy(columns)
+    )) == 0L,
+    error = function(cnd) FALSE
+  )
+}
+
+# The regular expression matching every name a literal `.names` template can
+# produce, whatever its components evaluate to: its literal text, as glue's
+# own parser splits it without evaluating anything, around each component.
+# NULL where glue cannot parse it.
 across_template_pattern <- function(template) {
-  pieces <- regmatches(
-    template, gregexpr("\\{\\.(?:col|fn)\\}", template, perl = TRUE),
-    invert = TRUE
-  )[[1L]]
-  pieces <- gsub("([][.\\\\|()^$*+?])", "\\\\\\1", pieces, perl = TRUE)
+  marker <- "\001"
+  if (grepl(marker, template, fixed = TRUE)) {
+    return(NULL)
+  }
+  expanded <- tryCatch(
+    glue::glue(template, .envir = emptyenv(),
+               .transformer = function(text, envir) marker),
+    error = function(cnd) NULL
+  )
+  if (is.null(expanded)) {
+    return(NULL)
+  }
+  pieces <- strsplit(paste0(expanded, "\002"), marker, fixed = TRUE)[[1L]]
+  pieces[[length(pieces)]] <- sub("\002$", "", pieces[[length(pieces)]])
+  pieces <- gsub("([][{}.\\\\|()^$*+?])", "\\\\\\1", pieces, perl = TRUE)
   paste0("^", paste(pieces, collapse = ".*"), "$")
 }
 

@@ -763,8 +763,9 @@ test_that("an unpacked across() is not offered a reorder", {
   }
 })
 
-# An `across()` whose outputs are known, or whose literal `.names` cannot
-# produce the source, leaves the source an input column.
+# An `across()` whose outputs are known, whose literal `.names` cannot produce
+# the source, or whose selection the names settle as empty, leaves the source
+# an input column.
 test_that("an across() that cannot produce the source keeps the column hint", {
   data <- data.frame(g = c("a", "a", "b"), x = c(1, 2, 5), y = c(10, 20, 30))
   column <- "`x` is a column of the input, not a summary defined earlier"
@@ -780,6 +781,17 @@ test_that("an across() that cannot produce the source keeps the column hint", {
     ),
     summarize_with_margins(
       data, dplyr::across(dplyr::starts_with("zzz"), sum), total = sum(x),
+      s = share_of_total(x), .grouping = rollup(g)
+    ),
+    summarize_with_margins(
+      data, md = stats::median(x),
+      dplyr::across(dplyr::starts_with("zzz"), sum),
+      s = share_of_total(x), .grouping = rollup(g)
+    ),
+    # Every name this template produces holds its literal `_`.
+    summarize_with_margins(
+      data, md = stats::median(x),
+      dplyr::across(c(x, y), sum, .names = "{.col}_{sub('q', '', .col)}"),
       s = share_of_total(x), .grouping = rollup(g)
     )
   )) {
