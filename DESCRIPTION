@@ -439,7 +439,8 @@ Config/testthat/start-first:
     share-deferred-calls,
     share-eval-parent,
     share-function-naming,
-    share-function-constructors
+    share-function-constructors,
+    share-str-glue-process
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
