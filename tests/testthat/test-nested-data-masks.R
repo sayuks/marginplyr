@@ -665,9 +665,12 @@ test_that("a verb on the right of %!>% owns its arguments (#1827)", {
     )
   }
 })
+# nolint end
 
 # `%$%` exposes its left side as an environment rather than inserting it as
-# the first argument, so it supplies no input and is not a data pipe.
+# the first argument, so it supplies no input and is not a data pipe. Its
+# infix spelling is what the registry is asked to leave unrecognised.
+# nolint start: pipe_consistency_linter.
 test_that("%$% keeps ordinary traversal (#1827)", {
   `%$%` <- magrittr::`%$%`
   input <- tibble::tibble(g = c("a", "a", "b"), v = c(1, 2, 4))

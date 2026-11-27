@@ -435,10 +435,8 @@ test_that("cleanup failure retains interrupts before and after failure", {
   }
 })
 
-# A time limit is not the name probe's answer: R delivers it as an unclassed
-# error, which the conservative arm would read as a name that resolves, and
-# the rest of compute() then ran with no limit (#1805). The limit expires
-# inside the probe's statement and must still end the call, leaving no table.
+# The limit expires inside the probe's statement and must still end the call,
+# leaving no table (#1805).
 test_that("a time limit in SQLite's destination name probe ends compute()", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
