@@ -528,7 +528,9 @@ whatever the statement, with the DuckDB call condition; this is the shape the
 value-function names of #1647 took. The names are one hand-kept constant,
 `duckdb_implicit_functions`, which a test asserts each reached without a call
 head on the DuckDB under test, so a name DuckDB adds later is admitted until it
-is listed. The check reads only a snapshot the operation already took and adds
+is listed. A name only one supported version reaches from syntax, such as
+`factorial` behind postfix `!` on DuckDB 2.0 (#1818), is listed for every
+version, and the test asserts its form where that version runs. The check reads only a snapshot the operation already took and adds
 no query, so a statement that names no relation and no call head binds without
 it. Refusing a caller macro named like any built-in function was rejected:
 it also refuses statements that never reach the macro. Recognising each syntax

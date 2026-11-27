@@ -832,7 +832,7 @@ test_that("a caller macro DuckDB binds without a call head refuses (#1780)", {
   writeLines(c("k", "source_tail"), path)
   expect_identical(typed_plans(), plans)
   for (name in c("+", "count_star", "struct_pack", "list_value", "date_part",
-                 "~~")) {
+                 "~~", "factorial", "regexp_matches", "trunc")) {
     macro <- DBI::dbQuoteIdentifier(con, name)
     DBI::dbExecute(con, paste0(
       "CREATE MACRO ", macro, "(a := NULL, b := NULL) AS ",
@@ -890,17 +890,31 @@ test_that("each implicitly bound function name is reached without a head", {
     to_days = "INTERVAL (1) DAY", to_hours = "INTERVAL (1) HOUR",
     to_minutes = "INTERVAL (1) MINUTE", to_seconds = "INTERVAL (1) SECOND",
     to_milliseconds = "INTERVAL (1) MILLISECOND",
-    to_microseconds = "INTERVAL (1) MICROSECOND"
+    to_microseconds = "INTERVAL (1) MICROSECOND",
+    # The INTERVAL constructor truncates a fractional count to an integer,
+    # so this macro returns one in place of the text the others return.
+    trunc = "CAST(INTERVAL (1.5) DAY AS VARCHAR)"
   )
-  expect_setequal(names(forms), duckdb_implicit_functions)
+  # DuckDB 1.5 binds postfix `!` and `~` to its own functions however the
+  # catalog names a macro, so those names have no form to assert there.
+  if (utils::packageVersion("duckdb") >= "2.0.0") {
+    forms <- c(forms, factorial = "5!", regexp_matches = "'a' ~ 'a'")
+  }
+  expect_setequal(names(forms), setdiff(
+    duckdb_implicit_functions,
+    if (utils::packageVersion("duckdb") < "2.0.0") {
+      c("factorial", "regexp_matches")
+    }
+  ))
   for (name in names(forms)) {
     macro <- DBI::dbQuoteIdentifier(con, name)
+    body <- if (name == "trunc") "7" else "'reached'"
     DBI::dbExecute(con, paste0(
-      "CREATE MACRO ", macro, "(a := NULL, b := NULL, c := NULL) AS 'reached'"
+      "CREATE MACRO ", macro, "(a := NULL, b := NULL, c := NULL) AS ", body
     ))
     expect_identical(
       DBI::dbGetQuery(con, paste("SELECT", forms[[name]], "AS r"))$r,
-      "reached", label = forms[[name]]
+      if (name == "trunc") "7 days" else "reached", label = forms[[name]]
     )
     DBI::dbExecute(con, paste("DROP MACRO", macro))
   }

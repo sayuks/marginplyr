@@ -582,7 +582,8 @@ duckdb_implicit_functions <- c(
   "timezone", "ltrim", "rtrim", "regexp_full_match", "like_escape",
   "ilike_escape", "list_apply", "contains", "to_millennia", "to_centuries",
   "to_decades", "to_years", "to_quarters", "to_months", "to_weeks", "to_days",
-  "to_hours", "to_minutes", "to_seconds", "to_milliseconds", "to_microseconds"
+  "to_hours", "to_minutes", "to_seconds", "to_milliseconds", "to_microseconds",
+  "trunc", "factorial", "regexp_matches"
 )
 
 # Table functions that bind SQL text passed as a value, refused by name in
