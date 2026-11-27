@@ -1012,7 +1012,7 @@ test_that("a caller macro DuckDB binds without a call head refuses (#1780)", {
   writeLines(c("k", "source_tail"), path)
   expect_identical(typed_plans(), plans)
   for (name in c("+", "count_star", "struct_pack", "list_value", "date_part",
-                 "~~")) {
+                 "~~", "factorial", "regexp_matches", "trunc")) {
     macro <- DBI::dbQuoteIdentifier(con, name)
     DBI::dbExecute(con, paste0(
       "CREATE MACRO ", macro, "(a := NULL, b := NULL) AS ",
@@ -1039,12 +1039,78 @@ test_that("a caller macro DuckDB binds without a call head refuses (#1780)", {
   }
 })
 
+test_that("a caller macro named with operator characters refuses (#1813)", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  writeLines(c("k", "101"), path)
+  reader <- paste0("read_csv_auto(", DBI::dbQuoteString(con, path), ")")
+  DBI::dbWriteTable(con, "t", data.frame(g = "a", v = 1L, j = "{\"a\":1}"))
+  t <- dplyr::tbl(con, "t")
+  unrelated <- dplyr::select(t, g, v)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  plan <- inspect_grouping(
+    unrelated, .grouping = grouping_set(where(is.numeric))
+  )$included
+  # DuckDB 2.0 lexes a backtick as a quoted identifier, 1.5 as an operator.
+  operators <- c("@@", "->>", "<<=", "!!", "|/",
+                 if (utils::packageVersion("duckdb") < "2.0.0") "`")
+  for (operator in operators) {
+    macro <- DBI::dbQuoteIdentifier(con, operator)
+    DBI::dbExecute(con, paste0(
+      "CREATE MACRO ", macro, "(a := NULL, b := NULL) AS ",
+      "(SELECT first(k) FROM ", reader, ")"
+    ))
+    form <- paste0("j ", operator, " 'a'")
+    sql <- paste0("SELECT g, v, ", form, " AS y FROM t")
+    DBI::dbExecute(con, paste("CREATE VIEW operator_view AS", sql))
+    infix <- rlang::call2(paste0("%", operator, "%"), quote(j), "a")
+    inputs <- list(
+      dplyr::tbl(con, dbplyr::sql(sql), vars = c("g", "v", "y")),
+      dplyr::mutate(t, y = dplyr::sql(form)),
+      dplyr::mutate(t, y = !!infix),
+      dplyr::tbl(con, "operator_view"),
+      unrelated
+    )
+    for (value in c("101", "source_tail")) {
+      writeLines(c("k", value), path)
+      for (input in inputs) {
+        expect_error(inspect_grouping(
+          input, .grouping = grouping_set(where(is.numeric))
+        ), "DuckDB call", fixed = TRUE, class = "marginplyr_error",
+        info = operator)
+        expect_duckdb_catalog_only()
+        expect_error(
+          summarize_with_margins(input, n = dplyr::n(), .grouping = rollup(g)),
+          "DuckDB call", fixed = TRUE, class = "marginplyr_error",
+          info = operator
+        )
+        expect_duckdb_catalog_only()
+      }
+    }
+    # Name-only inspection opens nothing.
+    expect_identical(inspect_grouping(
+      unrelated, .grouping = grouping_set(v)
+    )$included, "(v)")
+    expect_equal(nrow(last_sent_queries()), 0L)
+    DBI::dbExecute(con, "DROP VIEW operator_view")
+    DBI::dbExecute(con, paste("DROP MACRO", macro))
+  }
+  expect_identical(inspect_grouping(
+    unrelated, .grouping = grouping_set(where(is.numeric))
+  )$included, plan)
+})
+
 test_that("each implicitly bound function name is reached without a head", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
-  # The syntax that binds each name in duckdb_implicit_functions.
-  forms <- c(
+  # Operators DuckDB binds as functions, the class duckdb_operator_name()
+  # decides by its characters.
+  operators <- c(
     "+" = "2 + 1", "-" = "2 - 1", "*" = "2 * 1", "/" = "2 / 1", "%" = "2 % 1",
     "//" = "2 // 1", "^" = "2 ^ 1", "**" = "2 ** 1", "||" = "'a' || 'b'",
     "<<" = "2 << 1", ">>" = "2 >> 1", "&" = "2 & 1", "|" = "2 | 1",
@@ -1053,6 +1119,12 @@ test_that("each implicitly bound function name is reached without a head", {
     "<=>" = "[1.0] <=> [1.0]", "~~" = "'a' LIKE 'a'",
     "!~~" = "'a' NOT LIKE 'a'", "~~*" = "'a' ILIKE 'a'",
     "!~~*" = "'a' NOT ILIKE 'a'", "~~~" = "'a' GLOB 'a'",
+    "@@" = "'a' @@ 'a'", "->>" = "'a' ->> 'a'", "<<=" = "2 <<= 1",
+    "!!" = "!! 2", "|/" = "|/ 4"
+  )
+  expect_true(all(duckdb_operator_name(names(operators))))
+  # The syntax that binds each name in duckdb_implicit_functions.
+  forms <- c(
     count_star = "COUNT(*)", list_value = "[1]", struct_pack = "{'a': 1}",
     row = "(1, 2)", map = "MAP {'a': 1}",
     date_part = "EXTRACT(year FROM DATE '2020-01-01')",
@@ -1070,17 +1142,32 @@ test_that("each implicitly bound function name is reached without a head", {
     to_days = "INTERVAL (1) DAY", to_hours = "INTERVAL (1) HOUR",
     to_minutes = "INTERVAL (1) MINUTE", to_seconds = "INTERVAL (1) SECOND",
     to_milliseconds = "INTERVAL (1) MILLISECOND",
-    to_microseconds = "INTERVAL (1) MICROSECOND"
+    to_microseconds = "INTERVAL (1) MICROSECOND",
+    # The INTERVAL constructor truncates a fractional count to an integer,
+    # so this macro returns one in place of the text the others return.
+    trunc = "CAST(INTERVAL (1.5) DAY AS VARCHAR)"
   )
-  expect_setequal(names(forms), duckdb_implicit_functions)
+  # DuckDB 1.5 binds postfix `!` and `~` to its own functions however the
+  # catalog names a macro, so those names have no form to assert there.
+  if (utils::packageVersion("duckdb") >= "2.0.0") {
+    forms <- c(forms, factorial = "5!", regexp_matches = "'a' ~ 'a'")
+  }
+  expect_setequal(names(forms), setdiff(
+    duckdb_implicit_functions,
+    if (utils::packageVersion("duckdb") < "2.0.0") {
+      c("factorial", "regexp_matches")
+    }
+  ))
+  forms <- c(operators, forms)
   for (name in names(forms)) {
     macro <- DBI::dbQuoteIdentifier(con, name)
+    body <- if (name == "trunc") "7" else "'reached'"
     DBI::dbExecute(con, paste0(
-      "CREATE MACRO ", macro, "(a := NULL, b := NULL, c := NULL) AS 'reached'"
+      "CREATE MACRO ", macro, "(a := NULL, b := NULL, c := NULL) AS ", body
     ))
     expect_identical(
       DBI::dbGetQuery(con, paste("SELECT", forms[[name]], "AS r"))$r,
-      "reached", label = forms[[name]]
+      if (name == "trunc") "7 days" else "reached", label = forms[[name]]
     )
     DBI::dbExecute(con, paste("DROP MACRO", macro))
   }

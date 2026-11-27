@@ -750,12 +750,14 @@ rollback to you, read none of your tables, and are recorded by
 `last_sent_queries()` as `share_dialect_transaction` rows.
 
 A dialect is asked about type alone; *[Lazy execution
-boundaries][share-boundaries]* says where a summary that is not one value per
-grouping row surfaces. On DuckDB and PostgreSQL the result query checks a
+boundaries][share-boundaries]* says which summary that is not one value per
+grouping row is detected. On DuckDB and PostgreSQL the result query checks a
 bare, single-argument `UNNEST()` at the top level of a direct `dbplyr::sql()`
 share source, such as `SUM(amount) + UNNEST(ARRAY[10])`: an array of zero or
 more than one element causes a database error on execution. The check recognizes SQL expressions
-with standard quotes and without comments.
+with standard quotes and without comments. Any other direct SQL source must
+itself return one value per grouping row; unless the database refuses it, one
+that returns several or none is not detected.
 
 With `.check_share_source = FALSE` on live SQLite, a direct `collect()` keeps
 a declared double share when the result is empty or a finite prefix contains

@@ -372,6 +372,14 @@ Unresolved readers are refused before binding and direct the caller to
 established metadata or explicit collection. Name-only inspection continues to
 use captured names.
 
+A JSON file replacement scan is named by the suffix `.json`, `.jsonl`,
+`.ndjson`, `.geojson` or `.geojsonl`, in any case, optionally followed by
+`.gz` or `.zst`, or by `?` and more text, as measured on DuckDB 2.0.1, which
+added the GeoJSON pair (#1814); `.geojsonseq`, `.ndgeojson`, `.topojson`,
+`.jsonld`, `.json5` and `.jsonc` are not replaced. The suffixes are matched on
+every supported version, so on DuckDB 1.5 an unresolved `.geojson` relation,
+which fails to bind there, is refused instead.
+
 DuckDB's [JSON loading reference][json-loading] documents its inference options.
 The additional record-mode boundary is implemented by
 `JSONMultiFileInfo::BindReader` in the
@@ -406,8 +414,9 @@ inheriting the caller's common table expressions. Existing reader checks apply
 inside those definitions. Cycles, macro calls and table functions whose safety
 is not established are refused before binding, with the option to supply
 established reader metadata directly or collect explicitly. A table function's
-safety is not established when authored SQL refuses it: `query()` and
-`query_table()`, which bind SQL text given as a value, and a CSV or JSON reader
+safety is not established when authored SQL refuses it: `query()`,
+`query_table()` and the json extension's `json_execute_serialized_sql()`
+(#1812), which bind a statement given as a value, and a CSV or JSON reader
 that has not disabled inference. Any other table function, such as
 `read_parquet()`, `range()` or `unnest()`, is admitted inside a view as it is
 when written directly (#1651). View definitions
@@ -525,10 +534,17 @@ from a call head has no head for the scan to see (#1780): an operator such as
 for `COUNT(*)` or `struct_pack` for `{...}`. While the operation's catalog
 snapshot holds such a macro, typed metadata is refused for the connection,
 whatever the statement, with the DuckDB call condition; this is the shape the
-value-function names of #1647 took. The names are one hand-kept constant,
-`duckdb_implicit_functions`, which a test asserts each reached without a call
-head on the DuckDB under test, so a name DuckDB adds later is admitted until it
-is listed. The check reads only a snapshot the operation already took and adds
+value-function names of #1647 took. An operator is decided by the name's
+characters (#1813): DuckDB binds an operator token it has no rule of its own
+for as the function of that name, so the names a caller can reach that way are
+open-ended, and a caller macro named only with operator characters refuses,
+including the comparison operators DuckDB 2.0 does not reach from syntax,
+since excluding them would be a second list measured on one version. The other
+names are one hand-kept constant, `duckdb_implicit_functions`, which a test
+asserts each reached without a call head on the DuckDB under test, so a name
+DuckDB adds later is admitted until it is listed. A name only one supported version reaches from syntax, such as
+`factorial` behind postfix `!` on DuckDB 2.0 (#1818), is listed for every
+version, and the test asserts its form where that version runs. The check reads only a snapshot the operation already took and adds
 no query, so a statement that names no relation and no call head binds without
 it. Refusing a caller macro named like any built-in function was rejected:
 it also refuses statements that never reach the macro. Recognising each syntax
