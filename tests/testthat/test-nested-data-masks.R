@@ -676,3 +676,21 @@ test_that("%$% keeps ordinary traversal (#1827)", {
     c(FALSE, FALSE)
   )
 })
+
+test_that("a verb on the right of %T>% owns its arguments (#1826)", {
+  `%T>%` <- magrittr::`%T>%`
+  input <- tibble::tibble(g = c("a", "a", "b"), v = c(1, 2, 4))
+  nested_g <- nested_verb_frame()
+  expect_nested_verb_value(input, rlang::quo(nrow(
+    nested_g %T>% summarize_with_margins(k = dplyr::n(), .grouping = NULL)
+  )), 3L)
+  expect_error(
+    summarize_with_margins(
+      input,
+      n = nrow(nested_g %T>% dplyr::filter(grouping_bit(g) == 0L)),
+      .grouping = rollup(g)
+    ),
+    "can only be used inside `summarize_with_margins()`",
+    fixed = TRUE
+  )
+})

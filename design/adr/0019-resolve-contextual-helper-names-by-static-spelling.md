@@ -782,6 +782,14 @@ reads the rebuilt call's head rather than its position, so the pair around a
 `list()` or `c()` is dropped wherever one is rebuilt; neither is an infix
 operator, so no operand grouping depends on it.
 
+The right-hand side of a data pipe is the one position that rule does not
+read by head (#1826). There a pair around a function literal or a qualified
+name is not grouping: it is what tells magrittr to apply the value rather than
+insert `.` into it as a call, so dropping it fails an expression native dplyr
+evaluates. A rebuilt pipe whose written right-hand side was parenthesized keeps
+one pair there whatever its head. No `across()` `.fns` stands in that
+position, so #1602's output names are unaffected.
+
 Restoring the pair only for a lazy SQL input is rejected: the rebuild does not
 know the backend, and the pair is the caller's own spelling, which every
 consumer already receives from the same expression in a native summary.

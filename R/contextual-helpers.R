@@ -111,13 +111,14 @@ static_spelling_rules <- function() {
       )
     },
     # A pipe that inserts its left side as the first argument of the call on
-    # its right. `%$%` exposes the left side as an environment instead, so it
-    # supplies no input and is absent.
+    # its right; `%T>%` does so and then returns the left side. `%$%` exposes
+    # the left side as an environment instead, so it supplies no input and is
+    # absent.
     data_pipe = function() {
       list(
         namespaces = c("magrittr", "dplyr"),
         contextual = FALSE,
-        names = c("%>%", "%!>%")
+        names = c("%>%", "%!>%", "%T>%")
       )
     },
     # Every exported dplyr verb that evaluates caller-written arguments against
