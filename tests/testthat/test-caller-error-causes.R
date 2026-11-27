@@ -160,6 +160,42 @@ test_that("direct Package refusals retain their public call context", {
   )
 })
 
+# A verb the caller calls from inside another verb's summary or `.grouping`
+# predicate already blamed its own call; the enclosing verb leaves it, so a
+# refusal of the inner `.grouping` is not reported against the outer one
+# (#1806).
+test_that("an inner Margin verb's refusal keeps the call it blamed", {
+  sales <- data.frame(region = c("E", "E", "W"), v = 1:3)
+  lookup <- data.frame(k = 1:2)
+  lookup_sets <- function() nrow(inspect_grouping(lookup, .grouping = "k"))
+  pred <- function(x) {
+    inspect_grouping(lookup, .grouping = "k")
+    TRUE
+  }
+  calls <- list(
+    function() {
+      summarize_with_margins(
+        sales, n = dplyr::n() * lookup_sets(), .grouping = rollup(region)
+      )
+    },
+    function() {
+      summarize_with_margins(
+        sales, n = dplyr::n(), .grouping = rollup(where(pred))
+      )
+    },
+    function() expand_with_margins(sales, .grouping = rollup(where(pred))),
+    function() inspect_grouping(sales, .grouping = rollup(where(pred)))
+  )
+  for (outer in calls) {
+    refusal <- expect_error(
+      outer(), "A character vector was supplied", class = "marginplyr_error"
+    )
+    expect_identical(
+      conditionCall(refusal), quote(inspect_grouping(lookup, .grouping = "k"))
+    )
+  }
+})
+
 test_that("generated across glue checks retain their own reporting", {
   data <- data.frame(g = c("a", "b"), x = c(1, 3))
   collision <- expect_error(
