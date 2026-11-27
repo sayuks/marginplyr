@@ -8,6 +8,9 @@ constructed_function_reads <- function() {
     sum(as.function(list(quote(prior)))()),
     sum(as.function(alist(prior))()),
     sum(as.function(list(x = 1, quote(prior)))()),
+    # A default evaluated where the list is built leaves the body readable.
+    sum(as.function(list(x = -1, quote(prior)))()),
+    sum(rlang::new_function(list(x = c(1, 2)), quote(prior))()),
     sum(as.function(list(as.name("prior")))()),
     sum(as.function(list(quote(prior)), envir = environment())()),
     sum(rlang::new_function(NULL, quote(prior))()),
@@ -55,6 +58,7 @@ test_that("a function built reading no earlier summary keeps its value", {
     summed = rlang::new_function(NULL, quote(sum(x)))(),
     formal = (function(share) rlang::new_function(NULL, quote(share))())(2),
     default = rlang::new_function(list(share = 2), quote(share))(),
+    negative = as.function(list(share = -2, quote(share)))(),
     local = {
       share <- 2
       as.function(list(quote(share)))()
@@ -67,6 +71,7 @@ test_that("a function built reading no earlier summary keeps its value", {
   expect_equal(result$summed, c(1, 3, 4))
   expect_equal(result$formal, rep(2, 3L))
   expect_equal(result$default, rep(2, 3L))
+  expect_equal(result$negative, rep(-2, 3L))
   expect_equal(result$local, rep(2, 3L))
   expect_equal(result$base, rep(1, 3L))
   expect_equal(result$literal, c(1, 3, 4))

@@ -5245,9 +5245,10 @@ literal_function_definition <- function(expr) {
 # The literal a known constructor builds from language written in place, and
 # NULL for any other call (#1831): base `as.function()` of a literal `list()`
 # or `alist()`, `rlang::new_function()` given `NULL` or such a list of formals
-# and a body, and `rlang::new_formula(NULL, rhs)`. Each formal default and the
-# body is a constant or a constructor `static_language_values()` reads to one
-# language object. `$literal` is the `function` or `~` call, and `$placed`
+# and a body, and `rlang::new_formula(NULL, rhs)`. The body is a constant or a
+# constructor `static_language_values()` reads to one language object; a
+# formal default `constructed_list_elements()` cannot read is NULL in the
+# literal. `$literal` is the `function` or `~` call, and `$placed`
 # whether it is enclosed by the current frame, as an omitted environment
 # makes it; one the walk cannot place is not taken to be that frame.
 #
@@ -5267,7 +5268,8 @@ constructed_function_literal <- function(expr, scope, lookup) {
       return(NULL)
     }
     elements <- constructed_list_elements(parts$x, scope, lookup)
-    if (length(elements) == 0L) {
+    if (length(elements) == 0L ||
+          length(elements) %in% attr(elements, "unreadable")) {
       return(NULL)
     }
     body <- list(elements[[length(elements)]])
@@ -5325,7 +5327,10 @@ constructed_function_literal <- function(expr, scope, lookup) {
 # The elements of a written argument list a constructor reads: `alist()` and
 # `rlang::exprs()` as written, and base `list()` or `pairlist()` and
 # `rlang::pairlist2()` element by element through
-# `constructed_language_value()`. NULL where any element is not readable.
+# `constructed_language_value()`. An element that is not readable there, a
+# value computed as the list is built, is NULL and its index is in the
+# `unreadable` attribute: language it computes is held in a value, outside the
+# walk as #1807's are, and its build-time reads are the call's own arguments.
 constructed_list_elements <- function(expr, scope, lookup) {
   expr <- unparenthesized_value(expr)
   name <- static_call_name(expr)
@@ -5347,6 +5352,7 @@ constructed_list_elements <- function(expr, scope, lookup) {
     # An injection operand is evaluated where the list is built.
     return(if (length(injection_operands(expr)) == 0L) elements)
   }
+  unreadable <- integer()
   for (index in seq_along(elements)) {
     # A missing element is read by subscript, never bound to a name.
     if (identical(name, "pairlist2") && rlang::is_missing(elements[[index]])) {
@@ -5354,11 +5360,12 @@ constructed_list_elements <- function(expr, scope, lookup) {
     }
     value <- constructed_language_value(elements[[index]])
     if (is.null(value)) {
-      return(NULL)
+      unreadable <- c(unreadable, index)
+      value <- list(NULL)
     }
     elements[index] <- value
   }
-  elements
+  structure(elements, unreadable = unreadable)
 }
 
 # The one value a written argument is statically known to be, as a
