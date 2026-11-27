@@ -99,7 +99,7 @@ test_that("a deprecated selection on SQLite leaves the argument unevaluated", {
 
 test_that("a deprecated selection on DuckDB leaves the argument unevaluated", {
   skip_if_suggest_absent("duckdb")
-  con <- DBI::dbConnect(duckdb::duckdb())
+  con <- duckdb_test_connection()
   withr::defer(DBI::dbDisconnect(con, shutdown = TRUE))
   expect_argument_unevaluated(
     dplyr::copy_to(con, deprecation_data(), "deprecation_data"),
