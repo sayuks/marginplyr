@@ -729,7 +729,8 @@ plan_share_expressions <- function(dots,
     if (length(analyses[[i]]$records) == 0L) {
       unnamed_across_source_hint(
         dots[[i]], dot_names[[i]], i, colnames(selection_proxy),
-        outputs_unknown = isTRUE(analyses[[i]]$outputs_unknown)
+        outputs_unknown = isTRUE(analyses[[i]]$outputs_unknown),
+        preceding = preceding_dot_names(dot_names, i)
       )
     }
   })
@@ -2451,12 +2452,13 @@ validate_share_request <- function(outputs,
 # evaluated; later, all three are. Otherwise, when `outputs_unknown` says the
 # analysis could not name its outputs rather than knew it names none, the hint
 # says so, with the `pattern` of the names a literal or default `.names` can
-# produce (#1810). An `across()` whose selection the column names alone
-# settle, running no caller code, and select none of, names nothing whatever
-# its `.names`, in any position, and has no hint; one they settle to some
-# columns has a pattern whose `{.col}` is one of them.
+# produce (#1810). An `across()` whose selection the names of the input's
+# `columns` and the `preceding` summaries alone settle, running no caller code,
+# and select none of, names nothing whatever its `.names`, in any position, and
+# has no hint. `preceding` is `NULL` where those summaries' names are not
+# known.
 unnamed_across_source_hint <- function(dot, name, position, columns,
-                                       outputs_unknown) {
+                                       outputs_unknown, preceding) {
   expr <- rlang::quo_get_expr(dot)
   if (nzchar(name) || !is_across_call(expr) || contains_share_helper(expr)) {
     return(NULL)
@@ -2493,7 +2495,9 @@ unnamed_across_source_hint <- function(dot, name, position, columns,
   if (!outputs_unknown) {
     return(NULL)
   }
-  selected <- settled_selection_names(parsed$cols, env, columns)
+  selected <- if (!is.null(preceding)) {
+    settled_selection_names(parsed$cols, env, unique(c(columns, preceding)))
+  }
   if (!is.null(selected) && length(selected) == 0L) {
     return(NULL)
   }
@@ -2505,6 +2509,14 @@ unnamed_across_source_hint <- function(dot, name, position, columns,
     kind = "unknown", name = NULL, reorder = position > 1L && unpack_false,
     pattern = if (unpack_false) across_names_pattern(parsed$names, selected)
   )
+}
+
+# The names of the dots before `position`, which are the summaries an
+# `across()` there selects from besides the input, or `NULL` where one of them
+# is unnamed and its outputs are not read here.
+preceding_dot_names <- function(dot_names, position) {
+  prior <- dot_names[seq_len(position - 1L)]
+  if (all(nzchar(prior))) prior
 }
 
 # The names of the columns `cols`, evaluated in `env`, selects among `columns`,

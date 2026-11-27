@@ -899,6 +899,20 @@ test_that("an across() whose names settle its selection keeps column hints", {
   }
 })
 
+# A later across() selects from the summaries before it too, so one that
+# renames `md` to the source may produce it (#1810).
+test_that("a settled selection of an earlier summary keeps the unknown hint", {
+  data <- data.frame(g = c("a", "a", "b"), x = c(1, 2, 5), y = c(10, 20, 30))
+  refused <- expect_error(summarize_with_margins(
+    data, md = stats::median(x), dplyr::across(dplyr::any_of(c(x = "md")), sum),
+    s = share_of_total(x), .grouping = rollup(g)
+  ), "unknown preceding ordinary summary `x`", class = "marginplyr_error")
+  expect_match(conditionMessage(refused), "not known before the call runs",
+               fixed = TRUE)
+  expect_no_match(conditionMessage(refused), "is a column of the input",
+                  fixed = TRUE)
+})
+
 # The share planner reads `.fns` as one function or a literal `list()`; any
 # other spelling produces columns the planner has not proven (#1772).
 test_that("an unread `.fns` hints at a literal list()", {
