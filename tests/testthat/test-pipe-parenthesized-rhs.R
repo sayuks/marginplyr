@@ -29,8 +29,9 @@ pipe_rhs_cases <- function() {
     literal = rlang::quo(v %>% (function(x) sum(x))),
     lambda = rlang::quo(v %>% (\(x) sum(x))),
     exported = rlang::quo(v %>% (base::sum)),
-    # jarl-ignore internal_function: The `:::` spelling is the case under test.
-    internal = rlang::quo(v %>% (base:::sum)),
+    internal =
+      # jarl-ignore internal_function: `:::` is the spelling under test.
+      rlang::quo(v %>% (base:::sum)),
     prefix = rlang::quo(magrittr::`%>%`(v, (function(x) sum(x)))),
     tee = rlang::quo(sum(v %T>% (function(x) invisible(x)))),
     scaled = rlang::quo(sum(v %>% (function(x) x * 2))),
