@@ -662,13 +662,18 @@ function is chosen dynamically still names no Contextual helper by itself.
 ## Amendment: independent data-mask ownership
 
 #781 bounds Contextual helper recognition to the operation that owns the
-expression. A nested Margin operation or dplyr data-mask verb owns its
+expression. A nested Margin operation or dplyr or tidyr data-mask verb owns its
 arguments; the enclosing Margin summary neither searches them for its helpers
 nor rewrites them with its Grouping plan or selection proxy. The nested call's
 input expression still belongs to the enclosing scope and is traversed.
 
 The registry records these ordinary operation spellings, their namespaces,
-and their input formal. Recognition follows the same namespace and redundant
+and their input formal. It covers every exported dplyr verb that evaluates
+caller-written arguments against its own input, as a data mask or a tidyselect
+selection, at the dplyr version `DESCRIPTION` requires, superseded verbs
+included, and tidyr's `uncount()` (#1819). A verb taking a function, such as
+`group_modify()` or `with_groups()`, is not one: which mask owns that
+function's body depends on its value (#1652). Recognition follows the same namespace and redundant
 parenthesis rules as other registered spellings; it does not resolve a caller
 binding or qualify the operation's head. An unrecognized or computed operation
 head retains ordinary recursive traversal. Function literals, their defaults,

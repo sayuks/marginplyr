@@ -433,3 +433,202 @@ test_that("supported Arrow summaries stay lazy until collection", {
     expect_identical(dplyr::collect(actual$result)$answer, 3L)
   }
 })
+
+# A Margin summary of `expr`, a quosure, at `rollup(g)` and a plain summary at
+# each grain both return the value the nested call gives evaluated alone.
+expect_nested_verb_value <- function(input, expr, alone) {
+  outer <- dplyr::collect(summarize_with_margins(
+    input, n = !!expr, .grouping = rollup(g), .sort = "last"
+  ))
+  native <- dplyr::summarise(
+    dplyr::collect(input), n = !!expr, .by = dplyr::all_of("g")
+  )
+  expect_identical(native$n, rep(alone, nrow(native)))
+  expect_identical(outer$n, rep(alone, nrow(outer)))
+}
+
+nested_verb_frame <- function() {
+  tibble::tibble(g = c("x", "y", "z"), aa = 1:3)
+}
+
+test_that("filter_out() and nest_by() own their selections (#1819)", {
+  input <- tibble::tibble(g = c("a", "a", "b"), v = c(1, 2, 4))
+  nested_g <- nested_verb_frame()
+  expect_nested_verb_value(input, rlang::quo(nrow(dplyr::filter_out(
+    nested_g, dplyr::if_any(dplyr::everything(), ~ .x == "x")
+  ))), 2L)
+  expect_nested_verb_value(input, rlang::quo(ncol(dplyr::nest_by(
+    nested_g, dplyr::across(dplyr::everything())
+  ))), 3L)
+})
+
+# dplyr expands `pick()` syntactically in any call argument, so a plain summary
+# reads this nested-only column from the outer data and fails; the registered
+# `filter()` already returns its own mask's value, the control here.
+test_that("pick() inside filter_out() and nest_by() reads its own frame", {
+  input <- tibble::tibble(g = c("a", "a", "b"), v = c(1, 2, 4))
+  nested_g <- nested_verb_frame()
+  picked <- function(expr) {
+    summarize_with_margins(input, n = !!expr, .grouping = rollup(g))$n
+  }
+  expect_identical(
+    picked(quote(nrow(dplyr::filter(nested_g, dplyr::pick(aa)[[1L]] > 1L)))),
+    rep(2L, 3L)
+  )
+  expect_identical(
+    picked(quote(nrow(dplyr::filter_out(
+      nested_g, dplyr::pick(aa)[[1L]] > 1L
+    )))),
+    rep(1L, 3L)
+  )
+  expect_identical(
+    picked(quote(nrow(dplyr::nest_by(nested_g, dplyr::pick(aa)[[1L]] > 1L)))),
+    rep(2L, 3L)
+  )
+})
+
+test_that("filter_out() and nest_by() own them on a dtplyr input (#1819)", {
+  skip_if_suggest_absent("dtplyr")
+  input <- dtplyr::lazy_dt(data.frame(g = c("a", "a", "b"), v = c(1, 2, 4)))
+  nested_g <- nested_verb_frame()
+  expect_nested_verb_value(input, rlang::quo(nrow(dplyr::filter_out(
+    nested_g, dplyr::if_any(dplyr::everything(), ~ .x == "x")
+  ))), 2L)
+  expect_nested_verb_value(input, rlang::quo(ncol(dplyr::nest_by(
+    nested_g, dplyr::across(dplyr::everything())
+  ))), 3L)
+})
+
+test_that("Grouping helpers inside filter_out() are refused as in filter()", {
+  input <- tibble::tibble(g = c("a", "a", "b"), v = c(1, 2, 4))
+  nested_g <- nested_verb_frame()
+  for (helper in list(quote(grouping_bit(g)), quote(grouping_id(g)))) {
+    for (verb in c("filter", "filter_out")) {
+      expr <- rlang::call2(
+        "nrow",
+        rlang::call2(rlang::call2("::", quote(dplyr), rlang::sym(verb)),
+                     quote(nested_g), rlang::call2("==", helper, 0L))
+      )
+      expect_error(
+        summarize_with_margins(input, n = !!expr, .grouping = rollup(g)),
+        "can only be used inside `summarize_with_margins()`",
+        fixed = TRUE
+      )
+    }
+  }
+})
+
+test_that("superseded and tidyr verbs own their selections (#1819)", {
+  input <- tibble::tibble(g = c("a", "a", "b"), v = c(1, 2, 4))
+  nested_g <- nested_verb_frame()
+  expect_nested_verb_value(input, rlang::quo(nrow(dplyr::top_n(
+    nested_g, 1, dplyr::if_any(dplyr::everything(), ~ .x == "x")
+  ))), 1L)
+  expect_nested_verb_value(input, rlang::quo(nrow(dplyr::top_frac(
+    nested_g, 0.34, dplyr::if_any(dplyr::everything(), ~ .x == "x")
+  ))), 1L)
+  expect_nested_verb_value(input, rlang::quo(ncol(dplyr::group_nest(
+    nested_g, dplyr::across(dplyr::everything())
+  ))), 3L)
+  expect_nested_verb_value(input, rlang::quo(nrow(tidyr::uncount(
+    nested_g,
+    as.integer(dplyr::if_any(dplyr::everything(), ~ .x == "x"))
+  ))), 1L)
+  expect_nested_verb_value(input, rlang::quo(dplyr::sample_n(
+    nested_g, 1,
+    weight = as.numeric(dplyr::if_any(dplyr::everything(), ~ .x == "x"))
+  )$aa), 1L)
+  expect_nested_verb_value(input, rlang::quo(dplyr::sample_frac(
+    nested_g, 0.34,
+    weight = as.numeric(dplyr::if_any(dplyr::everything(), ~ .x == "x"))
+  )$aa), 1L)
+})
+
+# Each verb opens a mask of its own, so its `cur_group_id()` describes that
+# mask's one group rather than the Margin summary's branches.
+test_that("cur_group_id() inside a verb's own mask is dplyr's (#1819)", {
+  input <- tibble::tibble(g = c("a", "a", "b"), v = c(1, 2, 4))
+  nested_g <- nested_verb_frame()
+  expect_nested_verb_value(input, rlang::quo(nrow(dplyr::top_n(
+    nested_g, 1, -dplyr::cur_group_id()
+  ))), 3L)
+  expect_nested_verb_value(input, rlang::quo(nrow(tidyr::uncount(
+    nested_g, dplyr::cur_group_id() * 2L
+  ))), 6L)
+  expect_nested_verb_value(input, rlang::quo(ncol(dplyr::group_nest(
+    nested_g, k = dplyr::cur_group_id()
+  ))), 2L)
+  expect_nested_verb_value(input, rlang::quo(dplyr::mutate_at(
+    nested_g, "aa", ~ . + dplyr::cur_group_id()
+  )$aa[[1L]]), 2L)
+  expect_nested_verb_value(input, rlang::quo(dplyr::summarise_all(
+    nested_g, ~ dplyr::cur_group_id()
+  )$aa), 1L)
+  expect_nested_verb_value(input, rlang::quo(nrow(dplyr::filter_at(
+    nested_g, "aa", dplyr::all_vars(. > dplyr::cur_group_id())
+  ))), 2L)
+})
+
+test_that("a share source may read a nested frame's own column (#1819)", {
+  input <- tibble::tibble(g = c("a", "a", "b"), v = c(1, 2, 4))
+  nested_t <- tibble::tibble(total = c(1, 5, 3))
+  for (source in list(
+    rlang::quo(sum(dplyr::filter(nested_t, total > 2)$total)),
+    rlang::quo(sum(dplyr::top_n(nested_t, 2, total)$total))
+  )) {
+    actual <- summarize_with_margins(
+      input, total = sum(v), x = !!source, p = share_of_total(x),
+      .grouping = rollup(g)
+    )
+    expect_identical(actual$x, c(8, 8, 8))
+    expect_identical(actual$p, c(1, 1, 1))
+  }
+})
+
+# `with_groups()` takes the verb as a value, so which mask owns its arguments
+# depends on that value (#1652); its lambda form is the supported spelling.
+test_that("with_groups() keeps ordinary traversal (#1819)", {
+  input <- tibble::tibble(g = c("a", "a", "b"), v = c(1, 2, 4))
+  nested_g <- nested_verb_frame()
+  expect_null(independent_mask_input(quote(dplyr::with_groups(
+    nested_g, g, dplyr::mutate, k = 1
+  ))))
+  expect_nested_verb_value(input, rlang::quo(dplyr::with_groups(
+    nested_g, g, function(data) dplyr::mutate(data, k = dplyr::cur_group_id())
+  )$k[[3L]]), 3L)
+})
+
+# The written set of verbs that evaluate caller arguments against their own
+# input at the required dplyr version; see `dplyr_mask` in
+# `static_spelling_rules()` for what is left out and why.
+test_that("the nested-verb registry names every data-mask verb (#1819)", {
+  scoped <- c(
+    "mutate", "transmute", "summarise", "summarize", "filter", "arrange",
+    "group_by", "distinct", "select", "rename"
+  )
+  dplyr_verbs <- c(
+    "add_count", "add_tally", "arrange", "count", "distinct", "do", "filter",
+    "filter_out", "group_by", "group_nest", "group_split", "mutate",
+    "nest_by", "pull", "reframe", "relocate", "rename", "rename_with",
+    "rowwise", "sample_frac", "sample_n", "select", "slice", "slice_head",
+    "slice_max", "slice_min", "slice_sample", "slice_tail", "summarise",
+    "summarize", "tally", "top_frac", "top_n", "transmute", "ungroup",
+    paste0(rep(scoped, each = 3L), c("_all", "_at", "_if"))
+  )
+  expect_setequal(static_spelling_names("dplyr_mask"), dplyr_verbs)
+  expect_setequal(static_spelling_names("tidyr_mask"), "uncount")
+  expect_true(all(dplyr_verbs %in% getNamespaceExports("dplyr")))
+  expect_true("uncount" %in% getNamespaceExports("tidyr"))
+  inputs <- c(
+    static_spelling_rule("dplyr_mask")$inputs,
+    static_spelling_rule("tidyr_mask")$inputs
+  )
+  owners <- c(
+    rlang::set_names(rep("dplyr", length(dplyr_verbs)), dplyr_verbs),
+    uncount = "tidyr"
+  )
+  for (verb in names(inputs)) {
+    formals <- names(formals(getExportedValue(owners[[verb]], verb)))
+    expect_identical(formals[[1L]], inputs[[verb]], label = verb)
+  }
+})
