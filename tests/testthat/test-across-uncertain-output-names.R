@@ -947,7 +947,7 @@ expect_base_constant_names <- function(name, values, input = identity) {
       dplyr::all_of(!!rlang::sym(name)), sum, .names = "{.col}_t"
     ),
     s = share_of_total(!!rlang::sym(paste0(values[[1L]], "_t"))),
-    .grouping = rollup(g)
+    .grouping = rollup("g")
   )
   expect_constant_share(result)
 }
