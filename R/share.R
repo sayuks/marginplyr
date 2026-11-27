@@ -8825,8 +8825,10 @@ scope_after_evaluated_language <- function(language, frame, scope, lookup,
 }
 
 # A known evaluator as the `eval()` of the code it runs: base `evalq()`, which
-# is defined to be one, and base `with()`, `rlang::with_env()` and
-# `rlang::inject()` given the environment that code runs in (ADR 0010). NULL
+# is defined to be one, base `eval.parent()`, which from its caller is
+# `eval(expr, parent.frame(n))` and with `n = 0` is `eval(expr)`, and base
+# `with()`, `rlang::with_env()` and `rlang::inject()` given the environment
+# that code runs in (ADR 0010). NULL
 # where R runs it in the current frame or in data enclosed by it, which the
 # ordinary call walk reads: `inject()` without `env`, and `with()` or
 # `with_env()` on a known base `list()` or `data.frame()`. Any other argument
@@ -8836,6 +8838,7 @@ evaluator_as_eval <- function(expr, name, scope, lookup) {
   evaluator <- switch(
     name %||% "",
     evalq = list(package = "base", fun = base::evalq),
+    eval.parent = list(package = "base", fun = base::eval.parent),
     with = list(package = "base", fun = base::with, environment = "data"),
     with_env = list(package = "rlang", fun = rlang::with_env,
                     environment = "env"),
@@ -8853,6 +8856,19 @@ evaluator_as_eval <- function(expr, name, scope, lookup) {
   if (identical(name, "evalq")) {
     parts$expr <- rlang::call2(quote(base::quote), parts$expr)
     return(rlang::call2(quote(base::eval), !!!parts))
+  }
+  if (identical(name, "eval.parent")) {
+    # A depth other than a literal 0 is handed to `parent.frame()`, which
+    # places a literal depth and leaves any other unplaceable.
+    depth <- parts$n %||% 1L
+    if (identical(unparenthesized_value(depth), 0) ||
+          identical(unparenthesized_value(depth), 0L)) {
+      return(rlang::call2(quote(base::eval), parts$expr))
+    }
+    return(rlang::call2(
+      quote(base::eval), parts$expr,
+      rlang::call2(quote(base::parent.frame), depth)
+    ))
   }
   environment <- parts[[evaluator$environment]]
   if (is.null(environment) ||

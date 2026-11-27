@@ -1314,7 +1314,7 @@ is_reflective_lookup <- function(callee_name) {
 # under it -- adding it here would answer the same thing twice.
 is_reflective_evaluation <- function(callee_name) {
   !is.null(callee_name) &&
-    callee_name %in% c("eval", "eval_tidy", "eval_bare")
+    callee_name %in% c("eval", "eval.parent", "eval_tidy", "eval_bare")
 }
 
 # The function a call reaches, read from its own name where it has one and from
