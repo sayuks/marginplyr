@@ -490,9 +490,9 @@ grouping_spec_call <- function(x, kind) {
   }
   rlang::call2(
     rule$constructor,
-    !!!lapply(args, function(arg) inline_grouping_spec_calls(
-      rlang::quo_squash(arg)
-    ))
+    !!!lapply(args, function(arg) {
+      inline_grouping_spec_calls(rlang::quo_squash(arg))
+    })
   )
 }
 

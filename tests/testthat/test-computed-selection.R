@@ -151,7 +151,9 @@ test_that("a caller's function keeps a converted warning and a lookup", {
   converted <- local({
     withr::local_options(warn = 2)
     expect_error(
-      inspect_grouping(data, .by = slow_registry(region), .grouping = rollup(dt))
+      inspect_grouping(
+        data, .by = slow_registry(region), .grouping = rollup(dt)
+      )
     )
   })
   expect_false(inherits(converted, "marginplyr_error"))
