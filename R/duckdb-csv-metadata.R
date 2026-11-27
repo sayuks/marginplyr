@@ -711,8 +711,13 @@ validate_duckdb_authored_calls <- function(tokens, catalog) {
   materialized <- tokens[heads] == "materialized" & !quoted[heads] &
     tokens[previous] == "not" & heads > 2L &
     tokens[pmax(1L, heads - 2L)] == "as"
+  # A star stands where a select item starts; elsewhere `*` multiplies, and
+  # its right operand is a call.
+  before <- pmax(1L, heads - 2L)
   modifier <- tokens[heads] %in% c("exclude", "replace", "rename") &
-    !quoted[heads] & tokens[previous] == "*" & !quoted[previous]
+    !quoted[heads] & tokens[previous] == "*" & !quoted[previous] &
+    heads > 2L & !quoted[before] &
+    tokens[before] %in% c("select", "distinct", "all", ",", ".", "(")
   # Alias column lists and OVER/FILTER clauses follow closing expressions.
   implicit_alias <- heads > 1L & tokens[previous] == ")" & !quoted[previous]
   heads <- heads[!alias & !materialized & !modifier &

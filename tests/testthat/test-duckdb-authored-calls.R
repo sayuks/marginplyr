@@ -546,6 +546,64 @@ test_that("no word the call scan reads as syntax reaches a caller macro", {
 })
 
 
+test_that("a star modifier is told from a multiplication (#1836)", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  writeLines(c("k", "101"), path)
+  reader <- paste0("read_csv_auto(", DBI::dbQuoteString(con, path), ")")
+  DBI::dbWriteTable(con, "t", data.frame(g = c("a", "b"), v = 1:2))
+  modifiers <- c("exclude", "replace", "rename")
+  for (name in modifiers) {
+    DBI::dbExecute(con, paste0(
+      "CREATE MACRO ", name, "(a) AS (SELECT first(k) FROM ", reader, ")"
+    ))
+  }
+  authored <- function(sql) {
+    dplyr::tbl(con, dbplyr::sql(sql), vars = c("g", "v", "y"))
+  }
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  for (sql in c(
+    "SELECT * EXCLUDE (v), 1 AS v, 2 AS y FROM t",
+    "SELECT DISTINCT * EXCLUDE (v), 1 AS v, 2 AS y FROM t",
+    "SELECT ALL * EXCLUDE (v), 1 AS v, 2 AS y FROM t",
+    "SELECT g, * EXCLUDE (g), 2 AS y FROM t",
+    "SELECT t.* REPLACE (v + 1 AS v), 2 AS y FROM t",
+    "SELECT g, v, y FROM (SELECT * RENAME (v AS y), v FROM t)",
+    "SELECT g, COLUMNS(* EXCLUDE (g)), 2 AS y FROM t"
+  )) {
+    expect_identical(inspect_grouping(
+      authored(sql), .grouping = grouping_set(where(is.numeric))
+    )$included, "(v, y)", label = sql)
+  }
+  t <- dplyr::tbl(con, "t")
+  inputs <- c(
+    lapply(modifiers, function(name) {
+      authored(paste0("SELECT g, v, v * ", name, "(v) AS y FROM t"))
+    }),
+    list(
+      authored("SELECT g, v, (v) * exclude(v) AS y FROM t"),
+      authored("SELECT g, v, v ** exclude(v) AS y FROM t"),
+      authored("SELECT g, v, v AS y FROM t WHERE v * exclude(v) > 0"),
+      dplyr::mutate(t, y = v * exclude(v)),
+      dplyr::mutate(t, y = dplyr::sql("v * rename(v)"))
+    )
+  )
+  for (value in c("101", "source_tail", "absent")) {
+    if (value == "absent") unlink(path) else writeLines(c("k", value), path)
+    for (input in inputs) {
+      expect_error(inspect_grouping(
+        input, .grouping = grouping_set(where(is.numeric))
+      ), "DuckDB call", fixed = TRUE, class = "marginplyr_error")
+      expect_duckdb_catalog_only()
+    }
+  }
+})
+
+
 test_that("chained and parenthesis-less macro calls are checked (#1647)", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
