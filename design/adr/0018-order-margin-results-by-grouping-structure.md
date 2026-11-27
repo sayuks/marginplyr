@@ -203,8 +203,9 @@ dbplyr's own `collapse()` and `compute()` drop a frame across a seal; dropping
 it uniformly would have changed SQLite expansions and share-less summaries
 over an ordering that survives, and was not chosen. A share-less summary over
 a frame with no usable ordering, a frame-only input or one whose ordering does
-not survive, returned values framed over an order SQL leaves unspecified
-before #1815, and returns unframed ones since.
+not survive, and a SQLite expansion over a frame-only input, returned values
+framed over an order SQL leaves unspecified before #1815, and return unframed
+ones since.
 
 ## Considered options
 
