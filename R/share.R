@@ -2456,8 +2456,9 @@ validate_share_request <- function(outputs,
 # `columns` and the `preceding` summaries alone settle, running no caller code,
 # and select none of, names nothing whatever its `.names`, in any position, and
 # has no hint. `preceding` is `NULL` where those summaries' names are not
-# known. Where the input's names alone settle the selection, `first_pattern`
-# matches what the `across()` written first would produce, which decides
+# known. Where the input's names alone settle the selection of an `across()`
+# that is not unpacked, `first_pattern` matches what it would produce written
+# first, nothing where written first its selection fails, and so decides
 # whether moving it can help.
 unnamed_across_source_hint <- function(dot, name, position, columns,
                                        outputs_unknown, preceding) {
@@ -2508,7 +2509,7 @@ unnamed_across_source_hint <- function(dot, name, position, columns,
   # either position, and so are the names that replace a `.names` template.
   unpack_false <- across_unpack_is_false(parsed$unpack, env)
   first <- if (unpack_false) {
-    settled_selection_names(parsed$cols, env, columns)
+    settled_selection_names(parsed$cols, env, columns, failed = character())
   }
   list(
     kind = "unknown", name = NULL, reorder = position > 1L && unpack_false,
@@ -2527,8 +2528,7 @@ unnamed_across_source_hint <- function(dot, name, position, columns,
 # The names of the summaries the dots before `position` produce, which an
 # `across()` there selects from besides the input: a named dot's name, and an
 # unnamed `across()`'s recorded outputs from `analyses`. `NULL` where an
-# unnamed dot is not an `across()` (a data frame's records are candidates, not
-# its outputs), holds a share, or has unknown outputs.
+# unnamed dot is not an `across()`, holds a share, or has unknown outputs.
 preceding_summary_names <- function(dots, dot_names, analyses, position) {
   names <- character()
   for (j in seq_len(position - 1L)) {
@@ -2550,9 +2550,10 @@ preceding_summary_names <- function(dots, dot_names, analyses, position) {
 
 # The names of the columns `cols`, evaluated in `env`, selects among `columns`,
 # where tidyselect settles it from the column names alone without caller code;
-# `NULL` where that is not known. A warning settling it raises, as `one_of()`
-# of an absent column does, is muffled: it is the execution's to raise.
-settled_selection_names <- function(cols, env, columns) {
+# `NULL` where that is not known, and `failed` where settling it errors. A
+# warning settling it raises, as `one_of()` of an absent column does, is
+# muffled: it is the execution's to raise.
+settled_selection_names <- function(cols, env, columns, failed = NULL) {
   if (rlang::is_quosure(cols)) {
     env <- rlang::quo_get_env(cols)
     cols <- rlang::quo_get_expr(cols)
@@ -2568,7 +2569,7 @@ settled_selection_names <- function(cols, env, columns) {
       )),
       warning = function(cnd) invokeRestart("muffleWarning")
     ),
-    error = function(cnd) NULL
+    error = function(cnd) failed
   )
 }
 

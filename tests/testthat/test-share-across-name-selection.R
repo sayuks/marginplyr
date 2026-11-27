@@ -973,6 +973,28 @@ test_that("an unnamed dot before a settled selection", {
   ), "unknown preceding ordinary summary `x`", class = "marginplyr_error")
   expect_no_match(conditionMessage(framed), "is a column of the input",
                   fixed = TRUE)
+  expect_no_match(conditionMessage(framed), "Write that", fixed = TRUE)
+})
+
+# Written first, a name-only selection of a later summary fails, so moving the
+# across() cannot make the call accepted (#1810).
+test_that("a selection that fails written first offers no move", {
+  data <- data.frame(g = c("a", "a", "b"), x = c(1, 2, 5), y = c(10, 20, 30))
+  for (across in list(
+    rlang::expr(dplyr::across(dplyr::all_of(c(x = "mean.y.")), sum)),
+    rlang::expr(dplyr::across(mean.y., sum, .names = "x"))
+  )) {
+    info <- rlang::expr_deparse(across)
+    refused <- expect_error(summarize_with_margins(
+      data, data.frame(mean(y)), !!across, s = share_of_total(x),
+      .grouping = rollup(g)
+    ), "unknown preceding ordinary summary `x`", class = "marginplyr_error",
+    info = info)
+    expect_match(conditionMessage(refused), "not known before the call runs",
+                 fixed = TRUE, info = info)
+    expect_no_match(conditionMessage(refused), "Write that", fixed = TRUE,
+                    info = info)
+  }
 })
 
 # The share planner reads `.fns` as one function or a literal `list()`; any
