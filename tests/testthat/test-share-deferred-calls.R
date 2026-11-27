@@ -74,3 +74,91 @@ test_that("a do.call() that quotes its arguments evaluates no language", {
     "identity"
   )
 })
+
+# rlang's `exec()` builds and evaluates the call `do.call()` builds, with its
+# arguments written in place, and `invoke()` is its deprecated twin taking a
+# list; each is read as its `do.call()` twin is (#1820). purrr's `exec()` is
+# rlang's re-exported. The bare spellings bind rlang's own functions here, as
+# attaching rlang would.
+rlang_builder_reads <- function() {
+  exec <- rlang::exec
+  invoke <- rlang::invoke
+  c(
+    alist(
+      rlang::exec("get", "prior"),
+      rlang::exec("get0", "prior"),
+      rlang::exec("eval", quote(prior)),
+      rlang::exec(get, "prior"),
+      rlang::exec(sum, quote(prior)),
+      rlang::invoke("get", list("prior")),
+      rlang::invoke(get, list("prior")),
+      rlang::invoke(sum, list(quote(prior))),
+      rlang::invoke(sum, list(1), quote(prior))
+    ),
+    rlang::quos(invoke("get", list("prior")), exec(get, "prior")),
+    # Parsed so that the test names no package it does not declare: purrr is
+    # not a dependency, and the walk never runs the call.
+    list(str2lang("purrr::exec('get', 'prior')"))
+  )
+}
+
+test_that("rlang's call builders are read as do.call() is", {
+  hidden <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(100, 300))
+  plain <- data.frame(g = c("a", "b"), x = c(1, 3))
+  expect_share_dependencies(hidden, rlang_builder_reads())
+  expect_share_dependencies(plain, rlang_builder_reads())
+})
+
+test_that("rlang's call builders are read as do.call() is on data.table", {
+  skip_if_suggest_absent("data.table")
+  data <- data.table::data.table(g = c("a", "b"), x = c(1, 3),
+                                 prior = c(100, 300))
+  expect_share_dependencies(data, rlang_builder_reads())
+})
+
+test_that("a call builder removing a local exposes the alias behind it", {
+  data <- data.frame(group = c("a", "b"), x = c(1, 3))
+  removals <- alist(
+    rlang::exec("rm", "prior"),
+    rlang::exec(rm, "prior"),
+    rlang::invoke("rm", list("prior"))
+  )
+  for (removal in removals) {
+    expression <- rlang::expr({
+      prior <- 2
+      identity(!!removal)
+      sum(prior)
+    })
+    expect_error(
+      summarize_with_margins(
+        data, prior = sum(x), value = !!expression,
+        fraction = share_of_total(value), .grouping = rollup(group)
+      ),
+      "depends on earlier summary alias `prior`",
+      class = "marginplyr_error"
+    )
+  }
+})
+
+test_that("a call builder reading no earlier summary keeps its value", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3))
+  # A caller's own function of the same name is not rlang's.
+  exec <- function(.fn, ...) 7
+  invoke <- function(.fn, .args = list(), ...) 7
+  result <- rlang::inject(summarize_with_margins(
+    data,
+    value = sum(x),
+    share = share_of_total(value),
+    named = rlang::exec("sum", x),
+    passed = rlang::exec(sum, x),
+    listed = suppressWarnings(rlang::invoke("sum", list(x))),
+    own_exec = exec("get", "share"),
+    own_invoke = invoke("get", list("share")),
+    .grouping = rollup(g)
+  ))
+  expect_equal(result$named, c(1, 3, 4))
+  expect_equal(result$passed, c(1, 3, 4))
+  expect_equal(result$listed, c(1, 3, 4))
+  expect_equal(result$own_exec, rep(7, 3L))
+  expect_equal(result$own_invoke, rep(7, 3L))
+})

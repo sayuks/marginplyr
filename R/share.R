@@ -4804,6 +4804,17 @@ scoped_data_symbols <- function(expr, scope, lookup) {
       evaluated_language_symbols(expr, scope, lookup)
     )))
   }
+  deferred <- call_builder_as_do_call(expr, call_name, function(expr, name) {
+    is_known_call_builder(expr, name, function(owner) {
+      is_known_package_frame_call(expr, name, owner, scope, lookup)
+    })
+  })
+  if (!is.null(deferred)) {
+    return(unique(c(
+      call_part_symbols(expr, scope, lookup),
+      deferred_call_symbols(deferred, scope, lookup)
+    )))
+  }
   if (identical(callee_name, "do.call")) {
     invocation <- scope_empty_do_call(expr, scope, lookup)
     return(unique(c(
@@ -8645,6 +8656,56 @@ deferred_call_symbols <- function(expr, scope, lookup) {
   deferred_language_symbols(
     literal_list_elements(arguments[[1L]], scope, lookup), scope, lookup
   )
+}
+
+# rlang's `exec()` and `invoke()` as the base `do.call()` each performs, and
+# NULL for any other call or one `known(expr, name)` does not recognize as
+# rlang's. `exec()` takes the function's arguments in place and `invoke()` in
+# `.args` before its dots; both evaluate the call they build in `.env`, which
+# defaults to the caller's environment as `envir` does. An `.args` that is not
+# a literal `list()` stays unread, as a `do.call()` list does.
+call_builder_as_do_call <- function(expr, name, known) {
+  definition <- switch(name %||% "",
+    exec = rlang::exec,
+    invoke = rlang::invoke
+  )
+  if (is.null(definition) || !known(expr, name)) {
+    return(NULL)
+  }
+  parts <- static_matched_arguments(
+    rlang::call2(name, !!!static_call_args(expr)), definition,
+    expand_dots = FALSE
+  )
+  if (is.null(parts) || !".fn" %in% names(parts)) {
+    return(NULL)
+  }
+  dots <- as.list(parts[["..."]])
+  listed <- if (".args" %in% names(parts)) unparenthesized_value(parts$.args)
+  arguments <- if (is.null(listed)) {
+    rlang::call2(quote(base::list), !!!dots)
+  } else if (identical(static_call_name(listed), "list") &&
+               !is_parenthesized(static_call_head(listed))) {
+    rlang::call2(static_call_head(listed), !!!static_call_args(listed),
+                 !!!dots)
+  } else {
+    rlang::call2(quote(base::c), listed, rlang::call2(quote(base::list),
+                                                      !!!dots))
+  }
+  rlang::call2(
+    quote(base::do.call), what = parts$.fn, args = arguments,
+    !!!if (".env" %in% names(parts)) list(envir = parts$.env)
+  )
+}
+
+# Whether a call builder is rlang's, recognized by the binding its name
+# reaches, so a caller's own `exec()` stays an ordinary call: `known(owner)`
+# answers for one owning package. purrr's `exec()` is rlang's re-exported, so
+# its qualified spelling is rlang's; purrr's own `invoke()` is a different
+# function and stays outside the walk with any other wrapper (#1652, #1820).
+is_known_call_builder <- function(expr, name, known) {
+  known("rlang") ||
+    (identical(name, "exec") && identical(static_call_ns(expr), "purrr") &&
+       known("purrr"))
 }
 
 # The elements of a known base `list()` call as written, and none for any

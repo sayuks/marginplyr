@@ -378,6 +378,14 @@ scope_mutation_call <- function(expr, bound, lookup) {
   if (!is.null(name) && name %in% names(rlang_scope_mutations())) {
     return(rlang_scope_mutation_call(expr, name, bound, lookup))
   }
+  deferred <- call_builder_as_do_call(expr, name, function(expr, name) {
+    is_known_call_builder(expr, name, function(owner) {
+      is_known_package_call(expr, name, bound, lookup, owner)
+    })
+  })
+  if (!is.null(deferred)) {
+    return(scope_mutation_call(deferred, bound, lookup))
+  }
   if (is.null(name) ||
         !name %in% c(scope_mutation_names(), "do.call")) {
     return(NULL)
