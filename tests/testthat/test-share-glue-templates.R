@@ -84,3 +84,24 @@ test_that("data.table templates that read no earlier summary remain valid", {
   )
   expect_share_dependency_values(data, independent_template_reads(), 7)
 })
+
+# stringr is a Suggest, so a qualified `stringr::str_glue()` can name a package
+# no library holds. The walk then reads no template, and the call's own
+# evaluation raises the error native dplyr raises. An evaluator table naming
+# such a package for `str_glue` stands in for the absent stringr (#1824).
+test_that("an evaluator whose package is absent raises its own error", {
+  evaluators <- template_evaluators()
+  evaluators$str_glue$package <- "marginplyrabsentpackage"
+  local_mocked_bindings(template_evaluators = function() evaluators)
+  data <- data.frame(g = c("a", "b"), x = c(1, 3))
+  call <- str2lang("marginplyrabsentpackage::str_glue('{sum(x)}')")
+  error <- expect_error(summarize_with_margins(
+    data, value = sum(x), share = share_of_total(value), v = !!call,
+    .grouping = rollup(g)
+  ))
+  expect_false(inherits(error, "marginplyr_error"))
+  native <- expect_error(dplyr::summarize(data, v = !!call))
+  expect_s3_class(error$parent, "packageNotFoundError")
+  expect_identical(conditionMessage(error$parent),
+                   conditionMessage(native$parent))
+})
