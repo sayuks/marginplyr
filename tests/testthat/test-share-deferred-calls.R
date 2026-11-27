@@ -14,6 +14,8 @@ deferred_quoted_reads <- function() {
     do.call(sum, list(substitute(prior))),
     do.call(sum, list(expression(prior))),
     do.call(identity, list(quote(sum(prior)))),
+    # A substitution leaves the language unknown, so every alias is read.
+    do.call(sum, list(base::bquote(prior + .(0)))),
     do.call(max, list(quote(x), quote(prior))),
     do.call(sum, list(x = quote(prior)), quote = FALSE),
     match.fun("do.call")(sum, list(quote(prior)))
@@ -90,6 +92,7 @@ rlang_builder_reads <- function() {
       rlang::exec("eval", quote(prior)),
       rlang::exec(get, "prior"),
       rlang::exec(sum, quote(prior)),
+      rlang::exec(sum, quote(prior), .env = rlang::current_env()),
       rlang::invoke("get", list("prior")),
       rlang::invoke(get, list("prior")),
       rlang::invoke(sum, list(quote(prior))),
@@ -145,6 +148,8 @@ test_that("a call builder reading no earlier summary keeps its value", {
   # A caller's own function of the same name is not rlang's.
   exec <- function(.fn, ...) 7
   invoke <- function(.fn, .args = list(), ...) 7
+  # An `.args` held in a variable is not read, as a `do.call()` list is not.
+  arguments <- list(1, 2)
   result <- rlang::inject(summarize_with_margins(
     data,
     value = sum(x),
@@ -152,6 +157,7 @@ test_that("a call builder reading no earlier summary keeps its value", {
     named = rlang::exec("sum", x),
     passed = rlang::exec(sum, x),
     listed = suppressWarnings(rlang::invoke("sum", list(x))),
+    held = suppressWarnings(rlang::invoke("sum", arguments)),
     own_exec = exec("get", "share"),
     own_invoke = invoke("get", list("share")),
     .grouping = rollup(g)
@@ -159,6 +165,24 @@ test_that("a call builder reading no earlier summary keeps its value", {
   expect_equal(result$named, c(1, 3, 4))
   expect_equal(result$passed, c(1, 3, 4))
   expect_equal(result$listed, c(1, 3, 4))
+  expect_equal(result$held, rep(3, 3L))
   expect_equal(result$own_exec, rep(7, 3L))
   expect_equal(result$own_invoke, rep(7, 3L))
+})
+
+# A `do.call()` without `args`, or an `exec()` without `.fn`, has no list to
+# read, and the call raises the error native dplyr raises (#1807, #1820).
+test_that("a deferred call missing its parts raises its own error", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3))
+  for (call in alist(do.call(sum), rlang::exec())) {
+    info <- rlang::expr_deparse(call)
+    error <- expect_error(summarize_with_margins(
+      data, value = sum(x), share = share_of_total(value), v = !!call,
+      .grouping = rollup(g)
+    ), info = info)
+    expect_false(inherits(error, "marginplyr_error"), info = info)
+    native <- expect_error(dplyr::summarize(data, v = !!call), info = info)
+    expect_identical(conditionMessage(error$parent),
+                     conditionMessage(native$parent), info = info)
+  }
 })
