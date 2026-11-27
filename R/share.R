@@ -4808,7 +4808,7 @@ scoped_data_symbols <- function(expr, scope, lookup) {
     invocation <- scope_empty_do_call(expr, scope, lookup)
     return(unique(c(
       call_part_symbols(invocation %||% expr, scope, lookup),
-      deferred_call_symbols(expr)
+      deferred_call_symbols(expr, scope, lookup)
     )))
   }
   if (
@@ -8613,8 +8613,19 @@ reflective_lookup_symbols <- function(expr, bound, lookup = NULL) {
 # run time, which this walk cannot read, so a `do.call()` of a reflective
 # primitive is reported as a lookup it cannot resolve.
 #
+# Any other function is handed the list's elements as arguments, and an element
+# that is a language object is evaluated there as the code it holds: R builds
+# the call from the values and evaluates it, so `do.call(sum, list(quote(x)))`
+# is `sum(x)`. An element of a literal base `list()` written as one of the
+# constructors `static_language_values()` reads -- `quote()`, `as.name()`,
+# `str2lang()` and the rest -- is therefore walked as that code, unless
+# `quote = TRUE` hands it on as language. Language built by any other call
+# (`call()`, `rlang::syms()`, `lapply(..., as.name)`) or held in a variable,
+# and a list that is not a literal `list()`, stay outside the walk, as a
+# function held as a value does (#1652, #1807).
+#
 # A known closure invocation follows the ordinary call walk.
-deferred_call_symbols <- function(expr) {
+deferred_call_symbols <- function(expr, scope, lookup) {
   argument <- call_formal_argument(expr, "what")
   if (length(argument) == 0L) {
     return(character())
@@ -8623,7 +8634,48 @@ deferred_call_symbols <- function(expr) {
   if (is_reflective_lookup(named) || is_reflective_evaluation(named)) {
     return(unresolved_lookup_name())
   }
-  character()
+  quoted <- base_call_argument(expr, "quote", base::do.call)
+  if (length(quoted) == 1L && isTRUE(unparenthesized_value(quoted[[1L]]))) {
+    return(character())
+  }
+  arguments <- base_call_argument(expr, "args", base::do.call)
+  if (length(arguments) == 0L) {
+    return(character())
+  }
+  deferred_language_symbols(
+    literal_list_elements(arguments[[1L]], scope, lookup), scope, lookup
+  )
+}
+
+# The elements of a known base `list()` call as written, and none for any
+# other expression.
+literal_list_elements <- function(expr, scope, lookup) {
+  expr <- unparenthesized_value(expr)
+  if (!identical(static_call_name(expr), "list") ||
+        !is_known_base_frame_call(expr, "list", scope, lookup)) {
+    return(list())
+  }
+  static_call_args(expr)
+}
+
+# The reads of the language objects among arguments a deferred call evaluates
+# as code: each one written as a constructor `static_language_values()` reads.
+# Any other argument is a value, whose own reads the call's parts report.
+deferred_language_symbols <- function(arguments, scope, lookup) {
+  unique(unlist(lapply(arguments, function(argument) {
+    if (!rlang::is_call(argument)) {
+      return(character())
+    }
+    values <- static_language_values(argument)
+    if (is.null(values)) {
+      return(character())
+    }
+    if (isTRUE(attr(values, "unresolved"))) {
+      return(unresolved_lookup_name())
+    }
+    unlist(lapply(values, scoped_data_symbols, scope = scope, lookup = lookup),
+           use.names = FALSE)
+  }), use.names = FALSE))
 }
 
 # The names the language object handed to `eval()` reads.

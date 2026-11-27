@@ -3600,9 +3600,12 @@ test_that("`do.call()` of a reflective primitive is an unresolved lookup", {
     expression_data_symbols(quote(do.call(base::get, list("share")))),
     unresolved_lookup_name()
   )
-  # A `do.call()` of anything else is left alone: its arguments are values by
-  # the time it runs, and the walk has reported the expressions that built
-  # them.
+  # A `do.call()` of anything else adds nothing to the walk of its parts
+  # unless its literal `list()` holds language written in place, which it
+  # evaluates as code (test-share-deferred-calls.R). Other elements are
+  # values, and the walk has reported the expressions that built them;
+  # language built by another call or held in a variable stays outside the
+  # walk (#1652).
   expect_identical(
     expression_data_symbols(quote(do.call("sum", list(value)))),
     "value"
