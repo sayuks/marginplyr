@@ -441,8 +441,9 @@ scope_mutation_call <- function(expr, bound, lookup) {
 
 # rlang's removals and enclosure setters, each translating its matched
 # arguments into the base call it performs, or NULL when the call removes or
-# replaces nothing (#1677): `env_unbind()`, and `env_bind()` or `env_poke()`
-# given `zap()`, are `rm()`; `fn_env<-` and `set_env()` are `environment<-`;
+# replaces nothing (#1677): `env_unbind()`, and `env_bind()`, `env_poke()`,
+# `env_bind_active()`, `local_bindings()` or `with_bindings()` given `zap()`,
+# are `rm()`; `fn_env<-` and `set_env()` are `environment<-`;
 # and `env_poke_parent()` is `parent.env<-`. A `zap()` that is not a named
 # argument's whole value removes names the walk cannot read.
 rlang_scope_mutations <- function() {
@@ -482,6 +483,20 @@ rlang_scope_mutations <- function() {
       if (length(removed) > 0L && ".env" %in% names(parts)) {
         rlang::call2("rm", !!!removed, envir = parts[[".env"]])
       }
+    },
+    # The removal is read as permanent, though rlang restores the binding when
+    # the frame or `.expr` ends (#1822).
+    local_bindings = function(parts, bound, lookup) {
+      parts[[".env"]] <- parts[[".env"]] %||% parts[[".frame"]] %||%
+        quote(base::environment())
+      rlang_scope_mutations()$env_bind(parts, bound, lookup)
+    },
+    with_bindings = function(parts, bound, lookup) {
+      parts[[".env"]] <- parts[[".env"]] %||% quote(base::environment())
+      rlang_scope_mutations()$env_bind(parts, bound, lookup)
+    },
+    env_bind_active = function(parts, bound, lookup) {
+      rlang_scope_mutations()$env_bind(parts, bound, lookup)
     },
     `fn_env<-` = function(parts, bound, lookup) {
       rlang::call2("environment<-", !!!rlang_renamed_parts(

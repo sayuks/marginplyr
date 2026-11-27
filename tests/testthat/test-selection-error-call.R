@@ -162,3 +162,61 @@ test_that("predicate and nested refusals stay Package conditions", {
     rlang::call_name(conditionCall(nested)), "summarize_with_margins"
   )
 })
+
+# A first unnamed `across()` whose outputs a later share reads has its
+# selection resolved in a planning probe before any branch runs. Its failure
+# owes the caller the chain native dplyr raises for the `across()` they wrote.
+pick_cols <- function() {
+  rlang::abort("The registry is offline.", class = "registry_offline")
+}
+
+expect_first_across_native <- function(data) {
+  shapes <- list(
+    list(quote(dplyr::across(c(v, nope), sum)), "v"),
+    list(quote(dplyr::across(dplyr::all_of(c("v", "nope")), sum)), "v"),
+    list(quote(dplyr::across(dplyr::all_of(pick_cols()), sum)), "v"),
+    list(
+      quote(dplyr::across(dplyr::where(function(x) stop("boom")), sum)),
+      "v"
+    ),
+    list(quote(dplyr::across(dplyr::starts_with("zz") | nope, sum)), "v"),
+    list(quote(dplyr::across(c(v, nope), list(s = sum))), "v_s")
+  )
+  for (shape in shapes) {
+    summary <- shape[[1L]]
+    source <- rlang::sym(shape[[2L]])
+    label <- rlang::expr_deparse(summary)
+    native <- expect_error(dplyr::summarise(
+      as.data.frame(data), !!summary, .by = "g"
+    ))
+    actual <- expect_error(summarize_with_margins(
+      data, !!summary, p = share_of_total(!!source), .grouping = rollup("g")
+    ))
+    expect_identical(
+      conditionMessage(actual), conditionMessage(native), info = label
+    )
+    expect_identical(
+      lapply(condition_chain(actual), class),
+      lapply(condition_chain(native), class),
+      info = label
+    )
+    expect_identical(
+      selection_call_names(actual),
+      c("summarize_with_margins", selection_call_names(native)[-1L]),
+      info = label
+    )
+  }
+}
+
+test_that("a first across selection failing before a share reads natively", {
+  expect_first_across_native(
+    data.frame(g = c("a", "a", "b"), v = c(1, 2, 3), w = c(2, 2, 2))
+  )
+})
+
+test_that("a first across selection failing before a share on data.table", {
+  skip_if_suggest_absent("data.table")
+  expect_first_across_native(
+    data.table::data.table(g = c("a", "a", "b"), v = c(1, 2, 3), w = c(2, 2, 2))
+  )
+})

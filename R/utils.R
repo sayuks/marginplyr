@@ -778,6 +778,16 @@ rebuild_static_call <- function(expr, args, head = static_call_head(expr)) {
   # arguments `static_call_args()` gave them one to one, and the ones that
   # change an argument count are named `across()` and `pick()` calls.
   stopifnot(!rlang::is_quosure(expr) || length(args) == 1L)
+  # On a pipe's right the caller's pair selects applying a function value
+  # rather than inserting `.` into it, so a pair the rebuilt argument lost goes
+  # back however its head reads (ADR 0019, *a rebuilt call keeps the caller's
+  # pair*).
+  if (!is.null(static_spelling_name(expr, "data_pipe")) &&
+        length(args) == 2L &&
+        is_parenthesized(static_call_args(expr)[[2L]]) &&
+        !is_parenthesized(args[[2L]])) {
+    args[[2L]] <- rlang::call2("(", args[[2L]])
+  }
   rebuilt <- rlang::call2(head, !!!args)
   # Argument names live in the call's own pairlist tags rather than in an
   # attribute, so this replaces nothing `call2()` just set.

@@ -339,8 +339,13 @@
 #' execution-time diagnostics name the share, its source summary, and the
 #' original call, as the local ones do.
 #'
-#' On dbplyr, a summary that is not one value per grouping row surfaces as a
-#' database error when the staged query executes. *Parent shares use a staged
+#' On dbplyr, a summary that is not one value per grouping row is detected in
+#' one form: on DuckDB and PostgreSQL, a bare, single-argument `UNNEST()` at
+#' the top level of a direct [dbplyr::sql()] share source, written with
+#' standard quotes and without comments, surfaces as a database error when the
+#' staged query executes. Any other direct SQL source must itself return one
+#' value per grouping row; unless the database refuses it, one that returns
+#' several or none is not detected. *Parent shares use a staged
 #' lazy query* in [Database and lazy backends][db] describes how a dialect is
 #' asked, which answers are reused, and what that sends; its *Backend support
 #' matrix* sets each backend family's share support beside its other answers.
@@ -723,7 +728,8 @@ plan_share_expressions <- function(dots,
   source_hints <- lapply(seq_along(dots), function(i) {
     if (length(analyses[[i]]$records) == 0L) {
       unnamed_across_source_hint(
-        dots[[i]], dot_names[[i]], i, colnames(selection_proxy)
+        dots[[i]], dot_names[[i]], i, colnames(selection_proxy),
+        outputs_unknown = isTRUE(analyses[[i]]$outputs_unknown)
       )
     }
   })
@@ -738,7 +744,7 @@ plan_share_expressions <- function(dots,
     expr <- rlang::quo_get_expr(quo)
     env <- rlang::quo_get_env(quo)
     output_name <- dot_names[[i]]
-    planning_context["source_hint"] <- list(Find(
+    planning_context["source_hints"] <- list(Filter(
       Negate(is.null), source_hints[seq_len(i - 1L)]
     ))
 
@@ -792,7 +798,8 @@ plan_share_expressions <- function(dots,
         vapply(preceding_ordinary, `[[`, character(1), "name"),
         preceding_shares$names
       ),
-      reparented = analyses[[i]]$reparented
+      reparented = analyses[[i]]$reparented,
+      selection_strings = TRUE
     )
     if (length(share_dependency) > 0L) {
       dependency <- share_dependency[[1L]]
@@ -1905,12 +1912,16 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
     # and selection predicates to that execution.
     if (defer_local && contains_summary_selection(expr) &&
           (i > 1L || nzchar(output_name) || independent_shares)) {
+      outputs_unknown <- FALSE
       output_names <- if (nzchar(output_name)) {
         output_name
       } else if (is_across_call(expr)) {
-        predictable_local_across_names(list(quo), c(
-          names(selection_proxy), preceding_names
-        ))
+        predicted <- predict_local_across_names(
+          quo, unique(c(names(selection_proxy), preceding_names)),
+          list(env = env, rebound = character())
+        )
+        outputs_unknown <- is.null(predicted)
+        predicted %||% character()
       } else {
         character()
       }
@@ -1929,15 +1940,19 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
       analyses[[i]] <- list(records = ordinary_summary_records(
         expr, env, proxy, output_names, output_name,
         eligibility, i, preceding_names, reparented, deferred_selection = TRUE
-      ), reparented = reparented)
+      ), reparented = reparented, outputs_unknown = outputs_unknown)
       preceding_names <- c(preceding_names, output_names)
       next
     }
 
+    outputs_unknown <- FALSE
     if (nzchar(output_name)) {
       output_names <- output_name
       eligibility <- if (is_across_call(expr)) "named_across" else "eligible"
     } else if (is_across_call(expr)) {
+      outputs_unknown <- across_output_names_unknown(
+        parse_across_arguments(expr), env
+      )
       output_names <- if (defer_local) {
         tryCatch(
           known_across_output_names(expr, env, selection_proxy),
@@ -1969,7 +1984,10 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
       expr, env, selection_proxy, output_names, output_name,
       eligibility, i, preceding_names, reparented
     )
-    analyses[[i]] <- list(records = records, reparented = reparented)
+    analyses[[i]] <- list(
+      records = records, reparented = reparented,
+      outputs_unknown = outputs_unknown
+    )
     # An argument name alone cannot establish a preceding alias dependency.
     if (!identical(eligibility, "frame_candidate")) {
       preceding_names <- c(preceding_names, output_names)
@@ -2363,8 +2381,9 @@ validate_share_request <- function(outputs,
       }
       # An earlier `across()` whose outputs are unknown is reported ahead of the
       # input-column hint, since it may be what produces the name.
-      if (!is.null(context$source_hint)) {
-        abort_share_source_hint(label, output, source, context$source_hint)
+      hint <- share_source_hint(context, source)
+      if (!is.null(hint)) {
+        abort_share_source_hint(label, output, source, hint)
       }
       if (source %in% context$data_vars) {
         abort_share_column_source(label, output, source, preceding)
@@ -2427,10 +2446,14 @@ validate_share_request <- function(outputs,
 # Why an unnamed `across()` at `position` names no output before the call runs,
 # when the caller can remove the reason: it reads a binding of theirs that has
 # not been evaluated yet, or its `.fns` is neither one function nor a literal
-# `list()`. The caller holds a dot whose outputs are unknown. Only `.fns` is
-# read without forcing in first position, where the selection and `.names` are
-# evaluated; later, all three are.
-unnamed_across_source_hint <- function(dot, name, position, columns) {
+# `list()`. The caller holds a dot that names no output. Only `.fns` is read
+# without forcing in first position, where the selection and `.names` are
+# evaluated; later, all three are. Otherwise, when `outputs_unknown` says the
+# analysis could not name its outputs rather than knew it names none, the hint
+# says so, with the `pattern` of the names a literal `.names` can produce
+# (#1810).
+unnamed_across_source_hint <- function(dot, name, position, columns,
+                                       outputs_unknown) {
   expr <- rlang::quo_get_expr(dot)
   if (nzchar(name) || !is_across_call(expr) || contains_share_helper(expr)) {
     return(NULL)
@@ -2449,10 +2472,7 @@ unnamed_across_source_hint <- function(dot, name, position, columns) {
         across_unpack_is_false(parsed$unpack, env)) {
     return(list(kind = "fns", name = NULL))
   }
-  if (position == 1L) {
-    return(NULL)
-  }
-  for (part in list(parsed$cols, parsed$names)) {
+  for (part in if (position > 1L) list(parsed$cols, parsed$names)) {
     part_env <- env
     if (rlang::is_quosure(part)) {
       part_env <- rlang::quo_get_env(part)
@@ -2467,18 +2487,53 @@ unnamed_across_source_hint <- function(dot, name, position, columns) {
       }
     }
   }
-  NULL
+  if (!outputs_unknown) {
+    return(NULL)
+  }
+  # Written first, the selection and `.names` are evaluated before the call
+  # names its outputs; an unpacked `across()` is named after its execution in
+  # either position, and so are the names that replace a `.names` template.
+  unpack_false <- across_unpack_is_false(parsed$unpack, env)
+  list(
+    kind = "unknown", name = NULL, reorder = position > 1L && unpack_false,
+    pattern = if (unpack_false && is_literal_across_template(parsed$names)) {
+      across_template_pattern(parsed$names)
+    }
+  )
+}
+
+# The regular expression matching every name a `.names` template interpolating
+# only `{.col}` and `{.fn}` can produce, whatever the columns and functions.
+across_template_pattern <- function(template) {
+  pieces <- regmatches(
+    template, gregexpr("\\{\\.(?:col|fn)\\}", template, perl = TRUE),
+    invert = TRUE
+  )[[1L]]
+  pieces <- gsub("([][.\\\\|()^$*+?])", "\\\\\\1", pieces, perl = TRUE)
+  paste0("^", paste(pieces, collapse = ".*"), "$")
+}
+
+# The first of `context$source_hints` that bears on `source`. An `across()`
+# whose outputs are unknown bears on it only when its `.names` can produce it.
+share_source_hint <- function(context, source) {
+  Find(function(hint) {
+    is.null(hint$pattern) || grepl(hint$pattern, source, perl = TRUE)
+  }, context$source_hints)
 }
 
 # Whether `name` resolves from `env` to a caller's unforced promise, which
-# `force()` would evaluate. A package environment's promises are read as values
-# by `known_across_function_names()`.
+# `force()` would evaluate. A base or package environment's promises are read
+# as values, by `known_context_constant()` and `known_across_function_names()`
+# alike (`reads_promise_as_value()`), and a promise of a constant is read as
+# that constant by `known_context_constant()`, so `force()` would change
+# neither (#1811).
 is_unevaluated_binding <- function(name, env) {
   while (!identical(env, emptyenv())) {
     if (exists(name, envir = env, inherits = FALSE)) {
       return(!bindingIsActive(name, env) &&
                rlang::env_binding_are_lazy(env, name) &&
-               !identical(env, baseenv()) && !is_package_environment(env))
+               !reads_promise_as_value(env) &&
+               !is_plain_constant(promise_expression(name, env)))
     }
     env <- parent.env(env)
   }
@@ -2493,6 +2548,31 @@ abort_share_source_hint <- function(label, output, source, hint) {
   # nolint start: object_usage_linter.
   name <- hint$name
   # nolint end
+  if (identical(hint$kind, "unknown") && isTRUE(hint$reorder)) {
+    abort_marginplyr(c(
+      paste0(
+        "{label} {.var {output}} refers to unknown preceding ordinary ",
+        "summary {.var {source}}."
+      ),
+      i = paste0(
+        "A preceding {.fun across} has output names that are not known ",
+        "before the call runs."
+      ),
+      i = "Write that {.fun across} before the other summaries."
+    ))
+  }
+  if (identical(hint$kind, "unknown")) {
+    abort_marginplyr(c(
+      paste0(
+        "{label} {.var {output}} refers to unknown preceding ordinary ",
+        "summary {.var {source}}."
+      ),
+      i = paste0(
+        "A preceding {.fun across} has output names that are not known ",
+        "before the call runs."
+      )
+    ))
+  }
   if (identical(hint$kind, "fns")) {
     abort_marginplyr(c(
       paste0(
@@ -2545,6 +2625,39 @@ abort_share_across_source_hint <- function(source, kind, hint) {
   helper <- share_helper_name(kind)
   name <- hint$name
   # nolint end
+  if (identical(hint$kind, "unknown") && isTRUE(hint$reorder)) {
+    abort_marginplyr(
+      c(
+        paste0(
+          "{.fun across} refers to unknown summary {.var {source}} for ",
+          "{.fun {helper}}."
+        ),
+        i = paste0(
+          "A preceding {.fun across} has output names that are not known ",
+          "before the call runs."
+        ),
+        i = "Write that {.fun across} before the other summaries."
+      ),
+      class = "marginplyr_share_source_unknown_error",
+      source_summary = source
+    )
+  }
+  if (identical(hint$kind, "unknown")) {
+    abort_marginplyr(
+      c(
+        paste0(
+          "{.fun across} refers to unknown summary {.var {source}} for ",
+          "{.fun {helper}}."
+        ),
+        i = paste0(
+          "A preceding {.fun across} has output names that are not known ",
+          "before the call runs."
+        )
+      ),
+      class = "marginplyr_share_source_unknown_error",
+      source_summary = source
+    )
+  }
   if (identical(hint$kind, "fns")) {
     abort_marginplyr(
       c(
@@ -4430,7 +4543,9 @@ resolve_share_selection <- function(expr,
       if (is_unsupported_predicate(cnd)) {
         abort_share_predicate(kind, parent = cnd)
       }
-      abort_share_selection_error(cnd, preceding, context, kind)
+      abort_share_selection_error(
+        cnd, preceding_names, preceding, context, kind
+      )
     }
   )
 }
@@ -4441,8 +4556,12 @@ resolve_share_selection <- function(expr,
 # rather than being flattened into the message. That keeps the class and the
 # chain a caller sees identical to the one the ordinary summary path propagates
 # for the same expression, with only marginplyr's context added on top.
-abort_share_selection_error <- function(cnd, preceding, context, kind) {
-  missing <- share_selection_missing_names(cnd)
+abort_share_selection_error <- function(cnd,
+                                        preceding_names,
+                                        preceding,
+                                        context,
+                                        kind) {
+  missing <- share_selection_missing_names(cnd, preceding_names)
   if (length(missing) == 0L) {
     abort_marginplyr(
       c(
@@ -4511,8 +4630,9 @@ abort_share_source_name <- function(source, preceding, context, kind) {
     )
   }
 
-  if (!is.null(context$source_hint)) {
-    abort_share_across_source_hint(source, kind, context$source_hint)
+  hint <- share_source_hint(context, source)
+  if (!is.null(hint)) {
+    abort_share_across_source_hint(source, kind, hint)
   }
   preceding_candidates <- unique(vapply(
     preceding,
@@ -4553,18 +4673,29 @@ abort_share_source_name <- function(source, preceding, context, kind) {
   )
 }
 
-# The names a failed selection gave, in the order the chain holds them. What
-# each one turns out to be -- a summary defined twice, one that is ineligible,
-# or a name no summary answers at all -- is `abort_share_source_name()`'s
-# question, so this says only what was named. A subscript that is not character
-# names nothing it can report, and neither does the empty string, which
-# `all_of(c(""))` puts in `i` where no summary could answer it.
-share_selection_missing_names <- function(cnd) {
+# The names a failed selection gave that the share's proxy lacks, in the order
+# the chain holds them. What each one turns out to be -- a summary defined
+# twice, one that is ineligible, or a name no summary answers at all -- is
+# `abort_share_source_name()`'s question, so this says only what was missing.
+#
+# Only vctrs' out-of-bounds condition over the proxy's own `names` is read. Its
+# `i` is the whole subscript for a character vector such as `all_of()`'s and
+# the single name for a bare one, so the missing names are those `names` lacks.
+# A condition over another frame's names comes from a caller's helper selecting
+# there, and any other condition names nothing the proxy was asked for; both
+# answer nothing, so `abort_share_selection_error()` keeps them as the parent.
+share_selection_missing_names <- function(cnd, names) {
   subscripts <- unlist(
     lapply(
       condition_chain(cnd),
       function(condition) {
-        if (is.character(condition$i)) condition$i else character()
+        if (inherits(condition, "vctrs_error_subscript_oob") &&
+              is.character(condition$i) &&
+              identical(as.character(condition$names), as.character(names))) {
+          condition$i[!condition$i %in% names]
+        } else {
+          character()
+        }
       }
     ),
     use.names = FALSE
@@ -4581,7 +4712,7 @@ share_selection_missing_names <- function(cnd) {
   if (is.null(subscripts)) {
     return(character())
   }
-  unique(subscripts[nzchar(subscripts)])
+  unique(subscripts)
 }
 
 contains_selection_predicate <- function(expr) {
@@ -4627,10 +4758,18 @@ abort_share_predicate <- function(kind, parent = NULL) {
 # value into a following `mutate()`, or fold the alias into one expression --
 # and naming the marker instead would put a name no summary has into a message
 # about the caller's own summaries.
+#
+# `selection_strings` also reads a string literal a selection position names,
+# as `selection_string_names()` does. The forward check sets it, because
+# `local_summary_selection()` removes an earlier share from a later selection's
+# proxy and nothing restates the missing column that leaves. Still unread: a
+# name reaching `all_of()` through a variable, and the unnamed top-level
+# `across()` string forms, which fail on another path before this check runs.
 expression_alias_dependencies <- function(expr, aliases, env = emptyenv(),
                                           mask = character(),
                                           reparented = list(),
-                                          deferred_selection = FALSE) {
+                                          deferred_selection = FALSE,
+                                          selection_strings = FALSE) {
   if (length(aliases) == 0L) {
     return(character())
   }
@@ -4640,7 +4779,8 @@ expression_alias_dependencies <- function(expr, aliases, env = emptyenv(),
       function_rebound = lookup_rebound_names(
         expr, env, mask, function_lookup = TRUE
       ),
-      reparented = reparented, deferred_selection = deferred_selection
+      reparented = reparented, deferred_selection = deferred_selection,
+      selection_strings = selection_strings
     )
   ))
   if (unresolved_lookup_name() %in% symbols) {
@@ -4799,12 +4939,13 @@ scoped_data_symbols <- function(expr, scope, lookup) {
       )
     )))
   }
-  if (identical(call_name, "as.list") &&
-        is_known_base_frame_call(expr, call_name, scope, lookup)) {
-    return(unique(c(
-      call_part_symbols(expr, scope, lookup),
-      materialized_env_symbols(expr, scope, lookup)
-    )))
+  materialized <- materialized_env_symbols(expr, call_name, scope, lookup)
+  if (length(materialized) > 0L) {
+    return(unique(c(call_part_symbols(expr, scope, lookup), materialized)))
+  }
+  template <- template_component_symbols(expr, call_name, scope, lookup)
+  if (!is.null(template)) {
+    return(unique(c(call_part_symbols(expr, scope, lookup), template)))
   }
   evaluation <- evaluator_as_eval(expr, call_name, scope, lookup)
   if (!is.null(evaluation)) {
@@ -4960,7 +5101,8 @@ call_part_symbols <- function(expr, scope, lookup) {
   call_head <- static_call_head(expr)
   call_name <- static_call_name(expr)
   parts <- scope_call_args(expr, call_name, scope_bound_names(scope), lookup)
-  selection <- if (isTRUE(lookup$deferred_selection)) {
+  selection <- if (isTRUE(lookup$deferred_selection) ||
+                     isTRUE(lookup$selection_strings)) {
     static_spelling_name(expr, "selection")
   }
   selection_positions <- if (identical(selection, "pick")) {
@@ -5014,12 +5156,16 @@ call_part_symbols <- function(expr, scope, lookup) {
         is_known_base_frame_call(expr, call_name, scope, lookup)) ||
        !is.null(scope_remapped_closure_list(expr, call_name, scope, lookup)))
   for (index in seq_along(parts)) {
-    read_symbols <- if (index %in% selection_positions) {
+    selects <- index %in% selection_positions
+    read_symbols <- if (selects && isTRUE(lookup$deferred_selection)) {
       selection_dependency_symbols
     } else {
       scoped_data_symbols
     }
     reads <- c(reads, read_symbols(parts[[index]], scope, parts_lookup))
+    if (selects && isTRUE(lookup$selection_strings)) {
+      reads <- c(reads, selection_string_names(parts[[index]]))
+    }
     scope <- scope_after_possible_removals(parts[[index]], scope, lookup)
   }
   unique(c(
@@ -5049,6 +5195,29 @@ selection_dependency_symbols <- function(expr, scope, lookup) {
     ), use.names = FALSE))
   }
   scoped_data_symbols(expr, scope, lookup)
+}
+
+# The column names a selection argument spells as string literals: bare, under
+# an operator tidyselect walks, or as the literal vector `all_of()` is given.
+# `any_of()` is not read, because it selects nothing rather than refusing a
+# name its data lacks (#1619); nor is any other helper's argument, which is a
+# pattern rather than a name.
+selection_string_names <- function(expr) {
+  if (rlang::is_quosure(expr)) {
+    return(selection_string_names(rlang::quo_get_expr(expr)))
+  }
+  if (is.character(expr) && is.null(attributes(expr))) {
+    return(expr[!is.na(expr) & nzchar(expr)])
+  }
+  args <- if (is_selection_walk_call(expr)) {
+    static_call_args(expr)
+  } else if (identical(static_call_name(expr), "all_of") &&
+               (static_call_ns(expr) %||% "dplyr") %in%
+                 c("dplyr", "tidyselect")) {
+    static_call_args(expr)
+  }
+  unlist(lapply(args, selection_string_names), use.names = FALSE) %||%
+    character()
 }
 
 # A statically selected literal branch, without evaluating its selector.
@@ -7810,7 +7979,7 @@ scope_after_removals <- function(expr, scope, lookup) {
       return(scope_after_removals(invocation, scope, lookup))
     }
   }
-  assignment <- scope_local_closure_assignment(expr, scope, lookup)
+  assignment <- scope_local_assignment(expr, scope, lookup)
   if (!is.null(assignment)) {
     retained <- scope_after_removals(assignment$value, scope, lookup)
     return(scope_bind_local(
@@ -7902,9 +8071,14 @@ scope_after_removals <- function(expr, scope, lookup) {
   scope
 }
 
-# A literal base assignment installs a visible closure in the current frame
-# when its evaluation and assignment environments are both that frame.
-scope_local_closure_assignment <- function(expr, scope, lookup) {
+# A literal base `assign()` binds its value, whatever it is, in the current
+# frame when its evaluation and assignment environments are both that frame;
+# a literal `delayedAssign()` binds only a literal function definition. The
+# walk does not model when a promise of another value or an active binding
+# runs, so `delayedAssign()` of a value and `makeActiveBinding()` bind
+# nothing here, nor do `list2env()` and rlang's binders, which would each
+# need their own placement proof (#1833).
+scope_local_assignment <- function(expr, scope, lookup) {
   transfer_lookup <- lookup
   transfer_lookup$rebound <- lookup$function_rebound %||% lookup$rebound
   callee <- static_call_name(expr)
@@ -7930,10 +8104,8 @@ scope_local_closure_assignment <- function(expr, scope, lookup) {
         (length(inherited) > 0L && !identical(inherited[[1L]], FALSE))) {
     return(NULL)
   }
-  if (delayed && is.null(literal_function_definition(value[[1L]]))) {
-    return(NULL)
-  }
-  if (is.null(scope_value_closure(value[[1L]], scope, lookup))) {
+  if (delayed && (is.null(literal_function_definition(value[[1L]])) ||
+                    is.null(scope_value_closure(value[[1L]], scope, lookup)))) {
     return(NULL)
   }
   list(name = name[[1L]], value = value[[1L]])
@@ -8625,7 +8797,12 @@ static_environment_frames <- function(expr, scope, lookup, definite = FALSE) {
   } else {
     static_matched_arguments(expr, rlang::env_parent)
   }
-  frames <- static_environment_frames(args$env, scope, lookup, definite)
+  # rlang's `env` defaults to `caller_env()`, the frame the call is written in.
+  frames <- if (rlang_parent && !is.null(args) && !"env" %in% names(args)) {
+    1L
+  } else {
+    static_environment_frames(args$env, scope, lookup, definite)
+  }
   steps <- if ("n" %in% names(args)) unparenthesized_value(args$n) else 1L
   if (length(frames) == 0L || is.object(steps) || !is.numeric(steps) ||
         length(steps) != 1L || !is.finite(steps) || steps < 0 ||
@@ -8679,23 +8856,230 @@ static_returned_caller_frame <- function(expr, scope, lookup) {
 
 # Converting a known mask to a list retains an unresolved dependency.
 # The conversion does not inherit bindings from a lexical frame.
-materialized_env_symbols <- function(expr, scope, lookup) {
-  args <- static_matched_arguments(expr, base::as.list)
-  if (is_static_mask_parent(args$x, scope, lookup)) {
+#
+# The converters read are base `as.list()`, its `as.list.environment()`
+# method, the functionals that coerce `X` with `as.list()` (`lapply()`,
+# `sapply()`, `vapply()`) and `eapply()`, each over an argument
+# `is_static_mask_parent()` proves. A mask handed to any other callee, a
+# caller-level reader function or a `do.call()`, or carried through
+# `rlang::env_clone()`, stays outside the walk (#1652, #1825).
+materialized_env_symbols <- function(expr, call_name, scope, lookup) {
+  converters <- list(
+    as.list = list(base::as.list, "x"),
+    as.list.environment = list(base::as.list.environment, "x"),
+    lapply = list(base::lapply, "X"),
+    sapply = list(base::sapply, "X"),
+    vapply = list(base::vapply, "X"),
+    eapply = list(base::eapply, "env")
+  )
+  if (is.null(call_name) || !call_name %in% names(converters) ||
+        !is_known_base_frame_call(expr, call_name, scope, lookup)) {
+    return(character())
+  }
+  converter <- converters[[call_name]]
+  args <- static_matched_arguments(expr, converter[[1L]])
+  if (is_static_mask_parent(args[[converter[[2L]]]], scope, lookup)) {
     return(unresolved_lookup_name())
   }
   character()
+}
+
+# The template evaluators whose `{}` components the walk reads: the package
+# owning each, its definition, the formal holding the template, and those
+# naming its data and environment. `bind` is whether a named `...` argument
+# binds a name for the components, as glue's do, rather than being another
+# template, as cli's `format_inline()` reads it; `markup` is whether cli's
+# inline markup applies.
+template_evaluators <- function() {
+  glue_like <- list(template = "...", environment = ".envir", bind = TRUE,
+                    markup = FALSE)
+  cli_like <- list(package = "cli", environment = ".envir", markup = TRUE)
+  list(
+    glue = c(list(package = "glue", fun = glue::glue), glue_like),
+    glue_data = c(list(package = "glue", fun = glue::glue_data, data = ".x"),
+                  glue_like),
+    str_glue = c(list(package = "stringr", fun = function() {
+      stringr::str_glue
+    }), glue_like),
+    str_glue_data = c(list(package = "stringr", fun = function() {
+      stringr::str_glue_data
+    }, data = ".x"), glue_like),
+    englue = list(package = "rlang", fun = rlang::englue, template = "x",
+                  environment = "env", bind = FALSE, markup = FALSE),
+    format_inline = c(list(fun = cli::format_inline, template = "...",
+                           bind = FALSE), cli_like),
+    pluralize = c(list(fun = cli::pluralize, template = "...", bind = TRUE),
+                  cli_like),
+    format_message = c(list(fun = cli::format_message, template = "message",
+                            bind = FALSE), cli_like)
+  )
+}
+
+# What the literal templates of a known template evaluator read when their
+# components run, or NULL for any other call. Each template is split by glue's
+# own parser without evaluating anything, and each component is walked as code
+# in the frames its environment argument places, under the names the call's
+# data and named arguments bind; an unparsable component retains the marker.
+#
+# A template held in a variable or built by a call, a custom `.open` or
+# `.close`, another grammar such as `stringr::str_interp()`, and an evaluator
+# held as a value stay outside the walk (#1652, #1824).
+template_component_symbols <- function(expr, call_name, scope, lookup) {
+  evaluator <- template_evaluators()[[call_name %||% ""]]
+  if (is.null(evaluator) || !is_known_package_frame_call(
+    expr, call_name, evaluator$package, scope, lookup
+  ) || any(vapply(static_call_args(expr), identical, logical(1),
+                  quote(...)))) {
+    return(NULL)
+  }
+  fun <- evaluator$fun
+  if (identical(evaluator$package, "stringr")) {
+    fun <- fun()
+  }
+  parts <- static_matched_arguments(expr, fun, expand_dots = FALSE)
+  if (is.null(parts) || any(c(".open", ".close") %in% names(parts))) {
+    return(NULL)
+  }
+  templates <- if (identical(evaluator$template, "...")) {
+    dots <- parts[["..."]]
+    dots[!evaluator$bind | !nzchar(argument_names(dots))]
+  } else {
+    parts[evaluator$template]
+  }
+  templates <- Filter(Negate(rlang::is_missing), templates)
+  templates <- unlist(lapply(templates, function(template) {
+    template <- unparenthesized_value(template)
+    if (is.character(template)) {
+      return(template)
+    }
+    static_character_value(template, function(expr) {
+      identical(static_call_name(expr), "c") &&
+        is_known_base_frame_call(expr, "c", scope, lookup)
+    })
+  }), use.names = FALSE)
+  bound <- if (evaluator$bind) setdiff(argument_names(parts[["..."]]), "")
+  data <- parts[[evaluator$data %||% ""]]
+  if (!is.null(data) && is_known_data_constructor(data, scope, lookup)) {
+    bound <- c(bound, setdiff(argument_names(static_call_args(data)), ""))
+  }
+  components <- lapply(templates, template_components, evaluator$markup)
+  if (any(vapply(components, is.null, logical(1)))) {
+    return(unresolved_lookup_name())
+  }
+  frames <- template_scope(parts[[evaluator$environment]], scope, lookup)
+  if (is.null(frames)) {
+    return(character())
+  }
+  frames <- c(list(list(bound = unique(c(bound, frames$bound)),
+                        evaluated = TRUE)), frames$scope)
+  unique(c(character(), unlist(lapply(
+    unlist(components, recursive = FALSE), scoped_data_symbols,
+    scope = frames, lookup = lookup
+  ), use.names = FALSE)))
+}
+
+# The code of each `{}` component of a literal template, as glue's parser
+# splits it, or NULL when the template or a component does not parse. Under
+# cli's markup a `{.class text}` component is itself a template and a `{?s}`
+# component reads nothing.
+template_components <- function(template, markup) {
+  collected <- new.env(parent = emptyenv())
+  collected$texts <- character()
+  collect <- function(text, envir) {
+    collected$texts <- c(collected$texts, text)
+    ""
+  }
+  parsed <- tryCatch({
+    glue::glue(template, .envir = emptyenv(), .transformer = collect)
+    TRUE
+  }, error = function(cnd) FALSE)
+  if (!parsed) {
+    return(NULL)
+  }
+  code <- list()
+  for (text in collected$texts) {
+    if (markup && startsWith(text, "?")) {
+      next
+    }
+    inner <- if (markup && startsWith(text, ".")) {
+      template_components(sub("^\\.\\S*\\s?", "", text), markup)
+    } else {
+      tryCatch(as.list(parse(text = text, keep.source = FALSE)),
+               error = function(cnd) NULL)
+    }
+    if (is.null(inner)) {
+      return(NULL)
+    }
+    code <- c(code, inner)
+  }
+  code
+}
+
+# The frames a template's components run in, given its environment argument:
+# the current ones when it is omitted, and those it places otherwise, with
+# `bound` holding the names a literal `list2env()` binds over them. NULL when
+# `lookup_environment_is_external()` proves the environment cannot reach the
+# mask. An environment the walk cannot place binds nothing, so every free
+# name reads the mask.
+template_scope <- function(environment, scope, lookup) {
+  if (is.null(environment)) {
+    return(list(scope = scope, bound = character()))
+  }
+  environment <- unparenthesized_value(environment)
+  if (identical(static_call_name(environment), "list2env") &&
+        is_known_base_frame_call(environment, "list2env", scope, lookup)) {
+    parts <- static_matched_arguments(environment, base::list2env)
+    if (!is.null(parts) && !"envir" %in% names(parts) &&
+          is_known_data_constructor(parts$x, scope, lookup)) {
+      parent <- template_scope(parts$parent, scope, lookup)
+      if (is.null(parent)) {
+        return(NULL)
+      }
+      parent$bound <- c(
+        parent$bound, setdiff(argument_names(static_call_args(parts$x)), "")
+      )
+      return(parent)
+    }
+  }
+  if (lookup_environment_is_external(
+    environment, scope_bound_names(scope), lookup
+  )) {
+    return(NULL)
+  }
+  frames <- static_environment_frames(environment, scope, lookup)
+  list(scope = if (length(frames) == 1L && frames <= length(scope)) {
+    scope[seq.int(frames, length(scope))]
+  } else {
+    list()
+  }, bound = character())
 }
 
 # A lookup on the mask reads its own bindings regardless of inheritance.
 # A possibly inheriting lookup follows visible lexical bindings unless a known
 # stop frame ends the search before the mask.
 # A nonliteral key retains an unresolved dependency on a mask-reaching path.
+#
+# A possibly inheriting lookup on an environment no walked frame places reads
+# the mask unless `lookup_environment_is_external()` proves it external, as
+# `get()` on that environment does; its `last` is not honoured, since nothing
+# places the chain it would bound. A non-inheriting lookup there reads
+# nothing, so a mask carried through `rlang::env_clone()` stays outside the
+# walk (#1825), and so do `$`, `[[` and `as.list()` reads after `parent.env()`
+# steps from a constructor such as `new.env()` (#1829).
 inheriting_env_get_symbols <- function(expr, scope, lookup, bulk = FALSE) {
   definition <- if (bulk) rlang::env_get_list else rlang::env_get
   args <- static_matched_arguments(expr, definition)
-  frames <- static_environment_frames(args$env, scope, lookup)
-  if (length(frames) == 0L) {
+  # rlang's `env` defaults to `caller_env()`, the frame the call is written in.
+  frames <- if (!is.null(args) && !"env" %in% names(args)) {
+    1L
+  } else {
+    static_environment_frames(args$env, scope, lookup)
+  }
+  inherits <- "inherit" %in% names(args) &&
+    !identical(unparenthesized_value(args$inherit), FALSE)
+  if (length(frames) == 0L && (!inherits || lookup_environment_is_external(
+    args$env, scope_bound_names(scope), lookup
+  ))) {
     return(character())
   }
   name <- if (bulk) {
@@ -8709,12 +9093,14 @@ inheriting_env_get_symbols <- function(expr, scope, lookup, bulk = FALSE) {
   if (is.null(name) || (!bulk && !rlang::is_string(name))) {
     name <- unresolved_lookup_name()
   }
+  if (length(frames) == 0L) {
+    return(name)
+  }
   unique(unlist(lapply(frames, function(frame) {
     if (frame > length(scope)) {
       return(name)
     }
-    if (!"inherit" %in% names(args) ||
-          identical(unparenthesized_value(args$inherit), FALSE)) {
+    if (!inherits) {
       return(character())
     }
     if ("last" %in% names(args)) {
