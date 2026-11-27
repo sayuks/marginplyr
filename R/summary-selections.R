@@ -1844,9 +1844,23 @@ promise_expression <- function(name, env) {
   eval(call("substitute", as.name(name), env), envir = baseenv())
 }
 
+# Whether `x` is `NULL` or an unclassed atomic constant, which is what the
+# planner reads from a context binding or a caller's promise expression.
+is_plain_constant <- function(x) {
+  is.null(x) || (is.atomic(x) && !is.object(x))
+}
+
+# Whether the planner reads a promise bound in `env` as its value: base and a
+# package environment hold lazy-load promises, which run no caller code, and a
+# caller's own delayed binding stays unread (#1793).
+reads_promise_as_value <- function(env) {
+  identical(env, baseenv()) || is_package_environment(env)
+}
+
 # Reads a literal or an existing plain caller constant without forcing a
-# promise or active binding; a promise counts only when its expression is
-# such a constant. Mask names remain owned by local execution.
+# caller's promise or an active binding; a caller's promise counts only when
+# its expression is such a constant, and a base or package promise is read as
+# its value (#1809). Mask names remain owned by local execution.
 known_context_constant <- function(expr, lookup) {
   if (rlang::is_missing(expr)) return(NULL)
   if (rlang::is_quosure(expr)) {
@@ -1858,7 +1872,7 @@ known_context_constant <- function(expr, lookup) {
   if (is_parenthesized(expr)) {
     return(known_context_constant(unparenthesized_value(expr), lookup))
   }
-  if (is.null(expr) || (is.atomic(expr) && !is.object(expr))) {
+  if (is_plain_constant(expr)) {
     return(list(value = expr))
   }
   if (!rlang::is_symbol(expr) || rlang::as_string(expr) %in% lookup$mask) {
@@ -1870,12 +1884,13 @@ known_context_constant <- function(expr, lookup) {
   while (!identical(current, emptyenv())) {
     if (exists(name, envir = current, inherits = FALSE)) {
       if (bindingIsActive(name, current)) return(NULL)
-      value <- if (rlang::env_binding_are_lazy(current, name)) {
+      value <- if (rlang::env_binding_are_lazy(current, name) &&
+                     !reads_promise_as_value(current)) {
         promise_expression(name, current)
       } else {
         get(name, envir = current, inherits = FALSE)
       }
-      if (is.null(value) || (is.atomic(value) && !is.object(value))) {
+      if (is_plain_constant(value)) {
         return(list(value = value))
       }
       return(NULL)
@@ -2032,34 +2047,9 @@ predictable_local_across_names <- function(dots, input_names) {
     expr <- rlang::quo_get_expr(dot)
     lookup <- list(env = rlang::quo_get_env(dot), rebound = rebound)
     if (is_across_call(expr) && !nzchar(name) && !contains_share_helper(expr)) {
-      parsed <- parse_across_arguments(expr)
-      cols <- parsed$cols
-      template <- parsed$names
-      stable_unpack <- !rlang::is_symbol(parsed$unpack) ||
-        is_unrebound_name(rlang::as_string(parsed$unpack), lookup)
-      simple_cols <- is_literal_summary_selection(cols, available)
-      literal_template <- !is.null(attr(
-        template, "marginplyr_across_names", exact = TRUE
-      )) || is.null(template) || (
-        is.character(template) && length(template) == 1L &&
-          !is.na(template) &&
-          !grepl("{", gsub(
-            "{.fn}", "", gsub("{.col}", "", template, fixed = TRUE),
-            fixed = TRUE
-          ), fixed = TRUE)
-      )
-      if (simple_cols && literal_template && stable_unpack &&
-            known_context_fns(parsed, lookup)) {
-        proxy <- stats::setNames(as.list(seq_along(available)), available)
-        output <- tryCatch(
-          known_across_output_names(
-            expr, rlang::quo_get_env(dot), proxy
-          ),
-          vctrs_error_subscript_oob = function(cnd) character()
-        )
-        predicted <- c(predicted, output)
-        available <- union(available, output)
-      }
+      output <- predict_local_across_names(dot, available, lookup)
+      predicted <- c(predicted, output)
+      available <- union(available, output)
     }
     if (nzchar(name)) {
       available <- union(available, name)
@@ -2069,6 +2059,53 @@ predictable_local_across_names <- function(dots, input_names) {
     ))
   }
   predicted
+}
+
+# The output names of one unnamed local `across()` dot over `available`, by the
+# rule `predictable_local_across_names()` states, or `NULL` when they are not
+# known before the call runs; `character()` is an `across()` known to name
+# none.
+predict_local_across_names <- function(dot, available, lookup) {
+  parsed <- parse_across_arguments(rlang::quo_get_expr(dot))
+  template <- parsed$names
+  stable_unpack <- !rlang::is_symbol(parsed$unpack) ||
+    is_unrebound_name(rlang::as_string(parsed$unpack), lookup)
+  simple_cols <- is_literal_summary_selection(parsed$cols, available)
+  literal_template <- !is.null(attr(
+    template, "marginplyr_across_names", exact = TRUE
+  )) || is.null(template) || is_literal_across_template(template)
+  if (!simple_cols || !literal_template || !stable_unpack ||
+        !known_context_fns(parsed, lookup) ||
+        across_output_names_unknown(parsed, lookup$env)) {
+    return(NULL)
+  }
+  proxy <- stats::setNames(as.list(seq_along(available)), available)
+  tryCatch(
+    known_across_output_names(
+      rlang::quo_get_expr(dot), rlang::quo_get_env(dot), proxy
+    ),
+    vctrs_error_subscript_oob = function(cnd) NULL
+  )
+}
+
+# Whether `template` is one `.names` string interpolating only `{.col}` and
+# `{.fn}`, which expands without evaluating caller code.
+is_literal_across_template <- function(template) {
+  is.character(template) && length(template) == 1L && !is.na(template) &&
+    !grepl("{", gsub(
+      "{.fn}", "", gsub("{.col}", "", template, fixed = TRUE), fixed = TRUE
+    ), fixed = TRUE)
+}
+
+# Whether `known_across_output_names()`'s empty answer for `parsed` means its
+# outputs are unknown rather than none: an unpacked `across()` is named after
+# its execution, and a `.fns` that is neither one function nor a literal list
+# has no known function names.
+across_output_names_unknown <- function(parsed, env) {
+  !across_unpack_is_false(parsed$unpack, env) || (
+    !is_known_function_list_call(parsed$fns, env) &&
+      length(known_across_function_names(parsed, env)) == 0L
+  )
 }
 
 # Checks the first summary selection's bare names and empty pair before label
@@ -3542,9 +3579,7 @@ known_across_function_names <- function(parsed, env) {
           if (bindingIsActive(name, current)) {
             return(character())
           }
-          base_binding <- identical(current, baseenv()) ||
-            identical(current, asNamespace("base"))
-          binding <- if (base_binding || is_package_environment(current) ||
+          binding <- if (reads_promise_as_value(current) ||
                            !rlang::env_binding_are_lazy(current, name)) {
             get(name, envir = current, inherits = FALSE)
           } else {

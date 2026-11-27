@@ -295,11 +295,16 @@ sales_db |>
 The order survives a later verb only when dbplyr folds that verb into the same
 query. On DuckDB it is kept through `filter()`, `head()`, `rename()`,
 `distinct()`, and a `select()` that keeps every grouping column. It is dropped
-by `mutate()`, `transmute()`, a `select()` that drops a grouping column, a
-join, `count()`, and `summarise()`, each of which reads the ordered query as a
-subquery; dbplyr then warns that *ORDER BY is ignored in subqueries without
-LIMIT*. So `collect()` first and continue locally, or call `arrange()` last
-with a key you write: [Sort the newest year
+by `mutate()`, `transmute()`, a `select()` that drops a grouping column, and a
+join, each of which reads the ordered query as a subquery; dbplyr then warns
+that *ORDER BY is ignored in subqueries without LIMIT*. A `count()`, `tally()`,
+or `summarise()` either drops it the same way or is folded into the ordered
+query itself, which keeps its `ORDER BY` over columns the aggregate no longer
+groups by, and DuckDB and PostgreSQL refuse that statement with an error such
+as *column ... must appear in the GROUP BY clause*; which of the two happens
+depends on how dbplyr folds the query. So `collect()` first and continue
+locally, aggregate a result requested with `.sort = "none"`, or call
+`arrange()` last with a key you write: [Sort the newest year
 first](https://sayuks.github.io/marginplyr/vignettes/recipes.html#sort-the-newest-year-first)
 gives the key, and [Pivot a lazy result after
 collecting](https://sayuks.github.io/marginplyr/vignettes/recipes.html#pivot-a-lazy-result-after-collecting)
