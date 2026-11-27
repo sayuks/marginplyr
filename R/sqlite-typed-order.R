@@ -367,7 +367,11 @@ sqlite_compute_destination <- function(con, name, temporary, overwrite) {
 # The caller supplies the unquoted name inside explicit compute.
 sqlite_compute_name_resolves <- function(con, table, conservative = FALSE) {
   quoted <- DBI::dbQuoteIdentifier(con, table)
-  tryCatch({
+  # R delivers a time limit as an unclassed error, which the conservative arm
+  # would read as a resolving name, clearing the limit for the rest of
+  # compute() (#1805). Suspended, a limit or an interrupt reaches the caller
+  # after the probe instead.
+  suspendInterrupts(tryCatch({
     # Preparing EXPLAIN also resolves eponymous virtual tables, whose names
     # need not appear in any SQLite schema catalog.
     DBI::dbGetQuery(con, paste("EXPLAIN SELECT 1 FROM", quoted), n = 1L)
@@ -379,17 +383,19 @@ sqlite_compute_name_resolves <- function(con, table, conservative = FALSE) {
     }
     if (conservative) return(TRUE)
     stop(cnd)
-  })
+  }))
 }
 
 # Whether the SELECT's virtual reads can be ruled out for these sources.
 # The caller supplies FROM operands and VOpen identities on this connection.
 sqlite_virtual_sources_clear <- function(con, sources, virtual_reads) {
   for (source in sources) {
-    probe <- tryCatch(
+    # Suspended for the reason `sqlite_compute_name_resolves()` is: a limit
+    # read here as a failed probe would be reported as an unsafe overwrite.
+    probe <- suspendInterrupts(tryCatch(
       DBI::dbGetQuery(con, paste("EXPLAIN SELECT * FROM", source)),
       error = function(cnd) NULL
-    )
+    ))
     # VOpen carries the virtual table object, shared by prepared statements.
     id <- probe$p4[probe$opcode == "VOpen"]
     if (length(id) != 1L || !grepl("^vtab:", id) || id %in% virtual_reads) {
