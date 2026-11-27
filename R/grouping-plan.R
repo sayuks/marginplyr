@@ -3549,7 +3549,9 @@ resolve_grouping_selection <- function(arg, data_proxy) {
 # Whether a name `arg` reads is bound, where its quosure looks it up, to a
 # Grouping specification. A binding is read only where reading it evaluates
 # nothing tidyselect has not: an active binding is passed over, since reading
-# it would call it again.
+# it would call it again, and so is a promise, which tidyselect has not forced
+# -- a wrapper's argument named like a column it resolved as that column
+# (#1803).
 selection_names_grouping_spec <- function(arg) {
   env <- rlang::quo_get_env(arg)
   any(vapply(all.vars(nested_arg_expr(arg)), function(name) {
@@ -3559,6 +3561,7 @@ selection_names_grouping_spec <- function(arg) {
     }
     !identical(owner, emptyenv()) &&
       !rlang::env_binding_are_active(owner, name) &&
+      !rlang::env_binding_are_lazy(owner, name) &&
       inherits(rlang::env_get(owner, name), "margin_grouping_spec")
   }, logical(1)))
 }
