@@ -8590,6 +8590,14 @@ materialized_env_symbols <- function(expr, scope, lookup) {
 # A possibly inheriting lookup follows visible lexical bindings unless a known
 # stop frame ends the search before the mask.
 # A nonliteral key retains an unresolved dependency on a mask-reaching path.
+#
+# A possibly inheriting lookup on an environment no walked frame places reads
+# the mask unless `lookup_environment_is_external()` proves it external, as
+# `get()` on that environment does; its `last` is not honoured, since nothing
+# places the chain it would bound. A non-inheriting lookup there reads
+# nothing, so a mask carried through `rlang::env_clone()` stays outside the
+# walk (#1825), and so do `$`, `[[` and `as.list()` reads after `parent.env()`
+# steps from a constructor such as `new.env()` (#1829).
 inheriting_env_get_symbols <- function(expr, scope, lookup, bulk = FALSE) {
   definition <- if (bulk) rlang::env_get_list else rlang::env_get
   args <- static_matched_arguments(expr, definition)
@@ -8599,7 +8607,11 @@ inheriting_env_get_symbols <- function(expr, scope, lookup, bulk = FALSE) {
   } else {
     static_environment_frames(args$env, scope, lookup)
   }
-  if (length(frames) == 0L) {
+  inherits <- "inherit" %in% names(args) &&
+    !identical(unparenthesized_value(args$inherit), FALSE)
+  if (length(frames) == 0L && (!inherits || lookup_environment_is_external(
+    args$env, scope_bound_names(scope), lookup
+  ))) {
     return(character())
   }
   name <- if (bulk) {
@@ -8613,12 +8625,14 @@ inheriting_env_get_symbols <- function(expr, scope, lookup, bulk = FALSE) {
   if (is.null(name) || (!bulk && !rlang::is_string(name))) {
     name <- unresolved_lookup_name()
   }
+  if (length(frames) == 0L) {
+    return(name)
+  }
   unique(unlist(lapply(frames, function(frame) {
     if (frame > length(scope)) {
       return(name)
     }
-    if (!"inherit" %in% names(args) ||
-          identical(unparenthesized_value(args$inherit), FALSE)) {
+    if (!inherits) {
       return(character())
     }
     if ("last" %in% names(args)) {

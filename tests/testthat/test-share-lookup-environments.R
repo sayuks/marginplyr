@@ -335,7 +335,6 @@ test_that("literal reads from independent environments remain independent", {
     rlang::env_get(external, "prior", inherit = TRUE, last = emptyenv()),
     rlang::env_get(external, "prior", inherit = TRUE, last = baseenv()),
     rlang::env_get(external, "prior", inherit = TRUE, last = globalenv()),
-    rlang::env_get(environment(), "prior", inherit = TRUE),
     (function(prior) {
       rlang::env_get(rlang::current_env(), "prior", inherit = TRUE)
     })(7),
