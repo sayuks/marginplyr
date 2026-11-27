@@ -1264,10 +1264,21 @@ static_callee_name <- function(callee) {
 # knowable. One that is not leaves the head unnamed, which is the answer for
 # any other computed head: the walk reports the head's own reads and treats the
 # call as the ordinary call it cannot recognize.
+#
+# `match.fun()` returns a function it is handed, so its `FUN` is read as
+# `do.call()`'s `what` is: `match.fun(get)` names `get` as `match.fun("get")`
+# does (#1830). The other primitives take a string, and a name handed to one is
+# a variable holding the name to look up. `rlang::as_function()` and
+# `rlang::as_closure()` handed a function are that function under another name,
+# as `identity(get)` is, and stay outside the walk with every other function
+# held as a value (#1652).
 static_callee_name_from <- function(callee, formal) {
   argument <- call_formal_argument(callee, formal)
   if (length(argument) == 0L) {
     return(NULL)
+  }
+  if (identical(formal, "FUN")) {
+    return(static_callee_name(argument[[1L]]))
   }
   named <- static_character_value(argument[[1L]])
   if (is.null(named) || length(named) != 1L) {
