@@ -1058,6 +1058,21 @@ test_that("a caller macro named with operator characters refuses (#1813)", {
   plan <- inspect_grouping(
     unrelated, .grouping = grouping_set(where(is.numeric))
   )$included
+  # With no operator macro, each spelling of an operator DuckDB binds keeps
+  # its plan.
+  shift <- "SELECT g, v, v << 1 AS y FROM t"
+  DBI::dbExecute(con, paste("CREATE VIEW shift_view AS", shift))
+  for (input in list(
+    dplyr::tbl(con, dbplyr::sql(shift), vars = c("g", "v", "y")),
+    dplyr::mutate(t, y = dplyr::sql("v << 1")),
+    dplyr::mutate(t, y = !!rlang::call2("%<<%", quote(v), 1L)),
+    dplyr::tbl(con, "shift_view")
+  )) {
+    expect_identical(inspect_grouping(
+      input, .grouping = grouping_set(where(is.numeric))
+    )$included, "(v, y)")
+  }
+  DBI::dbExecute(con, "DROP VIEW shift_view")
   # DuckDB 2.0 lexes a backtick as a quoted identifier, 1.5 as an operator.
   operators <- c("@@", "->>", "<<=", "!!", "|/",
                  if (utils::packageVersion("duckdb") < "2.0.0") "`")

@@ -86,6 +86,15 @@ test_that("assignments that do not definitely bind the local stay refused", {
       assign("prior", 2, envir = parent.frame())
       prior
     },
+    # Refused before it runs, so the global environment is not written.
+    {
+      assign("prior", 2, envir = globalenv())
+      prior
+    },
+    {
+      assign("other", 2)
+      prior
+    },
     {
       assign(paste0("pri", "or"), 2)
       prior
