@@ -15,6 +15,7 @@ earlier_share_by_string <- function(data) {
     quote(sum(dplyr::pick(c("s", "sh"))[[2L]])),
     quote(sum(dplyr::pick(dplyr::all_of("sh"))[[1L]])),
     rlang::expr(sum(dplyr::pick(!!sh_name)[[1L]])),
+    rlang::expr(sum(dplyr::pick(!!rlang::quo("sh"))[[1L]])),
     quote(sum(dplyr::pick(dplyr::all_of("sh") | s)[[1L]]))
   )
   shares <- list(
