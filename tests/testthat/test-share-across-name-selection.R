@@ -850,7 +850,11 @@ settled_selection_cases <- list(
   )), "y"),
   list(rlang::expr(dplyr::across(
     dplyr::any_of(c("zzz", "y")), list(t = sum)
-  )), "y_t")
+  )), "y_t"),
+  # An injected quosure settles in its own environment.
+  list(rlang::expr(dplyr::across(
+    !!rlang::quo(dplyr::any_of(c("zzz", "y"))), sum
+  )), "y")
 )
 
 test_that("an across() whose names settle its selection keeps column hints", {
@@ -994,6 +998,30 @@ test_that("a selection that fails written first offers no move", {
                  fixed = TRUE, info = info)
     expect_no_match(conditionMessage(refused), "Write that", fixed = TRUE,
                     info = info)
+  }
+})
+
+# A `.names` template whose literal text holds the pattern's own markers, or
+# that glue cannot parse, has no pattern, so the source it may produce keeps
+# the unknown-output hint rather than being called an input column (#1810).
+test_that("an unreadable `.names` template keeps the unknown hint", {
+  data <- data.frame(g = c("a", "a", "b"), x = c(1, 2, 5), y = c(10, 20, 30))
+  cases <- list(
+    list(names = "\003{sub('q', '', .col)}", source = "\003x"),
+    list(names = "\001{sub('q', '', .col)}", source = "\001x"),
+    list(names = "{sub('q', '', .col)}_{", source = "x")
+  )
+  for (case in cases) {
+    refused <- expect_error(summarize_with_margins(
+      data, md = stats::median(x),
+      dplyr::across(c(x, y), sum, .names = !!case$names),
+      s = share_of_total(!!rlang::sym(case$source)), .grouping = rollup(g)
+    ), "unknown preceding ordinary summary", class = "marginplyr_error",
+    info = case$names)
+    expect_match(conditionMessage(refused), "not known before the call runs",
+                 fixed = TRUE, info = case$names)
+    expect_no_match(conditionMessage(refused), "is a column of the input",
+                    fixed = TRUE, info = case$names)
   }
 })
 
