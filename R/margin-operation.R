@@ -10,7 +10,8 @@ new_margin_operation <- function(data,
                                  margin_label_position,
                                  check_margin_label,
                                  sort,
-                                 call) {
+                                 call,
+                                 window_frame = NULL) {
   structure(
     list(
       data = data,
@@ -25,7 +26,8 @@ new_margin_operation <- function(data,
       margin_label_position = margin_label_position,
       check_margin_label = check_margin_label,
       sort = sort,
-      call = call
+      call = call,
+      window_frame = window_frame
     ),
     class = "marginplyr_margin_operation"
   )
@@ -378,7 +380,11 @@ prepare_margin_operation <- function(.data,
         margin_label_position = .margin_label_position,
         check_margin_label = .check_margin_label,
         sort = .sort,
-        call = call
+        call = call,
+        # Read before `sqlite_margin_input()` can seal it into a relation.
+        window_frame = if (backend$records_window_order) {
+          dbplyr::op_frame(data)
+        }
       )
     },
     call = call
@@ -548,6 +554,7 @@ finalize_margin_operation <- function(operation, execution,
     result <- combine_margin_branches(list(anchor, result))
     unsorted <- result
   }
+  result <- carry_margin_window_frame(result, operation)
   sqlite_boolean_column <- live_sqlite_margin_result(operation) &&
     length(sqlite_boolean_columns(dplyr::tbl_vars(result))) > 0L
   if (sqlite_typed_result_needed(
@@ -773,6 +780,20 @@ forget_margin_window_order <- function(result, backend) {
     return(result)
   }
   dbplyr::window_order(result)
+}
+
+# Gives the result the input's window frame exactly when it holds a window
+# ordering (ADR 0018's `.sort = "none"` amendment, #1815). Executors rebuild
+# relations from SQL text and share denominators clear the frame, so it is set
+# here once, before a typed SQLite companion records the query it wraps.
+carry_margin_window_frame <- function(result, operation) {
+  if (!operation$backend$records_window_order) {
+    return(result)
+  }
+  result$lazy_query$frame <- if (length(dbplyr::op_sort(result)) > 0L) {
+    operation$window_frame
+  }
+  result
 }
 
 # The key of ADR 0018, built from the Grouping plan alone:

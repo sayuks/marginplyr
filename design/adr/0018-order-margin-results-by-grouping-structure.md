@@ -190,6 +190,19 @@ result rather than adding an `ORDER BY` or a per-branch subquery. This does
 not alter the existing rule for `.sort = "first"` or `"last"`: those choices
 request a Margin order and clear a window ordering that cannot reproduce it.
 
+The input's `dbplyr::window_frame()` travels with that ordering: a lazy SQL
+expansion or summary, with or without a share, carries the input's frame
+exactly when it carries the input's usable window ordering, and under
+`.sort = "first"` or `"last"` records neither (#1815). `?expand_with_margins`
+defines the expansion by the `mutate()` + `union_all()` composition, which
+keeps the frame, and the raw-SQL relations the portable adapter builds are a
+seal the caller never asked for, as they were for the ordering (#1791). The
+frame is set on the final result, so the result's own statement is unchanged
+and a share's denominator windows still span the whole partition (#1555).
+dbplyr's own `collapse()` and `compute()` drop a frame across a seal; dropping
+it uniformly would have changed SQLite expansions and share-less summaries
+that already returned framed values, and was not chosen.
+
 ## Considered options
 
 **`.bits`, an argument adding one Grouping bit column per dimension, leaving
