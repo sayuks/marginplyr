@@ -2065,6 +2065,61 @@ test_that("a printed Grouping specification shows its arguments", {
   )
 })
 
+# An injected specification is a value in the captured call, which rlang
+# deparses as a placeholder naming no constructor; it prints as the call it was
+# built from, so the printed text still reads back without data (#1823).
+test_that("an injected nested specification prints as its constructor", {
+  s <- grouping_set(region)
+  s <- grouping_sets(!!s, grouping_set())
+  cases <- list(
+    list(
+      spec = s,
+      call = "grouping_sets(grouping_set(region), grouping_set())"
+    ),
+    list(
+      spec = grouping_sets(!!!list(rollup(a), cube(b, c))),
+      call = "grouping_sets(rollup(a), cube(b, c))"
+    ),
+    list(
+      spec = rlang::inject(grouping_sets(!!rollup(a), b)),
+      call = "grouping_sets(rollup(a), b)"
+    ),
+    list(
+      spec = grouping_sets(!!s, cube(x)),
+      call = paste0(
+        "grouping_sets(grouping_sets(grouping_set(region), grouping_set()), ",
+        "cube(x))"
+      )
+    ),
+    list(
+      spec = grouping_spec(!!rollup(a), c(b, d)),
+      call = "grouping_spec(rollup(a), c(b, d))"
+    ),
+    list(
+      spec = rollup(!!grouping_set(a, b), c),
+      call = "rollup(grouping_set(a, b), c)"
+    )
+  )
+  for (case in cases) {
+    printed <- utils::capture.output(print(case$spec))[-1L]
+    expect_identical(printed, case$call, info = case$call)
+    rebuilt <- eval(parse(text = printed))
+    data <- data.frame(region = "E", a = 1, b = 1, c = 1, d = 1, x = 1)
+    expect_identical(
+      inspect_grouping(data, .grouping = rebuilt, .duplicates = "keep"),
+      inspect_grouping(data, .grouping = case$spec, .duplicates = "keep"),
+      info = case$call
+    )
+  }
+  # A value of a kind no rule names keeps rlang's placeholder.
+  expect_identical(
+    utils::capture.output(
+      print(grouping_sets(!!new_grouping_spec("nonesuch", list()), b))
+    )[-1L],
+    "grouping_sets(<mrgn_gr_>, b)"
+  )
+})
+
 # The line a specification with no name to print prints, and the invisible
 # return a print method makes whatever it printed. The two tests below assert
 # it of shapes that reach it for three different reasons -- a kind that is
