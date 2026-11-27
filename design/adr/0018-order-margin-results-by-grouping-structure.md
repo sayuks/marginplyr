@@ -533,3 +533,27 @@ while `is.na()` and `dplyr::arrange()` tie every missing complex value, so its
 value term is its real part and then its imaginary part, each ranked and
 ordered as a double key is: ordinary value, `NaN`, `NA`. A non-missing complex
 value orders as before, and complex matrix keys order as other matrix keys do.
+
+## Amendment: a later aggregate can be refused rather than unordered
+
+"It promises exactly what `dplyr::arrange()` promises" measured that a further
+`group_by()` and `summarise()` lose the order with dbplyr's warning. Under
+dbplyr 2.6.0 that holds only when the sorted result's outer query computes a
+column, as a text Margin label does, so that dbplyr nests the query and drops
+its `ORDER BY`. Otherwise dbplyr folds a later `count()`, `tally()` or
+`summarise()` into the arranged projection and keeps the `ORDER BY` over
+columns the aggregate no longer groups by, and DuckDB 2.0.1 and PostgreSQL
+17.11 refuse the statement: a sorted summary whose labels are all
+typed-missing, a sorted share summary with `.by`, and every sorted expansion
+(#1816). Native `arrange(v) |> select(-v) |> count()` fails the same way on
+the same connections, so this is dbplyr's flattening and not a Margin
+construction.
+
+The promise is unchanged: what a verb applied after the result does is not
+promised, and the database-backends guide now says that such an aggregate is
+either answered without the order or refused, naming the remedy. No guard is
+added. A result class whose aggregate methods clear the `ORDER BY` would be
+the enumerated verb list this decision rejected, and wrapping the ordered
+query so nothing folds into it loses the `ORDER BY` the Margin order is. The
+repair belongs to dbplyr, whose inlining of a summary into an arranged query
+does not consider the `ORDER BY`.
