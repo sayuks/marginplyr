@@ -573,6 +573,7 @@ test_that("a star modifier is told from a multiplication (#1836)", {
     "SELECT g, * EXCLUDE (g), 2 AS y FROM t",
     "SELECT t.* REPLACE (v + 1 AS v), 2 AS y FROM t",
     "SELECT \"t\".* REPLACE (v + 1 AS v), 2 AS y FROM t",
+    "SELECT g, COLUMNS(t.* EXCLUDE (g)), 2 AS y FROM t",
     "SELECT g, v, y FROM (SELECT * RENAME (v AS y), v FROM t)",
     "SELECT g, COLUMNS(* EXCLUDE (g)), 2 AS y FROM t"
   )) {
@@ -589,6 +590,11 @@ test_that("a star modifier is told from a multiplication (#1836)", {
       authored("SELECT g, v, (v) * exclude(v) AS y FROM t"),
       # A numeric literal's trailing dot qualifies no star.
       authored("SELECT g, v, 2. * exclude(v) AS y FROM t"),
+      # Nor does a piece of one: these lex as `1`, `_0`, `.` and `1`, `e3`,
+      # `.`, and a qualified star starts a select item.
+      authored("SELECT g, v, 1_0. * exclude(v) AS y FROM t"),
+      authored("SELECT g, v, 1e3. * replace(v) AS y FROM t"),
+      dplyr::mutate(t, y = dplyr::sql("1_0. * exclude(v)")),
       authored("SELECT g, v, v ** exclude(v) AS y FROM t"),
       authored("SELECT g, v, v AS y FROM t WHERE v * exclude(v) > 0"),
       dplyr::mutate(t, y = v * exclude(v)),
