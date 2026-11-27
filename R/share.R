@@ -4823,6 +4823,10 @@ scoped_data_symbols <- function(expr, scope, lookup) {
   if (length(materialized) > 0L) {
     return(unique(c(call_part_symbols(expr, scope, lookup), materialized)))
   }
+  template <- template_component_symbols(expr, call_name, scope, lookup)
+  if (!is.null(template)) {
+    return(unique(c(call_part_symbols(expr, scope, lookup), template)))
+  }
   evaluation <- evaluator_as_eval(expr, call_name, scope, lookup)
   if (!is.null(evaluation)) {
     return(scoped_data_symbols(evaluation, scope, lookup))
@@ -8604,6 +8608,176 @@ materialized_env_symbols <- function(expr, call_name, scope, lookup) {
     return(unresolved_lookup_name())
   }
   character()
+}
+
+# The template evaluators whose `{}` components the walk reads: the package
+# owning each, its definition, the formal holding the template, and those
+# naming its data and environment. `bind` is whether a named `...` argument
+# binds a name for the components, as glue's do, rather than being another
+# template, as cli's `format_inline()` reads it; `markup` is whether cli's
+# inline markup applies.
+template_evaluators <- function() {
+  glue_like <- list(template = "...", environment = ".envir", bind = TRUE,
+                    markup = FALSE)
+  cli_like <- list(package = "cli", environment = ".envir", markup = TRUE)
+  list(
+    glue = c(list(package = "glue", fun = glue::glue), glue_like),
+    glue_data = c(list(package = "glue", fun = glue::glue_data, data = ".x"),
+                  glue_like),
+    str_glue = c(list(package = "stringr", fun = function() {
+      stringr::str_glue
+    }), glue_like),
+    str_glue_data = c(list(package = "stringr", fun = function() {
+      stringr::str_glue_data
+    }, data = ".x"), glue_like),
+    englue = list(package = "rlang", fun = rlang::englue, template = "x",
+                  environment = "env", bind = FALSE, markup = FALSE),
+    format_inline = c(list(fun = cli::format_inline, template = "...",
+                           bind = FALSE), cli_like),
+    pluralize = c(list(fun = cli::pluralize, template = "...", bind = TRUE),
+                  cli_like),
+    format_message = c(list(fun = cli::format_message, template = "message",
+                            bind = FALSE), cli_like)
+  )
+}
+
+# What the literal templates of a known template evaluator read when their
+# components run, or NULL for any other call. Each template is split by glue's
+# own parser without evaluating anything, and each component is walked as code
+# in the frames its environment argument places, under the names the call's
+# data and named arguments bind; an unparsable component retains the marker.
+#
+# A template held in a variable or built by a call, a custom `.open` or
+# `.close`, another grammar such as `stringr::str_interp()`, and an evaluator
+# held as a value stay outside the walk (#1652, #1824).
+template_component_symbols <- function(expr, call_name, scope, lookup) {
+  evaluator <- template_evaluators()[[call_name %||% ""]]
+  if (is.null(evaluator) || !is_known_package_frame_call(
+    expr, call_name, evaluator$package, scope, lookup
+  ) || any(vapply(static_call_args(expr), identical, logical(1),
+                  quote(...)))) {
+    return(NULL)
+  }
+  fun <- evaluator$fun
+  if (identical(evaluator$package, "stringr")) {
+    fun <- fun()
+  }
+  parts <- static_matched_arguments(expr, fun, expand_dots = FALSE)
+  if (is.null(parts) || any(c(".open", ".close") %in% names(parts))) {
+    return(NULL)
+  }
+  templates <- if (identical(evaluator$template, "...")) {
+    dots <- parts[["..."]]
+    dots[!evaluator$bind | !nzchar(argument_names(dots))]
+  } else {
+    parts[evaluator$template]
+  }
+  templates <- Filter(Negate(rlang::is_missing), templates)
+  templates <- unlist(lapply(templates, function(template) {
+    template <- unparenthesized_value(template)
+    if (is.character(template)) {
+      return(template)
+    }
+    static_character_value(template, function(expr) {
+      identical(static_call_name(expr), "c") &&
+        is_known_base_frame_call(expr, "c", scope, lookup)
+    })
+  }), use.names = FALSE)
+  bound <- if (evaluator$bind) setdiff(argument_names(parts[["..."]]), "")
+  data <- parts[[evaluator$data %||% ""]]
+  if (!is.null(data) && is_known_data_constructor(data, scope, lookup)) {
+    bound <- c(bound, setdiff(argument_names(static_call_args(data)), ""))
+  }
+  components <- lapply(templates, template_components, evaluator$markup)
+  if (any(vapply(components, is.null, logical(1)))) {
+    return(unresolved_lookup_name())
+  }
+  frames <- template_scope(parts[[evaluator$environment]], scope, lookup)
+  if (is.null(frames)) {
+    return(character())
+  }
+  frames <- c(list(list(bound = unique(c(bound, frames$bound)),
+                        evaluated = TRUE)), frames$scope)
+  unique(c(character(), unlist(lapply(
+    unlist(components, recursive = FALSE), scoped_data_symbols,
+    scope = frames, lookup = lookup
+  ), use.names = FALSE)))
+}
+
+# The code of each `{}` component of a literal template, as glue's parser
+# splits it, or NULL when the template or a component does not parse. Under
+# cli's markup a `{.class text}` component is itself a template and a `{?s}`
+# component reads nothing.
+template_components <- function(template, markup) {
+  collected <- new.env(parent = emptyenv())
+  collected$texts <- character()
+  collect <- function(text, envir) {
+    collected$texts <- c(collected$texts, text)
+    ""
+  }
+  parsed <- tryCatch({
+    glue::glue(template, .envir = emptyenv(), .transformer = collect)
+    TRUE
+  }, error = function(cnd) FALSE)
+  if (!parsed) {
+    return(NULL)
+  }
+  code <- list()
+  for (text in collected$texts) {
+    if (markup && startsWith(text, "?")) {
+      next
+    }
+    inner <- if (markup && startsWith(text, ".")) {
+      template_components(sub("^\\.\\S*\\s?", "", text), markup)
+    } else {
+      tryCatch(as.list(parse(text = text, keep.source = FALSE)),
+               error = function(cnd) NULL)
+    }
+    if (is.null(inner)) {
+      return(NULL)
+    }
+    code <- c(code, inner)
+  }
+  code
+}
+
+# The frames a template's components run in, given its environment argument:
+# the current ones when it is omitted, and those it places otherwise, with
+# `bound` holding the names a literal `list2env()` binds over them. NULL when
+# `lookup_environment_is_external()` proves the environment cannot reach the
+# mask. An environment the walk cannot place binds nothing, so every free
+# name reads the mask.
+template_scope <- function(environment, scope, lookup) {
+  if (is.null(environment)) {
+    return(list(scope = scope, bound = character()))
+  }
+  environment <- unparenthesized_value(environment)
+  if (identical(static_call_name(environment), "list2env") &&
+        is_known_base_frame_call(environment, "list2env", scope, lookup)) {
+    parts <- static_matched_arguments(environment, base::list2env)
+    if (!is.null(parts) && !"envir" %in% names(parts) &&
+          is_known_data_constructor(parts$x, scope, lookup)) {
+      parent <- template_scope(parts$parent, scope, lookup)
+      if (is.null(parent)) {
+        return(NULL)
+      }
+      parent$bound <- c(
+        parent$bound, setdiff(argument_names(static_call_args(parts$x)), "")
+      )
+      return(parent)
+    }
+  }
+  if (lookup_environment_is_external(
+    environment, scope_bound_names(scope), lookup
+  )) {
+    return(NULL)
+  }
+  frames <- static_environment_frames(environment, scope, lookup)
+  list(scope = if (length(frames) == 1L && frames <= length(scope)) {
+    scope[seq.int(frames, length(scope))]
+  } else {
+    list()
+  }, bound = character())
 }
 
 # A lookup on the mask reads its own bindings regardless of inheritance.
