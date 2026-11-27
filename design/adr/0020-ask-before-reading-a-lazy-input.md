@@ -525,10 +525,15 @@ from a call head has no head for the scan to see (#1780): an operator such as
 for `COUNT(*)` or `struct_pack` for `{...}`. While the operation's catalog
 snapshot holds such a macro, typed metadata is refused for the connection,
 whatever the statement, with the DuckDB call condition; this is the shape the
-value-function names of #1647 took. The names are one hand-kept constant,
-`duckdb_implicit_functions`, which a test asserts each reached without a call
-head on the DuckDB under test, so a name DuckDB adds later is admitted until it
-is listed. A name only one supported version reaches from syntax, such as
+value-function names of #1647 took. An operator is decided by the name's
+characters (#1813): DuckDB binds an operator token it has no rule of its own
+for as the function of that name, so the names a caller can reach that way are
+open-ended, and a caller macro named only with operator characters refuses,
+including the comparison operators DuckDB 2.0 does not reach from syntax,
+since excluding them would be a second list measured on one version. The other
+names are one hand-kept constant, `duckdb_implicit_functions`, which a test
+asserts each reached without a call head on the DuckDB under test, so a name
+DuckDB adds later is admitted until it is listed. A name only one supported version reaches from syntax, such as
 `factorial` behind postfix `!` on DuckDB 2.0 (#1818), is listed for every
 version, and the test asserts its form where that version runs. The check reads only a snapshot the operation already took and adds
 no query, so a statement that names no relation and no call head binds without

@@ -571,13 +571,11 @@ duckdb_value_function_heads <- function(tokens) {
           !unquoted(-1L, "as"))
 }
 
-# Functions DuckDB binds from syntax with no call head: operators, literal
-# constructors and keyword forms, as measured on DuckDB 1.5 and 2.0. A caller
-# macro of such a name replaces the function wherever that syntax stands,
-# which a head scan cannot see.
+# Functions DuckDB binds from syntax with no call head: literal constructors
+# and keyword forms, as measured on DuckDB 1.5 and 2.0. A caller macro of
+# such a name replaces the function wherever that syntax stands, which a head
+# scan cannot see. Operators are decided by duckdb_operator_name() instead.
 duckdb_implicit_functions <- c(
-  "+", "-", "*", "/", "%", "//", "^", "**", "||", "<<", ">>", "&", "|", "~",
-  "@", "^@", "&&", "@>", "<@", "<->", "<=>", "~~", "!~~", "~~*", "!~~*", "~~~",
   "count_star", "list_value", "struct_pack", "row", "map", "date_part",
   "timezone", "ltrim", "rtrim", "regexp_full_match", "like_escape",
   "ilike_escape", "list_apply", "contains", "to_millennia", "to_centuries",
@@ -585,6 +583,13 @@ duckdb_implicit_functions <- c(
   "to_hours", "to_minutes", "to_seconds", "to_milliseconds", "to_microseconds",
   "trunc", "factorial", "regexp_matches"
 )
+
+# Whether each of `names` consists only of operator characters. DuckDB binds
+# an operator token it has no rule of its own for as the function of that
+# name, so a caller can name a macro any such token reaches (ADR 0020).
+duckdb_operator_name <- function(names) {
+  grepl("^[-+*/<>=~!@#%^&|`?]+$", names)
+}
 
 # Table functions that bind SQL text passed as a value, refused by name in
 # authored SQL and in stored views alike (ADR 0020). Other table functions are
@@ -684,7 +689,8 @@ validate_duckdb_authored_calls <- function(tokens, catalog) {
   snapshot <- catalog(read = FALSE)
   if (!is.null(snapshot) && any(
     duckdb_caller_macros(snapshot) &
-      sql_ascii_lower(snapshot$relation_name) %in% duckdb_implicit_functions
+      (sql_ascii_lower(snapshot$relation_name) %in% duckdb_implicit_functions |
+         duckdb_operator_name(snapshot$relation_name))
   )) {
     abort_duckdb_call_metadata()
   }
