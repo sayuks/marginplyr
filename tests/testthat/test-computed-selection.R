@@ -338,13 +338,17 @@ test_that("a failure before a computed part is left to the caller", {
 test_that("a namespace part returning a function keeps the refusal", {
   data <- computed_selection_data()
   for (call in list(
-    quote(inspect_grouping(data, .by = identity(dt), .grouping = rollup(region))),
+    quote(inspect_grouping(
+      data, .by = identity(dt), .grouping = rollup(region)
+    )),
     quote(inspect_grouping(data, .grouping = rollup(identity(dt)))),
     quote(inspect_grouping(data, .grouping = rollup(c(value, identity(dt))))),
     quote(inspect_grouping(
       data, .by = c(value, force(dt)), .grouping = rollup(region)
     ))
   )) {
-    expect_error(eval(call), "is computed from `dt`", class = "marginplyr_error")
+    expect_error(
+      eval(call), "is computed from `dt`", class = "marginplyr_error"
+    )
   }
 })
