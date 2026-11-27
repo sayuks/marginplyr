@@ -930,7 +930,8 @@ test_that("a lazy-load constant names a later across() on a data.table", {
 
 # Base's own constants are lazy-load promises from startup, and nothing else in
 # the suite reads these two; each case reads its own, since reading one forces
-# it. `baseenv()` is not a package environment.
+# it. `baseenv()` is not a package environment, and it is locked, so a session
+# that has already read one cannot restore the promise: that case skips.
 test_that("a base constant names a later across() on its first call", {
   months <- list(
     month.abb = c(
@@ -947,7 +948,10 @@ test_that("a base constant names a later across() on its first call", {
     data.table::as.data.table(data)
   })
   for (name in names(months)) {
-    expect_true(rlang::env_binding_are_lazy(baseenv(), name))
+    skip_if_not(
+      rlang::env_binding_are_lazy(baseenv(), name),
+      paste0("`", name, "` was already read in this session")
+    )
     data <- data.frame(g = c("a", "a", "b"), matrix(
       c(1, 2, 5), nrow = 3L, ncol = 12L
     ))
