@@ -333,8 +333,9 @@ test_that("a failure before a computed part is left to the caller", {
   }
 })
 
-# A function a namespace part returns is applied by tidyselect as a predicate,
-# outside its "In argument" wrapper, so its error names no part (#1802).
+# A function a namespace part returns, its head bare or qualified, is applied
+# by tidyselect as a predicate, outside its "In argument" wrapper, so its error
+# names no part (#1802).
 test_that("a namespace part returning a function keeps the refusal", {
   data <- computed_selection_data()
   for (call in list(
@@ -342,6 +343,7 @@ test_that("a namespace part returning a function keeps the refusal", {
       data, .by = identity(dt), .grouping = rollup(region)
     )),
     quote(inspect_grouping(data, .grouping = rollup(identity(dt)))),
+    quote(inspect_grouping(data, .grouping = rollup(base::identity(dt)))),
     quote(inspect_grouping(data, .grouping = rollup(c(value, identity(dt))))),
     quote(inspect_grouping(
       data, .by = c(value, force(dt)), .grouping = rollup(region)
@@ -351,4 +353,36 @@ test_that("a namespace part returning a function keeps the refusal", {
       eval(call), "is computed from `dt`", class = "marginplyr_error"
     )
   }
+})
+
+# A `where()` predicate's condition reaches the reader unwrapped, and one whose
+# class computes its message in a `conditionMessage()` method holds no
+# `message` field to compare. The reader passes over it to the caller's own
+# function, whose failure stays the caller's (#1802).
+test_that("a predicate's condition with no message field stays its own", {
+  rlang::local_bindings(
+    conditionMessage.registry_offline = function(c) {
+      "The key registry is offline."
+    },
+    .env = asNamespace("base")$.__S3MethodsTable__.
+  )
+  offline <- function(x) {
+    stop(structure(
+      class = c("registry_offline", "error", "condition"), list(call = NULL)
+    ))
+  }
+  data <- computed_selection_data()
+  my_upper <- function(x) toupper(x)
+  expect_error(
+    inspect_grouping(
+      data, .by = c(where(offline), my_upper(region)), .grouping = rollup(dt)
+    ),
+    "The key registry is offline.", fixed = TRUE, class = "registry_offline"
+  )
+  expect_error(
+    inspect_grouping(
+      data, .grouping = rollup(c(where(offline), my_upper(region)))
+    ),
+    "The key registry is offline.", fixed = TRUE, class = "registry_offline"
+  )
 })
