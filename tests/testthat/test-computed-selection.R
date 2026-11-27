@@ -298,3 +298,46 @@ test_that("a failure is decided for the part that raised it", {
     expect_match(conditionMessage(error), "value_table", fixed = TRUE)
   }
 })
+
+# A computed part tidyselect never reached is a bystander: the failure was
+# raised by a part that computes nothing, and reaches the caller as it does
+# through `tidyselect::eval_select()` (#1802).
+test_that("a failure before a computed part is left to the caller", {
+  data <- computed_selection_data()
+  data$store <- c("x", "y")
+  key_cols <- function(x) {
+    rlang::abort("The key registry is offline.", class = "registry_offline")
+  }
+  key_pred <- function(x) {
+    rlang::abort("The key registry is offline.", class = "registry_offline")
+  }
+  caught <- function(call) {
+    rlang::try_fetch(call, registry_offline = function(cnd) "caught")
+  }
+  for (verb in names(forwarded_verbs)) {
+    expect_identical(caught(forwarded_verbs[[verb]](
+      data, c(all_of(key_cols(region)), toupper(store)), rollup(dt)
+    )), "caught")
+    expect_identical(caught(forwarded_verbs[[verb]](
+      data, NULL, rollup(c(all_of(key_cols(region)), toupper(store)))
+    )), "caught")
+    expect_identical(caught(forwarded_verbs[[verb]](
+      data, c(where(key_pred), toupper(store)), rollup(dt)
+    )), "caught")
+    expect_identical(caught(forwarded_verbs[[verb]](
+      data, NULL, rollup(c(where(key_pred), toupper(store)))
+    )), "caught")
+  }
+  for (call in list(
+    quote(inspect_grouping(
+      data, .by = c(all_of(nope), toupper(store)), .grouping = rollup(dt)
+    )),
+    quote(inspect_grouping(
+      data, .grouping = rollup(c(all_of(nope), toupper(store)))
+    ))
+  )) {
+    error <- expect_error(eval(call))
+    expect_false(inherits(error, "marginplyr_error"))
+    expect_match(conditionMessage(error), "all_of(nope)", fixed = TRUE)
+  }
+})

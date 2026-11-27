@@ -3907,7 +3907,8 @@ computed_selection_leaves <- function(expr, data_vars) {
 # computed-expression refusal explains `cnd`, the selection's failure, by, or
 # `NULL`; `env` is where the selection's quosure is evaluated. Where
 # `failed_selection_part()` names the part that raised the failure, that part
-# alone is decided; otherwise every part is. R's unbound-object error ending
+# alone is decided; where it finds that no computed part raised it, none is;
+# otherwise every part is. R's unbound-object error ending
 # the chain is explained by the first decided part naming that column. Any
 # other failure is explained by the first decided part only when no decided
 # part's head is the caller's own: a primitive, a `pkg::fun` spelling, or a
@@ -3925,6 +3926,9 @@ computed_selection_failure <- function(computed, cnd, env) {
     return(NULL)
   }
   failed <- failed_selection_part(computed, cnd)
+  if (isFALSE(failed)) {
+    return(NULL)
+  }
   if (!is.null(failed)) {
     computed <- list(failed)
   }
@@ -3952,33 +3956,54 @@ computed_selection_failure <- function(computed, cnd, env) {
 }
 
 # The part among `computed` that tidyselect reports as the one whose evaluation
-# failed, or `NULL` where its chain names none of them. A value a part
-# returned and tidyselect refused carries the part's label as the subscript
-# error's `subscript_arg`; an error raised while evaluating a part is wrapped
-# by tidyselect in an "In argument" condition whose message is rebuilt here
-# as tidyselect builds it, since the label is held nowhere else. tidyselect
-# leaves that message empty for a condition whose call is the bare head, so
-# such a failure names no part.
+# failed; `FALSE` where its chain shows that none of them raised it; `NULL`
+# where it cannot tell. A value a part returned and tidyselect refused carries
+# the part's label as the subscript error's `subscript_arg`; an error raised
+# while evaluating a part is wrapped by tidyselect in an "In argument"
+# condition whose message is rebuilt here as tidyselect builds it, since the
+# label is held nowhere else. Either naming another part answers `FALSE`, as
+# does a chain holding neither a subscript error nor a wrapper, which is
+# parented and carries no class of its own: no part was evaluated when it was
+# raised, as for a `where()` predicate. tidyselect leaves the wrapper's message
+# empty for a condition whose call is the bare head, so such a failure names
+# no part.
 failed_selection_part <- function(computed, cnd) {
   labels <- vapply(
     computed, function(part) rlang::as_label(part$expr), character(1)
   )
-  wrapped <- cli::ansi_strip(vapply(labels, function(code) {
-    cli::format_inline("In argument: {.code {code}}.")
-  }, character(1)))
-  for (link in condition_chain(cnd)) {
-    found <- if (inherits(link, "vctrs_error_subscript")) {
-      match(link$subscript_arg, labels)
+  wrapper <- function(code) {
+    cli::ansi_strip(cli::format_inline("In argument: {.code {code}}."))
+  }
+  wrapped <- vapply(labels, wrapper, character(1))
+  around <- strsplit(wrapper("\u0001"), "\u0001", fixed = TRUE)[[1L]]
+  chain <- condition_chain(cnd)
+  for (link in chain) {
+    if (inherits(link, "vctrs_error_subscript")) {
+      arg <- link$subscript_arg
+      found <- match(arg, labels)
+      named <- is.character(arg) && length(arg) == 1L && nzchar(arg)
     } else if (is.character(link$message) && length(link$message) == 1L) {
-      match(cli::ansi_strip(link$message), wrapped)
+      message <- cli::ansi_strip(link$message)
+      found <- match(message, wrapped)
+      named <- length(around) == 2L && startsWith(message, around[[1L]]) &&
+        endsWith(message, around[[2L]])
     } else {
-      NA_integer_
+      next
     }
     if (length(found) == 1L && !is.na(found)) {
       return(computed[[found]])
     }
+    if (isTRUE(named)) {
+      return(FALSE)
+    }
   }
-  NULL
+  traced <- vapply(chain, function(link) {
+    inherits(link, "vctrs_error_subscript") || (
+      identical(class(link), c("rlang_error", "error", "condition")) &&
+        inherits(link$parent, "condition")
+    )
+  }, logical(1))
+  if (any(traced)) NULL else FALSE
 }
 
 # Two refusals rather than one with the subject interpolated, because the
