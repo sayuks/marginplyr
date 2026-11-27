@@ -2546,6 +2546,8 @@ across_template_pattern <- function(template) {
   if (is.null(expanded)) {
     return(NULL)
   }
+  # strsplit() drops the empty piece after a trailing marker, which a template
+  # ending in a component needs; the terminator keeps it and is removed.
   pieces <- strsplit(paste0(expanded, "\002"), marker, fixed = TRUE)[[1L]]
   pieces[[length(pieces)]] <- sub("\002$", "", pieces[[length(pieces)]])
   pieces <- gsub("([][{}.\\\\|()^$*+?])", "\\\\\\1", pieces, perl = TRUE)
