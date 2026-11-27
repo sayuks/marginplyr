@@ -429,7 +429,8 @@ Config/testthat/start-first:
     list-grouping,
     dtplyr-row-call-metadata,
     suggest-guard-scan,
-    grouping-selection-deprecation
+    grouping-selection-deprecation,
+    pipe-parenthesized-rhs
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
