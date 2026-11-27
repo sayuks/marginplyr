@@ -141,6 +141,38 @@ test_that("a caller's own function keeps its own condition", {
   )
 })
 
+# The part a failure is decided for is the one whose column it names, or, for
+# any other failure, a part the caller defined wherever it stands.
+test_that("a later computed part is the one a failure is decided for", {
+  data <- computed_selection_data()
+  ok_cols <- function(x) "region"
+  expect_computed_refusal(
+    inspect_grouping(
+      data, .by = c(ok_cols(dt), toupper(region)), .grouping = rollup(value)
+    ),
+    by_main,
+    "i `toupper(region)` is computed from `region`."
+  )
+  expect_computed_refusal(
+    inspect_grouping(data, .grouping = rollup(c(ok_cols(dt), toupper(region)))),
+    grouping_main,
+    "i `toupper(region)` is computed from `region`."
+  )
+  key_cols <- function(x) {
+    rlang::abort("The key registry is offline.", class = "registry_offline")
+  }
+  caught <- function(call) {
+    rlang::try_fetch(call, registry_offline = function(cnd) "caught")
+  }
+  expect_identical(caught(inspect_grouping(
+    data, .by = c(rlang::as_name(quote(region)), key_cols(dt)),
+    .grouping = rollup(value)
+  )), "caught")
+  expect_identical(caught(inspect_grouping(
+    data, .grouping = rollup(c(rlang::as_name(quote(dt)), key_cols(region)))
+  )), "caught")
+})
+
 test_that("a caller's function keeps a converted warning and a lookup", {
   data <- computed_selection_data()
   slow_registry <- function(x) {

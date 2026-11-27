@@ -339,12 +339,10 @@ resolve_by_selection <- function(by_quo, data_proxy) {
           cnd
         )
       }
-      computed <- computed_selection_leaf(
+      computed <- computed_selection_failure(computed_selection_leaves(
         rlang::quo_get_expr(by_quo), selection_proxy_names(data_proxy)
-      )
-      if (is_computed_selection_failure(
-        computed, cnd, rlang::quo_get_env(by_quo)
-      )) {
+      ), cnd, rlang::quo_get_env(by_quo))
+      if (!is.null(computed)) {
         abort_computed_by(computed)
       }
       stop(cnd)
@@ -3531,12 +3529,10 @@ resolve_grouping_selection <- function(arg, data_proxy) {
         if (is_unsupported_predicate(cnd)) {
           abort_selection_predicate(label, cnd)
         }
-        computed <- computed_selection_leaf(
+        computed <- computed_selection_failure(computed_selection_leaves(
           nested_arg_expr(arg), selection_proxy_names(data_proxy)
-        )
-        if (is_computed_selection_failure(
-          computed, cnd, rlang::quo_get_env(arg)
-        )) {
+        ), cnd, rlang::quo_get_env(arg))
+        if (!is.null(computed)) {
           abort_computed_grouping_arg(computed)
         }
         stop(cnd)
@@ -3875,27 +3871,22 @@ selection_proxy_names <- function(data_proxy) {
   names(tidyselect::tidyselect_data_proxy(data_proxy))
 }
 
-# The first part of a failed selection that computes a value from columns of
-# the input, as `list(expr, columns)`, or `NULL` where there is none. This reads
-# the spelling alone; whether that part is why the selection failed is
-# `is_computed_selection_failure()`'s question. The walk descends the operators
+# Every part of a failed selection that computes a value from columns of the
+# input, each as `list(expr, columns)`, in the order tidyselect evaluates them.
+# This reads the spelling alone; which part, if any, explains the failure is
+# `computed_selection_failure()`'s question. The walk descends the operators
 # tidyselect walks. A selection helper, a constructor, a pronoun subscript, an
 # operator whatever its qualification -- whose failure is tidyselect's own --
 # and a call naming no column are not computed columns.
-computed_selection_leaf <- function(expr, data_vars) {
+computed_selection_leaves <- function(expr, data_vars) {
   expr <- unparenthesized_value(expr)
   if (is_selection_walk_call(expr)) {
-    parts <- static_call_args(expr)
-    for (index in seq_along(parts)) {
-      found <- computed_selection_leaf(parts[[index]], data_vars)
-      if (!is.null(found)) {
-        return(found)
-      }
-    }
-    return(NULL)
+    return(unlist(lapply(
+      static_call_args(expr), computed_selection_leaves, data_vars = data_vars
+    ), recursive = FALSE))
   }
   if (!is_nameable_call(expr)) {
-    return(NULL)
+    return(list())
   }
   name <- static_call_name(expr)
   if (!is.null(name) && name %in% c(
@@ -3903,54 +3894,60 @@ computed_selection_leaf <- function(expr, data_vars) {
     selection_walk_operators(), selection_refused_operators(),
     "(", "$", "[[", "~"
   )) {
-    return(NULL)
+    return(list())
   }
   columns <- intersect(all.vars(expr), data_vars)
   if (length(columns) == 0L) {
-    return(NULL)
+    return(list())
   }
-  list(expr = expr, columns = columns)
+  list(list(expr = expr, columns = columns))
 }
 
-# Whether `cnd`, the failure of a selection whose first computed part is
-# `computed` (from `computed_selection_leaf()`, possibly `NULL`), is the one the
-# computed-expression refusal explains; `env` is where the selection's quosure
-# is evaluated. Two failures are: R's unbound-object error for a column the
-# part names, ending the chain, and any failure of a part whose head the caller
-# did not define -- a primitive, a `pkg::fun` spelling, or a function closing
-# over a namespace -- such as `format(dt)` over a column named like a function.
-# Any other failure of a caller's own function is its own condition and is
-# re-raised (#1802).
+# The part among `computed` (from `computed_selection_leaves()`) that the
+# computed-expression refusal explains `cnd`, the selection's failure, by, or
+# `NULL`; `env` is where the selection's quosure is evaluated. R's
+# unbound-object error ending the chain is explained by the first part naming
+# that column. Any other failure is explained by the first part only when no
+# part's head is the caller's own: a primitive, a `pkg::fun` spelling, or a
+# function closing over a namespace, such as `format(dt)` over a column named
+# like a function. Where a caller's own function is among the parts, the
+# failure may be its own condition and is re-raised (#1802).
 #
 # R's unbound-object error carries no class, so it is recognised by the message
 # R gives for the same symbol in `emptyenv()`, which follows the session's
 # language as the original did. The head is read through
 # `selection_argument_function()`, which forces no caller binding and answers
 # `NULL`, read here as the caller's, for one it would have to force.
-is_computed_selection_failure <- function(computed, cnd, env) {
-  if (is.null(computed)) {
-    return(FALSE)
+computed_selection_failure <- function(computed, cnd, env) {
+  if (length(computed) == 0L) {
+    return(NULL)
   }
   chain <- condition_chain(cnd)
-  unbound <- vapply(computed$columns, function(column) {
-    tryCatch(
-      eval(as.symbol(column), emptyenv()),
-      error = conditionMessage
-    )
-  }, character(1))
-  if (conditionMessage(chain[[length(chain)]]) %in% unbound) {
-    return(TRUE)
+  message <- conditionMessage(chain[[length(chain)]])
+  for (part in computed) {
+    unbound <- vapply(part$columns, function(column) {
+      tryCatch(
+        eval(as.symbol(column), emptyenv()),
+        error = conditionMessage
+      )
+    }, character(1))
+    if (message %in% unbound) {
+      return(part)
+    }
   }
-  if (!is.null(static_call_ns(computed$expr))) {
-    return(TRUE)
-  }
-  fn <- selection_argument_function(computed$expr, env, character())
-  !is.null(fn) && (is.primitive(fn) || isNamespace(environment(fn)))
+  callers <- vapply(computed, function(part) {
+    if (!is.null(static_call_ns(part$expr))) {
+      return(FALSE)
+    }
+    fn <- selection_argument_function(part$expr, env, character())
+    is.null(fn) || !(is.primitive(fn) || isNamespace(environment(fn)))
+  }, logical(1))
+  if (any(callers)) NULL else computed[[1L]]
 }
 
 # Two refusals rather than one with the subject interpolated, because the
 # subject is markup in one and prose in the other. The failure they replace is
-# not carried as a cause: `is_computed_selection_failure()` admits only a
+# not carried as a cause: `computed_selection_failure()` admits only a
 # failure the expression's own spelling explains, which is what the refusal
 # states.
 abort_computed_by <- function(computed) {
