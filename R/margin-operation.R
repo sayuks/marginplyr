@@ -105,8 +105,12 @@ with_margin_error_call <- function(expr, call) {
   tryCatch(
     expr,
     error = function(cnd) {
-      if (inherits(cnd, "marginplyr_error")) {
+      # A condition already marked was blamed by an inner Margin verb the
+      # caller wrote inside this one's arguments; its call is that verb's.
+      # Nested sites within one verb all receive the same `call`.
+      if (inherits(cnd, "marginplyr_error") && !isTRUE(cnd$marginplyr_blamed)) {
         cnd$call <- call
+        cnd$marginplyr_blamed <- TRUE
       }
       stop(cnd)
     }

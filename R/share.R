@@ -339,8 +339,13 @@
 #' execution-time diagnostics name the share, its source summary, and the
 #' original call, as the local ones do.
 #'
-#' On dbplyr, a summary that is not one value per grouping row surfaces as a
-#' database error when the staged query executes. *Parent shares use a staged
+#' On dbplyr, a summary that is not one value per grouping row is detected in
+#' one form: on DuckDB and PostgreSQL, a bare, single-argument `UNNEST()` at
+#' the top level of a direct [dbplyr::sql()] share source, written with
+#' standard quotes and without comments, surfaces as a database error when the
+#' staged query executes. Any other direct SQL source must itself return one
+#' value per grouping row; unless the database refuses it, one that returns
+#' several or none is not detected. *Parent shares use a staged
 #' lazy query* in [Database and lazy backends][db] describes how a dialect is
 #' asked, which answers are reused, and what that sends; its *Backend support
 #' matrix* sets each backend family's share support beside its other answers.
