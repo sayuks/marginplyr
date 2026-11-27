@@ -4739,6 +4739,18 @@ scoped_data_symbols <- function(expr, scope, lookup) {
     }
     return(definition_data_symbols(expr, scope, lookup))
   }
+  constructed <- constructed_function_literal(expr, scope, lookup)
+  if (!is.null(constructed)) {
+    literal_scope <- if (constructed$placed) {
+      scope
+    } else {
+      list(list(bound = character()))
+    }
+    return(unique(c(
+      call_part_symbols(expr, scope, lookup),
+      scoped_data_symbols(constructed$literal, literal_scope, lookup)
+    )))
+  }
   # `statement_reads_and_scope()` is the one place that knows which nodes bind
   # and what each of them binds. Here only its reads are wanted: an expression
   # position has nothing after it for a binding to reach, which is what a bare
@@ -5059,6 +5071,149 @@ scope_literal_branch <- function(expr, scope, lookup) {
 literal_function_definition <- function(expr) {
   expr <- unparenthesized_value(expr)
   if (rlang::is_call(expr, "function") && length(expr) >= 3L) expr else NULL
+}
+
+# The literal a known constructor builds from language written in place, and
+# NULL for any other call (#1831): base `as.function()` of a literal `list()`
+# or `alist()`, `rlang::new_function()` given `NULL` or such a list of formals
+# and a body, and `rlang::new_formula(NULL, rhs)`. Each formal default and the
+# body is a constant or a constructor `static_language_values()` reads to one
+# language object. `$literal` is the `function` or `~` call, and `$placed`
+# whether it is enclosed by the current frame, as an omitted environment
+# makes it; one the walk cannot place is not taken to be that frame.
+#
+# A body or formal list held in a variable or built by another call -- `c()`,
+# `call()`, `rlang::fn_body<-` -- stays outside the walk, as language a
+# `do.call()` list does not hold in place does (#1652, #1807).
+constructed_function_literal <- function(expr, scope, lookup) {
+  expr <- unparenthesized_value(expr)
+  name <- static_call_name(expr)
+  if (is.null(name) || is_parenthesized(static_call_head(expr))) {
+    return(NULL)
+  }
+  if (identical(name, "as.function") &&
+        is_known_base_frame_call(expr, name, scope, lookup)) {
+    parts <- static_matched_arguments(expr, function(x, envir, ...) NULL)
+    if (!identical(setdiff(names(parts), "envir"), "x")) {
+      return(NULL)
+    }
+    elements <- constructed_list_elements(parts$x, scope, lookup)
+    if (length(elements) == 0L) {
+      return(NULL)
+    }
+    body <- list(elements[[length(elements)]])
+    formals <- elements[-length(elements)]
+    environment <- parts$envir
+  } else if (name %in% c("new_function", "new_formula") &&
+               is_known_package_frame_call(expr, name, "rlang", scope,
+                                           lookup)) {
+    definition <- if (identical(name, "new_function")) {
+      rlang::new_function
+    } else {
+      rlang::new_formula
+    }
+    parts <- static_matched_arguments(expr, definition)
+    required <- if (identical(name, "new_function")) {
+      c("args", "body")
+    } else {
+      c("lhs", "rhs")
+    }
+    if (is.null(parts) || !all(required %in% names(parts))) {
+      return(NULL)
+    }
+    first <- unparenthesized_value(parts[[required[[1L]]]])
+    formals <- if (is.null(first)) {
+      list()
+    } else if (identical(name, "new_function")) {
+      constructed_list_elements(first, scope, lookup)
+    }
+    body <- constructed_language_value(parts[[required[[2L]]]])
+    environment <- parts$env
+  } else {
+    return(NULL)
+  }
+  if (is.null(formals) || is.null(body) || rlang::is_missing(body[[1L]])) {
+    return(NULL)
+  }
+  if (identical(name, "new_formula")) {
+    literal <- rlang::call2("~", body[[1L]])
+  } else {
+    formal_names <- names(formals) %||% rep("", length(formals))
+    if (!all(nzchar(formal_names)) || anyDuplicated(formal_names)) {
+      return(NULL)
+    }
+    literal <- rlang::call2(
+      "function", if (length(formals)) as.pairlist(formals), body[[1L]]
+    )
+  }
+  list(
+    literal = literal,
+    placed = is.null(environment) ||
+      identical(static_environment_frame(environment, scope, lookup), 1L)
+  )
+}
+
+# The elements of a written argument list a constructor reads: `alist()` and
+# `rlang::exprs()` as written, and base `list()` or `pairlist()` and
+# `rlang::pairlist2()` element by element through
+# `constructed_language_value()`. NULL where any element is not readable.
+constructed_list_elements <- function(expr, scope, lookup) {
+  expr <- unparenthesized_value(expr)
+  name <- static_call_name(expr)
+  if (is.null(name) || is_parenthesized(static_call_head(expr))) {
+    return(NULL)
+  }
+  base <- name %in% c("alist", "list", "pairlist") &&
+    is_known_base_frame_call(expr, name, scope, lookup)
+  rlang <- name %in% c("exprs", "pairlist2") &&
+    is_known_package_frame_call(expr, name, "rlang", scope, lookup)
+  if (!base && !rlang) {
+    return(NULL)
+  }
+  elements <- static_call_args(expr)
+  if (identical(name, "alist")) {
+    return(elements)
+  }
+  if (identical(name, "exprs")) {
+    # An injection operand is evaluated where the list is built.
+    return(if (length(injection_operands(expr)) == 0L) elements)
+  }
+  for (index in seq_along(elements)) {
+    # A missing element is read by subscript, never bound to a name.
+    if (identical(name, "pairlist2") && rlang::is_missing(elements[[index]])) {
+      next
+    }
+    value <- constructed_language_value(elements[[index]])
+    if (is.null(value)) {
+      return(NULL)
+    }
+    elements[index] <- value
+  }
+  elements
+}
+
+# The one value a written argument is statically known to be, as a
+# one-element list: a constant, or the single language object a constructor
+# `static_language_values()` reads builds. An expression vector is no body or
+# default, so `expression()`, `str2expression()` and `parse()` answer NULL, as
+# does anything else.
+constructed_language_value <- function(expr) {
+  if (rlang::is_missing(expr) || rlang::is_symbol(expr)) {
+    return(NULL)
+  }
+  if (!is.language(expr)) {
+    return(if (!is.object(expr)) list(expr))
+  }
+  name <- static_call_name(expr)
+  if (is.null(name) ||
+        name %in% c("expression", "str2expression", "parse")) {
+    return(NULL)
+  }
+  values <- static_language_values(expr)
+  if (length(values) != 1L || isTRUE(attr(values, "unresolved"))) {
+    return(NULL)
+  }
+  values
 }
 
 # Model a known closure invoked by base do.call() with no arguments, in the
