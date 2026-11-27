@@ -855,7 +855,7 @@ test_that("an environment named like a package keeps its promise unread", {
     imitation <- rlang::new_environment(parent = globalenv())
     attr(imitation, "name") <- name
     delayedAssign("fn", {
-      reads <<- reads + 1L
+      reads <- reads + 1L
       sum
     }, assign.env = imitation)
     caller <- rlang::new_environment(list(data = data), parent = imitation)
@@ -929,44 +929,42 @@ test_that("a lazy-load constant names a later across() on a data.table", {
 })
 
 # Base's own constants are lazy-load promises from startup, and nothing else in
-# the suite reads these two; each case reads its own, since reading one forces
+# the suite reads these two; each test reads its own, since reading one forces
 # it. `baseenv()` is not a package environment, and it is locked, so a session
-# that has already read one cannot restore the promise: that case skips.
-test_that("a base constant names a later across() on its first call", {
-  months <- list(
-    month.abb = c(
-      "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct",
-      "Nov", "Dec"
-    ),
-    month.name = c(
-      "January", "February", "March", "April", "May", "June", "July",
-      "August", "September", "October", "November", "December"
-    )
+# that has already read one cannot restore the promise: that test skips.
+expect_base_constant_names <- function(name, values, input = identity) {
+  skip_if_not(
+    rlang::env_binding_are_lazy(baseenv(), name),
+    paste0("`", name, "` was already read in this session")
   )
-  inputs <- list(month.abb = identity, month.name = function(data) {
-    skip_if_suggest_absent("data.table")
-    data.table::as.data.table(data)
-  })
-  for (name in names(months)) {
-    skip_if_not(
-      rlang::env_binding_are_lazy(baseenv(), name),
-      paste0("`", name, "` was already read in this session")
-    )
-    data <- data.frame(g = c("a", "a", "b"), matrix(
-      c(1, 2, 5), nrow = 3L, ncol = 12L
-    ))
-    names(data)[-1L] <- months[[name]]
-    first <- months[[name]][[1L]]
-    result <- summarize_with_margins(
-      inputs[[name]](data), n = dplyr::n(),
-      dplyr::across(
-        dplyr::all_of(!!rlang::sym(name)), sum, .names = "{.col}_t"
-      ),
-      s = share_of_total(!!rlang::sym(paste0(first, "_t"))),
-      .grouping = rollup(g)
-    )
-    expect_constant_share(result)
-  }
+  data <- data.frame(g = c("a", "a", "b"), matrix(
+    c(1, 2, 5), nrow = 3L, ncol = 12L
+  ))
+  names(data)[-1L] <- values
+  result <- summarize_with_margins(
+    input(data), n = dplyr::n(),
+    dplyr::across(
+      dplyr::all_of(!!rlang::sym(name)), sum, .names = "{.col}_t"
+    ),
+    s = share_of_total(!!rlang::sym(paste0(values[[1L]], "_t"))),
+    .grouping = rollup(g)
+  )
+  expect_constant_share(result)
+}
+
+test_that("a base constant names a later across() on its first call", {
+  expect_base_constant_names("month.abb", c(
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct",
+    "Nov", "Dec"
+  ))
+})
+
+test_that("a base constant names a later across() on a data.table", {
+  skip_if_suggest_absent("data.table")
+  expect_base_constant_names("month.name", c(
+    "January", "February", "March", "April", "May", "June", "July",
+    "August", "September", "October", "November", "December"
+  ), data.table::as.data.table)
 })
 
 # A caller's delayed binding is not a lazy-load promise; the planner reads its
@@ -975,7 +973,7 @@ test_that("a delayed caller constant read by a later across() stays unread", {
   data <- data.frame(g = c("a", "a", "b"), x = c(1, 2, 5), y = c(10, 20, 30))
   reads <- 0L
   delayedAssign("columns", {
-    reads <<- reads + 1L
+    reads <- reads + 1L
     c("x", "y")
   })
   refused <- expect_error(summarize_with_margins(
@@ -987,7 +985,7 @@ test_that("a delayed caller constant read by a later across() stays unread", {
   imitation <- rlang::new_environment(parent = globalenv())
   attr(imitation, "name") <- "package:lazyacrossfake"
   delayedAssign("columns", {
-    reads <<- reads + 1L
+    reads <- reads + 1L
     c("x", "y")
   }, assign.env = imitation)
   caller <- rlang::new_environment(list(data = data), parent = imitation)
