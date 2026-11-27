@@ -2103,6 +2103,7 @@ test_that("an injected nested specification prints as its constructor", {
   for (case in cases) {
     printed <- utils::capture.output(print(case$spec))[-1L]
     expect_identical(printed, case$call, info = case$call)
+    expect_identical(format(case$spec)[-1L], case$call, info = case$call)
     rebuilt <- eval(parse(text = printed))
     data <- data.frame(region = "E", a = 1, b = 1, c = 1, d = 1, x = 1)
     expect_identical(

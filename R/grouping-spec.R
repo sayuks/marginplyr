@@ -432,6 +432,14 @@ new_grouping_spec <- function(type, args) {
 #' @exportS3Method
 #' @noRd
 print.margin_grouping_spec <- function(x, ...) {
+  cat(paste0(format(x), "\n"), sep = "")
+  invisible(x)
+}
+
+# The printed lines: a header naming the kind, then the constructor call.
+#' @exportS3Method
+#' @noRd
+format.margin_grouping_spec <- function(x, ...) {
   # The kind is read through `grouping_spec_kind()`, the reader the two guards
   # that can be handed an unvalidated object share, because this site asks
   # their question of the same field: whether the object can be asked for a
@@ -453,16 +461,14 @@ print.margin_grouping_spec <- function(x, ...) {
   # amendment for a specification the printer could not read decides that
   # count, and states what reading through a shared function costs.
   kind <- grouping_spec_kind(x)
-  printed <- grouping_kind_printed_name(kind)
-  cat(
-    "<marginplyr Grouping specification: ",
-    printed,
-    ">\n",
-    sep = ""
+  c(
+    paste0(
+      "<marginplyr Grouping specification: ",
+      grouping_kind_printed_name(kind),
+      ">"
+    ),
+    grouping_spec_call_lines(x, kind)
   )
-  call_lines <- grouping_spec_call_lines(x, kind)
-  cat(paste0(call_lines, "\n", recycle0 = TRUE), sep = "")
-  invisible(x)
 }
 
 # The constructor call a specification was written as, as the lines it
