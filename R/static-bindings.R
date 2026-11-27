@@ -350,13 +350,16 @@ scope_literal_kind <- function(value) {
 
 # Whether a standard package function is the callee, without invoking it.
 # The caller supplies its static name; unresolved bindings prove no exemption.
+# A bare name can hold the owner's function only once its namespace is loaded,
+# so an owner that is a Suggest is neither loaded nor required here.
 is_known_package_call <- function(expr, name, bound, lookup, owner = "base") {
   namespace <- static_call_ns(expr)
   if (!is.null(namespace)) {
     return(identical(namespace, owner))
   }
   rebound <- lookup$function_rebound %||% lookup$rebound
-  if (is.null(lookup$env) || name %in% c(bound, rebound) ||
+  if (is.null(lookup$env) || !isNamespaceLoaded(owner) ||
+        name %in% c(bound, rebound) ||
         unresolved_lookup_name() %in% rebound) {
     return(FALSE)
   }

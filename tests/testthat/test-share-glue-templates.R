@@ -100,3 +100,34 @@ test_that("data.table templates that read no earlier summary remain valid", {
   )
   expect_independent_templates(data)
 })
+
+# stringr is a Suggest, so the walk recognizes a bare `str_glue` only as a
+# function its loaded namespace holds. A fresh process starts without it.
+test_that("a caller's own str_glue() does not load stringr", {
+  package <- getNamespaceInfo(asNamespace("marginplyr"), "path")
+  script <- paste(
+    "args <- commandArgs(trailingOnly = TRUE)",
+    "if (file.exists(file.path(args[[1L]], 'Meta', 'package.rds'))) {",
+    ".libPaths(c(dirname(args[[1L]]), .libPaths()))",
+    "library(marginplyr)",
+    "} else {",
+    "pkgload::load_all(args[[1L]], quiet = TRUE)",
+    "}",
+    "before <- isNamespaceLoaded('stringr')",
+    "str_glue <- function(...) 'z'",
+    "data <- data.frame(g = c('a', 'b'), x = c(1, 3))",
+    paste0("result <- summarize_with_margins(data, n = sum(x), ",
+           "s = share_of_total(n), m = nchar(str_glue('a')), ",
+           ".grouping = rollup(g))"),
+    "cat(before, isNamespaceLoaded('stringr'), result$m, '\\n')",
+    sep = "\n"
+  )
+  log <- suppressWarnings(system2(
+    file.path(R.home("bin"), "Rscript"),
+    c("--vanilla", "-e", shQuote(script), shQuote(package)),
+    stdout = TRUE, stderr = TRUE
+  ))
+  expect_identical(attr(log, "status") %||% 0L, 0L,
+                   info = paste(log, collapse = "\n"))
+  expect_identical(trimws(log[[length(log)]]), "FALSE FALSE 1 1 1")
+})

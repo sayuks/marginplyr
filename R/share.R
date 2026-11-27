@@ -8885,7 +8885,7 @@ materialized_env_symbols <- function(expr, call_name, scope, lookup) {
 }
 
 # The template evaluators whose `{}` components the walk reads: the package
-# owning each, its definition, the formal holding the template, and those
+# exporting each under its name, the formal holding the template, and those
 # naming its data and environment. `bind` is whether a named `...` argument
 # binds a name for the components, as glue's do, rather than being another
 # template, as cli's `format_inline()` reads it; `markup` is whether cli's
@@ -8895,23 +8895,15 @@ template_evaluators <- function() {
                     markup = FALSE)
   cli_like <- list(package = "cli", environment = ".envir", markup = TRUE)
   list(
-    glue = c(list(package = "glue", fun = glue::glue), glue_like),
-    glue_data = c(list(package = "glue", fun = glue::glue_data, data = ".x"),
-                  glue_like),
-    str_glue = c(list(package = "stringr", fun = function() {
-      stringr::str_glue
-    }), glue_like),
-    str_glue_data = c(list(package = "stringr", fun = function() {
-      stringr::str_glue_data
-    }, data = ".x"), glue_like),
-    englue = list(package = "rlang", fun = rlang::englue, template = "x",
-                  environment = "env", bind = FALSE, markup = FALSE),
-    format_inline = c(list(fun = cli::format_inline, template = "...",
-                           bind = FALSE), cli_like),
-    pluralize = c(list(fun = cli::pluralize, template = "...", bind = TRUE),
-                  cli_like),
-    format_message = c(list(fun = cli::format_message, template = "message",
-                            bind = FALSE), cli_like)
+    glue = c(list(package = "glue"), glue_like),
+    glue_data = c(list(package = "glue", data = ".x"), glue_like),
+    str_glue = c(list(package = "stringr"), glue_like),
+    str_glue_data = c(list(package = "stringr", data = ".x"), glue_like),
+    englue = list(package = "rlang", template = "x", environment = "env",
+                  bind = FALSE, markup = FALSE),
+    format_inline = c(list(template = "...", bind = FALSE), cli_like),
+    pluralize = c(list(template = "...", bind = TRUE), cli_like),
+    format_message = c(list(template = "message", bind = FALSE), cli_like)
   )
 }
 
@@ -8932,9 +8924,12 @@ template_component_symbols <- function(expr, call_name, scope, lookup) {
                   quote(...)))) {
     return(NULL)
   }
-  fun <- evaluator$fun
-  if (identical(evaluator$package, "stringr")) {
-    fun <- fun()
+  # A qualified call names a Suggest that may be absent, and the call's own
+  # evaluation is what fails then.
+  fun <- tryCatch(getExportedValue(evaluator$package, call_name),
+                  error = function(cnd) NULL)
+  if (is.null(fun)) {
+    return(NULL)
   }
   parts <- static_matched_arguments(expr, fun, expand_dots = FALSE)
   if (is.null(parts) || any(c(".open", ".close") %in% names(parts))) {
