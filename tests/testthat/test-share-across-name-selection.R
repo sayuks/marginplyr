@@ -900,17 +900,47 @@ test_that("an across() whose names settle its selection keeps column hints", {
 })
 
 # A later across() selects from the summaries before it too, so one that
-# renames `md` to the source may produce it (#1810).
+# renames `md` to the source may produce it; written first it selects nothing,
+# so moving it cannot help (#1810).
 test_that("a settled selection of an earlier summary keeps the unknown hint", {
   data <- data.frame(g = c("a", "a", "b"), x = c(1, 2, 5), y = c(10, 20, 30))
-  refused <- expect_error(summarize_with_margins(
-    data, md = stats::median(x), dplyr::across(dplyr::any_of(c(x = "md")), sum),
-    s = share_of_total(x), .grouping = rollup(g)
-  ), "unknown preceding ordinary summary `x`", class = "marginplyr_error")
-  expect_match(conditionMessage(refused), "not known before the call runs",
-               fixed = TRUE)
-  expect_no_match(conditionMessage(refused), "is a column of the input",
-                  fixed = TRUE)
+  inputs <- list(data.frame = identity)
+  if (suggest_available("data.table")) {
+    inputs$data.table <- data.table::as.data.table
+  }
+  for (input in names(inputs)) {
+    for (share in rlang::syms(c("share_of_total", "share_of_parent"))) {
+      refused <- expect_error(summarize_with_margins(
+        inputs[[input]](data), md = stats::median(x),
+        dplyr::across(dplyr::any_of(c(x = "md")), sum),
+        s = (!!share)(x), .grouping = rollup(g)
+      ), "unknown preceding ordinary summary `x`", class = "marginplyr_error",
+      info = input)
+      lines <- strsplit(conditionMessage(refused), "\n")[[1L]]
+      expect_identical(lines[-1L], paste0(
+        "i A preceding `across()` has output names that are not known ",
+        "before the call runs."
+      ), info = input)
+    }
+  }
+})
+
+# A preceding unnamed across() whose outputs the analysis records still lets
+# a later selection settle, so the input-column sentence stays true (#1810).
+test_that("a recorded unnamed across() before a settled selection", {
+  data <- data.frame(g = c("a", "a", "b"), x = c(1, 2, 5), y = c(10, 20, 30))
+  for (across in list(
+    rlang::expr(dplyr::across(dplyr::any_of(c(x = "zz")), sum)),
+    rlang::expr(dplyr::across(dplyr::any_of(c("zzz", "y")), sum))
+  )) {
+    refused <- expect_error(summarize_with_margins(
+      data, dplyr::across(y, mean), md = stats::median(x), !!across,
+      s = share_of_total(x), .grouping = rollup(g)
+    ), "unknown preceding ordinary summary `x`", class = "marginplyr_error")
+    expect_match(conditionMessage(refused), "is a column of the input",
+                 fixed = TRUE, info = rlang::expr_deparse(across))
+    expect_no_match(conditionMessage(refused), "Write that", fixed = TRUE)
+  }
 })
 
 # The share planner reads `.fns` as one function or a literal `list()`; any

@@ -730,7 +730,7 @@ plan_share_expressions <- function(dots,
       unnamed_across_source_hint(
         dots[[i]], dot_names[[i]], i, colnames(selection_proxy),
         outputs_unknown = isTRUE(analyses[[i]]$outputs_unknown),
-        preceding = preceding_dot_names(dot_names, i)
+        preceding = preceding_summary_names(dots, dot_names, analyses, i)
       )
     }
   })
@@ -2456,7 +2456,9 @@ validate_share_request <- function(outputs,
 # `columns` and the `preceding` summaries alone settle, running no caller code,
 # and select none of, names nothing whatever its `.names`, in any position, and
 # has no hint. `preceding` is `NULL` where those summaries' names are not
-# known.
+# known. Where the input's names alone settle the selection, `first_pattern`
+# matches what the `across()` written first would produce, which decides
+# whether moving it can help.
 unnamed_across_source_hint <- function(dot, name, position, columns,
                                        outputs_unknown, preceding) {
   expr <- rlang::quo_get_expr(dot)
@@ -2505,18 +2507,39 @@ unnamed_across_source_hint <- function(dot, name, position, columns,
   # names its outputs; an unpacked `across()` is named after its execution in
   # either position, and so are the names that replace a `.names` template.
   unpack_false <- across_unpack_is_false(parsed$unpack, env)
+  first <- settled_selection_names(parsed$cols, env, columns)
   list(
     kind = "unknown", name = NULL, reorder = position > 1L && unpack_false,
-    pattern = if (unpack_false) across_names_pattern(parsed$names, selected)
+    pattern = if (unpack_false) across_names_pattern(parsed$names, selected),
+    first_pattern = if (unpack_false && !is.null(first)) {
+      if (length(first) == 0L) {
+        "(?!)"
+      } else {
+        across_names_pattern(parsed$names, first)
+      }
+    }
   )
 }
 
-# The names of the dots before `position`, which are the summaries an
-# `across()` there selects from besides the input, or `NULL` where one of them
-# is unnamed and its outputs are not read here.
-preceding_dot_names <- function(dot_names, position) {
-  prior <- dot_names[seq_len(position - 1L)]
-  if (all(nzchar(prior))) prior
+# The names of the summaries the dots before `position` produce, which an
+# `across()` there selects from besides the input: a named dot's name, and an
+# unnamed one's recorded outputs from `analyses`. `NULL` where an unnamed dot's
+# outputs are unknown or it holds a share.
+preceding_summary_names <- function(dots, dot_names, analyses, position) {
+  names <- character()
+  for (j in seq_len(position - 1L)) {
+    if (nzchar(dot_names[[j]])) {
+      names <- c(names, dot_names[[j]])
+      next
+    }
+    analysis <- analyses[[j]]
+    if (isTRUE(analysis$outputs_unknown) || is.null(analysis$outputs_unknown) ||
+          contains_share_helper(rlang::quo_get_expr(dots[[j]]))) {
+      return(NULL)
+    }
+    names <- c(names, vapply(analysis$records, `[[`, character(1), "name"))
+  }
+  names
 }
 
 # The names of the columns `cols`, evaluated in `env`, selects among `columns`,
@@ -2602,9 +2625,14 @@ across_template_pattern <- function(template, columns = NULL) {
 # The first of `context$source_hints` that bears on `source`. An `across()`
 # whose outputs are unknown bears on it only when its `.names` can produce it.
 share_source_hint <- function(context, source) {
-  Find(function(hint) {
+  hint <- Find(function(hint) {
     is.null(hint$pattern) || grepl(hint$pattern, source, perl = TRUE)
   }, context$source_hints)
+  if (!is.null(hint$first_pattern) &&
+        !grepl(hint$first_pattern, source, perl = TRUE)) {
+    hint$reorder <- FALSE
+  }
+  hint
 }
 
 # Whether `name` resolves from `env` to a caller's unforced promise, which
