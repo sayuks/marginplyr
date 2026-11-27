@@ -201,7 +201,10 @@ frame is set on the final result, so the result's own statement is unchanged
 and a share's denominator windows still span the whole partition (#1555).
 dbplyr's own `collapse()` and `compute()` drop a frame across a seal; dropping
 it uniformly would have changed SQLite expansions and share-less summaries
-that already returned framed values, and was not chosen.
+over an ordering that survives, and was not chosen. A share-less summary over
+a frame with no usable ordering, a frame-only input or one whose ordering does
+not survive, returned values framed over an order SQL leaves unspecified
+before #1815, and returns unframed ones since.
 
 ## Considered options
 
