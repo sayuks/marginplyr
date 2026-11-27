@@ -75,10 +75,10 @@ test_that("unquoted non-ASCII relation names are read as DuckDB does (#1834)", {
     authored("SELECT g, y FROM sché.plainv"),
     authored("SELECT t.g, s.y FROM t JOIN vüe AS s ON true"),
     # Code points DuckDB strips as whitespace separate tokens.
-    file(paste0(" read_csv_auto　(", quoted, ")")),
-    file(paste0(" read_csv_auto (", quoted, ")")),
-    file(paste0("　", quoted)),
-    file(paste0("﻿", quoted))
+    file(paste0(" read_csv_auto\u3000(", quoted, ")")),
+    file(paste0(" read_csv_auto\u00a0(", quoted, ")")),
+    file(paste0("\u3000", quoted)),
+    file(paste0("\ufeff", quoted))
   )
   old <- options(marginplyr.audit_sql = TRUE)
   on.exit(options(old), add = TRUE)
@@ -131,7 +131,7 @@ test_that("non-ASCII names DuckDB reads unquoted keep typed metadata (#1834)", {
     "SELECT g, y FROM vé",
     "SELECT g, yé AS y FROM (SELECT g, v AS yé FROM t)",
     "WITH cé AS (SELECT g, v AS y FROM t) SELECT g, y FROM cé",
-    "SELECT 'é　.csv' AS g, v AS y FROM t"
+    "SELECT 'é\u3000.csv' AS g, v AS y FROM t"
   )) {
     input <- dplyr::tbl(con, dbplyr::sql(enc2utf8(sql)), vars = c("g", "y"))
     expect_identical(inspect_grouping(

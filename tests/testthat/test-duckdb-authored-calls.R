@@ -453,7 +453,7 @@ test_that("unquoted non-ASCII macro heads are read as DuckDB does (#1834)", {
     authored("SELECT g, main.mé(v) AS y FROM t"),
     authored("SELECT g, y FROM tmé()"),
     # A code point DuckDB strips as whitespace still leaves a call head.
-    authored("SELECT g, hidden_first　(v) AS y FROM t"),
+    authored("SELECT g, hidden_first\u3000(v) AS y FROM t"),
     dplyr::mutate(t, y = !!rlang::call2(macro, quote(v))),
     dplyr::mutate(t, y = dplyr::sql(enc2utf8("mé(v)")))
   )
