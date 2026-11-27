@@ -201,22 +201,17 @@ test_that("a caller's function keeps a converted warning and a lookup", {
 test_that("a time limit inside a caller's function ends the call", {
   data <- computed_selection_data()
   slow_cols <- function(x) {
-    for (i in 1:40) Sys.sleep(0.01)
+    expire_time_limit()
     "region"
-  }
-  limited <- function(call) {
-    on.exit(setTimeLimit(elapsed = Inf), add = TRUE)
-    setTimeLimit(elapsed = 0.1, transient = TRUE)
-    tryCatch(call, error = identity)
   }
   chain_end <- function(cnd) {
     chain <- condition_chain(cnd)
     conditionMessage(chain[[length(chain)]])
   }
-  native <- limited(
+  native <- catch_time_limited(
     tidyselect::eval_select(rlang::quo(slow_cols(region)), data)
   )
-  error <- limited(
+  error <- catch_time_limited(
     inspect_grouping(data, .by = slow_cols(region), .grouping = rollup(dt))
   )
   expect_s3_class(error, "error")
