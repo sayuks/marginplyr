@@ -617,3 +617,75 @@ test_that("serialized SQL is refused as query() is (#1812)", {
     scalar, .grouping = grouping_set(where(is.numeric))
   )$included, "(v)")
 })
+
+test_that("GeoJSON replacement scans are held to the JSON rule (#1814)", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  duckdb_test_json_extension(con)
+  # DuckDB 1.5 does not replace these names, so only 2.0 reads the file.
+  replaced <- utils::packageVersion("duckdb") >= "2.0.0"
+  directory <- normalizePath(tempfile(), winslash = "/", mustWork = FALSE)
+  dir.create(directory)
+  on.exit(unlink(directory, recursive = TRUE), add = TRUE)
+  geojson <- file.path(directory, "p.geojson")
+  geojsonl <- file.path(directory, "p.geojsonl")
+  writeLines('{"k":101}', geojson)
+  writeLines('{"k":101}', geojsonl)
+  string <- function(path) DBI::dbQuoteString(con, path)
+  identifier <- function(path) DBI::dbQuoteIdentifier(con, path)
+  sql <- c(
+    paste("SELECT * FROM", string(geojson)),
+    paste("SELECT * FROM", identifier(geojson)),
+    paste("TABLE", identifier(geojsonl)),
+    paste("SELECT * FROM", string(file.path(directory, "q.geojson.gz"))),
+    paste("SELECT * FROM", string(file.path(directory, "q.geojsonl.zst"))),
+    paste("SELECT * FROM", string(paste0(geojson, "?x"))),
+    paste("SELECT * FROM", string(file.path(directory, "Q.GeoJSON"))),
+    paste("SELECT * FROM", string(file.path(directory, "*.geojson")))
+  )
+  inputs <- lapply(sql, function(sql) {
+    dplyr::tbl(con, dbplyr::sql(sql), vars = "k")
+  })
+  if (replaced) {
+    DBI::dbExecute(con, paste(
+      "CREATE VIEW geojson_view AS SELECT * FROM", string(geojson)
+    ))
+    inputs <- c(inputs, list(dplyr::tbl(con, "geojson_view")))
+  }
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  for (value in c('{"k":101}', '{"k":"source_tail"}', NA)) {
+    if (is.na(value)) {
+      unlink(geojson)
+    } else {
+      writeLines(value, geojson)
+      if (replaced) {
+        native <- dplyr::collect(utils::head(inputs[[1L]], 0L))
+        expect_identical(is.numeric(native$k), identical(value, '{"k":101}'))
+      }
+    }
+    for (input in inputs) {
+      expect_error(
+        inspect_grouping(input, .grouping = grouping_set(where(is.numeric))),
+        "this DuckDB JSON input", fixed = TRUE, class = "marginplyr_error"
+      )
+      expect_duckdb_catalog_only()
+    }
+  }
+  writeLines('{"k":"source_tail"}', geojson)
+  # An explicit schema and a catalog table of that name read no rows.
+  explicit <- dplyr::tbl(con, dbplyr::sql(paste0(
+    "SELECT * FROM read_json(", string(geojson), ", columns = {'k': 'BIGINT'}",
+    ", records = true, auto_detect = false)"
+  )), vars = "k")
+  DBI::dbWriteTable(con, "t.geojson", data.frame(k = 1L))
+  table <- dplyr::tbl(con, dbplyr::sql(paste(
+    "SELECT * FROM", identifier("t.geojson")
+  )), vars = "k")
+  for (input in list(explicit, table)) {
+    expect_identical(inspect_grouping(
+      input, .grouping = grouping_set(where(is.numeric))
+    )$included, "(k)")
+  }
+})

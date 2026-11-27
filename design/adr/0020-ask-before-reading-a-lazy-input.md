@@ -372,6 +372,14 @@ Unresolved readers are refused before binding and direct the caller to
 established metadata or explicit collection. Name-only inspection continues to
 use captured names.
 
+A JSON file replacement scan is named by the suffix `.json`, `.jsonl`,
+`.ndjson`, `.geojson` or `.geojsonl`, in any case, optionally followed by
+`.gz` or `.zst`, or by `?` and more text, as measured on DuckDB 2.0.1, which
+added the GeoJSON pair (#1814); `.geojsonseq`, `.ndgeojson`, `.topojson`,
+`.jsonld`, `.json5` and `.jsonc` are not replaced. The suffixes are matched on
+every supported version, so on DuckDB 1.5 an unresolved `.geojson` relation,
+which fails to bind there, is refused instead.
+
 DuckDB's [JSON loading reference][json-loading] documents its inference options.
 The additional record-mode boundary is implemented by
 `JSONMultiFileInfo::BindReader` in the

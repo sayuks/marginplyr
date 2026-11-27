@@ -817,8 +817,10 @@ validate_duckdb_csv_metadata <- function(
   ))) {
     abort_duckdb_reader_metadata("CSV")
   }
+  # The suffixes naming a JSON replacement scan (ADR 0020).
+  json_suffix <- "[.](json|jsonl|ndjson|geojson|geojsonl)"
   if (any(grepl(
-    "[.](json|jsonl|ndjson)([.](gz|zst))?$|[.](json|jsonl|ndjson)[?]",
+    paste0(json_suffix, "([.](gz|zst))?$|", json_suffix, "[?]"),
     relation_paths
   ))) {
     abort_duckdb_reader_metadata("JSON")
