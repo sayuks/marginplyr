@@ -591,10 +591,13 @@ duckdb_operator_name <- function(names) {
   grepl("^[-+*/<>=~!@#%^&|`?]+$", names)
 }
 
-# Table functions that bind SQL text passed as a value, refused by name in
-# authored SQL and in stored views alike (ADR 0020). Other table functions are
-# admitted; macros and inferring readers are refused by their own checks.
-duckdb_opaque_table_functions <- c("query", "query_table")
+# Table functions that bind a statement passed as a value, as SQL text or in
+# the json extension's serialized form, refused by name in authored SQL and in
+# stored views alike (ADR 0020). Other table functions are admitted; macros and
+# inferring readers are refused by their own checks.
+duckdb_opaque_table_functions <- c(
+  "query", "query_table", "json_execute_serialized_sql"
+)
 
 # Refuse view work whose safety cannot be established from captured definitions.
 abort_duckdb_view_metadata <- function() {
@@ -632,8 +635,8 @@ abort_duckdb_call_metadata <- function() {
   abort_marginplyr(c(
     "Can't safely determine column metadata for this DuckDB call.",
     i = paste0(
-      "A macro, query() or query_table() call could hide source work ",
-      "during binding."
+      "A macro, or a table function such as query() that binds a statement ",
+      "given as a value, could hide source work during binding."
     ),
     i = paste0(
       "Call {.code dplyr::compute()} on the input first, so the Margin verb ",

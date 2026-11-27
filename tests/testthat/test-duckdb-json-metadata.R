@@ -549,3 +549,71 @@ test_that("JSON record inference is refused even with explicit column types", {
   )
   expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
 })
+
+test_that("serialized SQL is refused as query() is (#1812)", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  duckdb_test_json_extension(con)
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  writeLines(c("k", "101"), path)
+  DBI::dbWriteTable(con, "t", data.frame(g = "a", v = 1L))
+  inner <- DBI::dbQuoteString(con, paste(
+    "SELECT * FROM read_csv(", DBI::dbQuoteString(con, path), ")"
+  ))
+  serialized <- DBI::dbGetQuery(con, paste(
+    "SELECT json_serialize_sql(", inner, ") AS s"
+  ))$s
+  # json_execute_serialized_sql() binds the statement it is given as a value.
+  calls <- c(
+    paste0("json_execute_serialized_sql(json_serialize_sql(", inner, "))"),
+    paste0("json_execute_serialized_sql(",
+           DBI::dbQuoteString(con, serialized), ")")
+  )
+  authored <- c(
+    paste("SELECT * FROM", calls),
+    paste("SELECT t.g, s.k FROM t,", calls[[1L]], "s"),
+    paste("SELECT g, (SELECT max(k) FROM", calls[[1L]], ") AS k FROM t")
+  )
+  for (i in seq_along(authored)) {
+    DBI::dbExecute(con, paste0("CREATE VIEW v", i, " AS ", authored[[i]]))
+    DBI::dbExecute(con, paste0("CREATE VIEW w", i, " AS SELECT * FROM v", i))
+  }
+  inputs <- c(
+    Map(function(sql, vars) dplyr::tbl(con, dbplyr::sql(sql), vars = vars),
+        authored, list("k", "k", c("g", "k"), c("g", "k"))),
+    lapply(seq_along(authored), function(i) dplyr::tbl(con, paste0("v", i))),
+    lapply(seq_along(authored), function(i) dplyr::tbl(con, paste0("w", i)))
+  )
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  for (value in c("101", "source_tail", NA)) {
+    if (is.na(value)) unlink(path) else writeLines(c("k", value), path)
+    for (input in inputs) {
+      expect_error(inspect_grouping(
+        input, .grouping = grouping_set(where(is.numeric))
+      ), "Can't safely determine column metadata for this DuckDB",
+      fixed = TRUE, class = "marginplyr_error")
+      expect_duckdb_catalog_only()
+      expect_error(
+        summarize_with_margins(input, n = dplyr::n(), .grouping = rollup(k)),
+        "Can't safely determine column metadata for this DuckDB",
+        fixed = TRUE, class = "marginplyr_error"
+      )
+      expect_duckdb_catalog_only()
+    }
+  }
+  # Name-only inspection opens nothing.
+  expect_identical(inspect_grouping(
+    inputs[[1L]], .grouping = grouping_set(k)
+  )$included, "(k)")
+  expect_equal(nrow(last_sent_queries()), 0L)
+  # Serializing a statement does no source work under LIMIT 0.
+  scalar <- dplyr::tbl(con, dbplyr::sql(paste(
+    "SELECT g, v, json_serialize_sql(", inner, ") AS s FROM t"
+  )), vars = c("g", "v", "s"))
+  expect_identical(inspect_grouping(
+    scalar, .grouping = grouping_set(where(is.numeric))
+  )$included, "(v)")
+})

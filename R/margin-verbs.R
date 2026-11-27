@@ -311,7 +311,8 @@
 #'   view names, stored view definitions, macro names, and the search path, to
 #'   check that the input hides no source work behind a view or macro before
 #'   its types are read. It binds no table of yours. Table macros, macros you
-#'   define, `query()`, `query_table()`, and views without stored SQL are
+#'   define, `query()`, `query_table()`, the json extension's
+#'   `json_execute_serialized_sql()`, and views without stored SQL are
 #'   refused, except a data frame registered with `duckdb::duckdb_register()`.
 #'   A function sharing its name with a table macro is refused as that macro
 #'   is, wherever the call stands; in a database holding no macro of yours,

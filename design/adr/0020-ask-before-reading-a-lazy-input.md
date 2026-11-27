@@ -406,8 +406,9 @@ inheriting the caller's common table expressions. Existing reader checks apply
 inside those definitions. Cycles, macro calls and table functions whose safety
 is not established are refused before binding, with the option to supply
 established reader metadata directly or collect explicitly. A table function's
-safety is not established when authored SQL refuses it: `query()` and
-`query_table()`, which bind SQL text given as a value, and a CSV or JSON reader
+safety is not established when authored SQL refuses it: `query()`,
+`query_table()` and the json extension's `json_execute_serialized_sql()`
+(#1812), which bind a statement given as a value, and a CSV or JSON reader
 that has not disabled inference. Any other table function, such as
 `read_parquet()`, `range()` or `unnest()`, is admitted inside a view as it is
 when written directly (#1651). View definitions
