@@ -472,7 +472,7 @@ test_that("a constant argument names a later across() on its first call", {
 # `across()` names no output for another reason, the refusal does not depend on
 # whether R has compiled the caller, and does not ask for a `force()` that
 # cannot help (#1811).
-refused_constant_argument_cases <- list(
+refused_constant_cases <- list(
   selection = list(
     across = rlang::expr(dplyr::across(
       dplyr::all_of(arg), sum, .names = "{sub('q', '', .col)}_t"
@@ -512,8 +512,8 @@ test_that("a constant argument gets one refusal on every call", {
   on.exit(compiler::enableJIT(default), add = TRUE)
   for (jit in c(0L, default)) {
     compiler::enableJIT(jit)
-    for (label in names(refused_constant_argument_cases)) {
-      case <- refused_constant_argument_cases[[label]]
+    for (label in names(refused_constant_cases)) {
+      case <- refused_constant_cases[[label]]
       info <- paste0(label, ", JIT ", jit)
       report <- rlang::new_function(rlang::pairlist2(arg = ), rlang::expr(
         summarize_with_margins(

@@ -877,26 +877,27 @@ expect_constant_share <- function(result, share = "s") {
   expect_equal(result[[share]], c(0.375, 0.625, 1))
 }
 
+lazy_load_constant_calls <- rlang::exprs(
+  selection = marginplyr::summarize_with_margins(
+    data, n = dplyr::n(),
+    dplyr::across(dplyr::all_of(columns), sum, .names = "{.col}_t"),
+    s = marginplyr::share_of_total(x_t), .grouping = marginplyr::rollup(g)
+  ),
+  names = marginplyr::summarize_with_margins(
+    data, n = dplyr::n(), dplyr::across(c(x, y), sum, .names = template),
+    s = marginplyr::share_of_total(x_t), .grouping = marginplyr::rollup(g)
+  ),
+  columnwise = marginplyr::summarize_with_margins(
+    data, n = dplyr::n(),
+    dplyr::across(dplyr::all_of(columns), sum, .names = "{.col}_t"),
+    dplyr::across(x_t, marginplyr::share_of_total, .names = "s"),
+    .grouping = marginplyr::rollup(g)
+  )
+)
+
 expect_lazy_load_constants <- function(make_input) {
   data <- data.frame(g = c("a", "a", "b"), x = c(1, 2, 5), y = c(10, 20, 30))
-  later <- rlang::exprs(
-    selection = marginplyr::summarize_with_margins(
-      data, n = dplyr::n(),
-      dplyr::across(dplyr::all_of(columns), sum, .names = "{.col}_t"),
-      s = marginplyr::share_of_total(x_t), .grouping = marginplyr::rollup(g)
-    ),
-    names = marginplyr::summarize_with_margins(
-      data, n = dplyr::n(), dplyr::across(c(x, y), sum, .names = template),
-      s = marginplyr::share_of_total(x_t), .grouping = marginplyr::rollup(g)
-    ),
-    columnwise = marginplyr::summarize_with_margins(
-      data, n = dplyr::n(),
-      dplyr::across(dplyr::all_of(columns), sum, .names = "{.col}_t"),
-      dplyr::across(x_t, marginplyr::share_of_total, .names = "s"),
-      .grouping = marginplyr::rollup(g)
-    )
-  )
-  for (label in names(later)) {
+  for (label in names(lazy_load_constant_calls)) {
     with_fresh_lazy_load_fixture(function() {
       attachNamespace("lazyacrossa")
       attached <- as.environment("package:lazyacrossa")
@@ -905,7 +906,7 @@ expect_lazy_load_constants <- function(make_input) {
       )))
       caller <- rlang::new_environment(list(data = make_input(data)),
                                        parent = globalenv())
-      expect_constant_share(eval(later[[label]], caller))
+      expect_constant_share(eval(lazy_load_constant_calls[[label]], caller))
     })
   }
   with_fresh_lazy_load_fixture(function() {
@@ -954,7 +955,9 @@ test_that("a base constant names a later across() on its first call", {
     first <- months[[name]][[1L]]
     result <- summarize_with_margins(
       inputs[[name]](data), n = dplyr::n(),
-      dplyr::across(dplyr::all_of(!!rlang::sym(name)), sum, .names = "{.col}_t"),
+      dplyr::across(
+        dplyr::all_of(!!rlang::sym(name)), sum, .names = "{.col}_t"
+      ),
       s = share_of_total(!!rlang::sym(paste0(first, "_t"))),
       .grouping = rollup(g)
     )
