@@ -721,12 +721,17 @@ validate_duckdb_authored_calls <- function(tokens, catalog) {
     tokens[previous] == "not" & heads > 2L &
     tokens[pmax(1L, heads - 2L)] == "as"
   # A star stands where a select item starts; elsewhere `*` multiplies, and
-  # its right operand is a call.
+  # its right operand is a call. A dot qualifies it only after a name, since a
+  # numeric literal's trailing dot is lexed as its own token.
   before <- pmax(1L, heads - 2L)
+  qualifier <- pmax(1L, heads - 3L)
+  qualified_star <- tokens[before] == "." & heads > 3L &
+    (quoted[qualifier] | duckdb_identifier_token(tokens[qualifier]))
   modifier <- tokens[heads] %in% c("exclude", "replace", "rename") &
     !quoted[heads] & tokens[previous] == "*" & !quoted[previous] &
     heads > 2L & !quoted[before] &
-    tokens[before] %in% c("select", "distinct", "all", ",", ".", "(")
+    (tokens[before] %in% c("select", "distinct", "all", ",", "(") |
+       qualified_star)
   # Alias column lists and OVER/FILTER clauses follow closing expressions.
   implicit_alias <- heads > 1L & tokens[previous] == ")" & !quoted[previous]
   heads <- heads[!alias & !materialized & !modifier &
