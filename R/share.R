@@ -2451,9 +2451,9 @@ validate_share_request <- function(outputs,
 # evaluated; later, all three are. Otherwise, when `outputs_unknown` says the
 # analysis could not name its outputs rather than knew it names none, the hint
 # says so, with the `pattern` of the names a literal `.names` can produce
-# (#1810). An `across()` with default names whose selection the column names
-# alone settle, running no caller code, and select none of, names no input
-# column in any position and has no hint.
+# (#1810). An `across()` whose selection the column names alone settle,
+# running no caller code, and select none of, names nothing whatever its
+# `.names`, in any position, and has no hint.
 unnamed_across_source_hint <- function(dot, name, position, columns,
                                        outputs_unknown) {
   expr <- rlang::quo_get_expr(dot)
@@ -2489,9 +2489,7 @@ unnamed_across_source_hint <- function(dot, name, position, columns,
       }
     }
   }
-  if (!outputs_unknown || (
-    is.null(parsed$names) && selects_no_column(parsed$cols, env, columns)
-  )) {
+  if (!outputs_unknown || selects_no_column(parsed$cols, env, columns)) {
     return(NULL)
   }
   # Written first, the selection and `.names` are evaluated before the call
@@ -2508,8 +2506,9 @@ unnamed_across_source_hint <- function(dot, name, position, columns,
 
 # Whether `cols`, evaluated in `env`, is a selection tidyselect settles from
 # the column names alone without caller code, and selects none of `columns`.
-# `FALSE` where that is not known, and where settling it warns, as `one_of()`
-# of an absent column does: the warning is the execution's to raise.
+# `FALSE` where that is not known. A warning settling it raises, as `one_of()`
+# of an absent column does, is muffled: the refusal this answers ends the call
+# before the execution that would raise it.
 selects_no_column <- function(cols, env, columns) {
   if (rlang::is_quosure(cols)) {
     env <- rlang::quo_get_env(cols)
@@ -2520,10 +2519,12 @@ selects_no_column <- function(cols, env, columns) {
     return(FALSE)
   }
   tryCatch(
-    length(tidyselect::eval_select(
-      rlang::new_quosure(cols, env), grouping_name_proxy(columns)
-    )) == 0L,
-    warning = function(cnd) FALSE,
+    withCallingHandlers(
+      length(tidyselect::eval_select(
+        rlang::new_quosure(cols, env), grouping_name_proxy(columns)
+      )) == 0L,
+      warning = function(cnd) invokeRestart("muffleWarning")
+    ),
     error = function(cnd) FALSE
   )
 }

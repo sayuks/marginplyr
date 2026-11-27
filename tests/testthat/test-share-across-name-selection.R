@@ -804,14 +804,39 @@ test_that("an across() that cannot produce the source keeps the column hint", {
   }
 })
 
-# Settling the hint reads the selection's names without the warning dplyr
-# raises when it runs.
-test_that("an across() hint raises no warning of its own", {
+# A selection the names settle as empty names nothing, whatever its `.names`,
+# and settling it raises no warning: the refusal ends the call before dplyr
+# would raise one.
+test_that("an across() selecting nothing keeps the column hint", {
   data <- data.frame(g = c("a", "a", "b"), x = c(1, 2, 5), y = c(10, 20, 30))
-  expect_no_warning(expect_error(summarize_with_margins(
-    data, md = stats::median(x), dplyr::across(dplyr::one_of("zzz"), sum),
-    s = share_of_total(x), .grouping = rollup(g)
-  ), "unknown preceding ordinary summary `x`", class = "marginplyr_error"))
+  hint <- c(
+    "Total share `s` refers to unknown preceding ordinary summary `x`.",
+    paste0(
+      "i `x` is a column of the input, not a summary defined earlier in the ",
+      "call."
+    ),
+    "i Pass the name of an ordinary summary defined before it, such as `md`."
+  )
+  inputs <- list(data.frame = identity)
+  if (suggest_available("data.table")) {
+    inputs$data.table <- data.table::as.data.table
+  }
+  for (input in names(inputs)) {
+    frame <- inputs[[input]](data)
+    for (across in rlang::exprs(
+      dplyr::across(dplyr::one_of("zzz"), sum),
+      dplyr::across(dplyr::starts_with("zzz"), sum, .names = "{.col}")
+    )) {
+      info <- paste(input, rlang::expr_deparse(across))
+      refused <- expect_no_warning(expect_error(summarize_with_margins(
+        frame, md = stats::median(x), !!across,
+        s = share_of_total(x), .grouping = rollup(g)
+      ), class = "marginplyr_error", info = info))
+      expect_identical(
+        strsplit(conditionMessage(refused), "\n")[[1L]], hint, info = info
+      )
+    }
+  }
 })
 
 # The share planner reads `.fns` as one function or a literal `list()`; any
