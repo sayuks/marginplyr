@@ -804,6 +804,16 @@ test_that("an across() that cannot produce the source keeps the column hint", {
   }
 })
 
+# Settling the hint reads the selection's names without the warning dplyr
+# raises when it runs.
+test_that("an across() hint raises no warning of its own", {
+  data <- data.frame(g = c("a", "a", "b"), x = c(1, 2, 5), y = c(10, 20, 30))
+  expect_no_warning(expect_error(summarize_with_margins(
+    data, md = stats::median(x), dplyr::across(dplyr::one_of("zzz"), sum),
+    s = share_of_total(x), .grouping = rollup(g)
+  ), "unknown preceding ordinary summary `x`", class = "marginplyr_error"))
+})
+
 # The share planner reads `.fns` as one function or a literal `list()`; any
 # other spelling produces columns the planner has not proven (#1772).
 test_that("an unread `.fns` hints at a literal list()", {
