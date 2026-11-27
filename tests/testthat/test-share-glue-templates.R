@@ -15,6 +15,7 @@ glue_template_reads <- alist(
   cli::format_message("{sum(prior)}"),
   as.numeric(glue::glue("{sum(prior)}", .envir = parent.env(environment()))),
   as.numeric(glue::glue("{sum(prior}")),
+  # jarl-ignore glue: The walk reads this unclosed template, never evaluated.
   as.numeric(glue::glue("{sum(prior)")),
   as.numeric(glue("{sum(prior)}"))
 )
