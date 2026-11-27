@@ -571,24 +571,33 @@ duckdb_value_function_heads <- function(tokens) {
           !unquoted(-1L, "as"))
 }
 
-# Functions DuckDB binds from syntax with no call head: operators, literal
-# constructors and keyword forms, as measured on DuckDB 1.5 and 2.0. A caller
-# macro of such a name replaces the function wherever that syntax stands,
-# which a head scan cannot see.
+# Functions DuckDB binds from syntax with no call head: literal constructors
+# and keyword forms, as measured on DuckDB 1.5 and 2.0. A caller macro of
+# such a name replaces the function wherever that syntax stands, which a head
+# scan cannot see. Operators are decided by duckdb_operator_name() instead.
 duckdb_implicit_functions <- c(
-  "+", "-", "*", "/", "%", "//", "^", "**", "||", "<<", ">>", "&", "|", "~",
-  "@", "^@", "&&", "@>", "<@", "<->", "<=>", "~~", "!~~", "~~*", "!~~*", "~~~",
   "count_star", "list_value", "struct_pack", "row", "map", "date_part",
   "timezone", "ltrim", "rtrim", "regexp_full_match", "like_escape",
   "ilike_escape", "list_apply", "contains", "to_millennia", "to_centuries",
   "to_decades", "to_years", "to_quarters", "to_months", "to_weeks", "to_days",
-  "to_hours", "to_minutes", "to_seconds", "to_milliseconds", "to_microseconds"
+  "to_hours", "to_minutes", "to_seconds", "to_milliseconds", "to_microseconds",
+  "trunc", "factorial", "regexp_matches"
 )
 
-# Table functions that bind SQL text passed as a value, refused by name in
-# authored SQL and in stored views alike (ADR 0020). Other table functions are
-# admitted; macros and inferring readers are refused by their own checks.
-duckdb_opaque_table_functions <- c("query", "query_table")
+# Whether each of `names` consists only of operator characters. DuckDB binds
+# an operator token it has no rule of its own for as the function of that
+# name, so a caller can name a macro any such token reaches (ADR 0020).
+duckdb_operator_name <- function(names) {
+  grepl("^[-+*/<>=~!@#%^&|`?]+$", names)
+}
+
+# Table functions that bind a statement passed as a value, as SQL text or in
+# the json extension's serialized form, refused by name in authored SQL and in
+# stored views alike (ADR 0020). Other table functions are admitted; macros and
+# inferring readers are refused by their own checks.
+duckdb_opaque_table_functions <- c(
+  "query", "query_table", "json_execute_serialized_sql"
+)
 
 # Refuse view work whose safety cannot be established from captured definitions.
 abort_duckdb_view_metadata <- function() {
@@ -626,8 +635,8 @@ abort_duckdb_call_metadata <- function() {
   abort_marginplyr(c(
     "Can't safely determine column metadata for this DuckDB call.",
     i = paste0(
-      "A macro, query() or query_table() call could hide source work ",
-      "during binding."
+      "A macro, or a table function such as query() that binds a statement ",
+      "given as a value, could hide source work during binding."
     ),
     i = paste0(
       "Call {.code dplyr::compute()} on the input first, so the Margin verb ",
@@ -683,7 +692,8 @@ validate_duckdb_authored_calls <- function(tokens, catalog) {
   snapshot <- catalog(read = FALSE)
   if (!is.null(snapshot) && any(
     duckdb_caller_macros(snapshot) &
-      sql_ascii_lower(snapshot$relation_name) %in% duckdb_implicit_functions
+      (sql_ascii_lower(snapshot$relation_name) %in% duckdb_implicit_functions |
+         duckdb_operator_name(snapshot$relation_name))
   )) {
     abort_duckdb_call_metadata()
   }
@@ -807,8 +817,10 @@ validate_duckdb_csv_metadata <- function(
   ))) {
     abort_duckdb_reader_metadata("CSV")
   }
+  # The suffixes naming a JSON replacement scan (ADR 0020).
+  json_suffix <- "[.](json|jsonl|ndjson|geojson|geojsonl)"
   if (any(grepl(
-    "[.](json|jsonl|ndjson)([.](gz|zst))?$|[.](json|jsonl|ndjson)[?]",
+    paste0(json_suffix, "([.](gz|zst))?$|", json_suffix, "[?]"),
     relation_paths
   ))) {
     abort_duckdb_reader_metadata("JSON")
