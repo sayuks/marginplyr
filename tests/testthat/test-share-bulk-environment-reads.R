@@ -65,6 +65,7 @@ expect_independent_bulk_reads <- function(data) {
     (function(prior) sum(as.list(environment())$prior))(7),
     sum(as.list.environment(external)[["prior"]]),
     sum(lapply(external, identity)$prior),
+    sum(lapply(list(prior = 7), identity)$prior),
     sum(eapply(external, identity)$prior),
     sum(sapply(list(prior = 7), identity, simplify = FALSE)$prior),
     sum(sapply(external, identity, simplify = FALSE)$prior),
