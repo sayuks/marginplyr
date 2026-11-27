@@ -2507,12 +2507,15 @@ unnamed_across_source_hint <- function(dot, name, position, columns,
   # names its outputs; an unpacked `across()` is named after its execution in
   # either position, and so are the names that replace a `.names` template.
   unpack_false <- across_unpack_is_false(parsed$unpack, env)
-  first <- settled_selection_names(parsed$cols, env, columns)
+  first <- if (unpack_false) {
+    settled_selection_names(parsed$cols, env, columns)
+  }
   list(
     kind = "unknown", name = NULL, reorder = position > 1L && unpack_false,
     pattern = if (unpack_false) across_names_pattern(parsed$names, selected),
-    first_pattern = if (unpack_false && !is.null(first)) {
+    first_pattern = if (!is.null(first)) {
       if (length(first) == 0L) {
+        # PCRE's empty negative lookahead, which no name matches.
         "(?!)"
       } else {
         across_names_pattern(parsed$names, first)
@@ -2523,8 +2526,9 @@ unnamed_across_source_hint <- function(dot, name, position, columns,
 
 # The names of the summaries the dots before `position` produce, which an
 # `across()` there selects from besides the input: a named dot's name, and an
-# unnamed one's recorded outputs from `analyses`. `NULL` where an unnamed dot's
-# outputs are unknown or it holds a share.
+# unnamed `across()`'s recorded outputs from `analyses`. `NULL` where an
+# unnamed dot is not an `across()` (a data frame's records are candidates, not
+# its outputs), holds a share, or has unknown outputs.
 preceding_summary_names <- function(dots, dot_names, analyses, position) {
   names <- character()
   for (j in seq_len(position - 1L)) {
@@ -2532,12 +2536,14 @@ preceding_summary_names <- function(dots, dot_names, analyses, position) {
       names <- c(names, dot_names[[j]])
       next
     }
-    analysis <- analyses[[j]]
-    if (isTRUE(analysis$outputs_unknown) || is.null(analysis$outputs_unknown) ||
-          contains_share_helper(rlang::quo_get_expr(dots[[j]]))) {
+    expr <- rlang::quo_get_expr(dots[[j]])
+    if (!is_across_call(expr) || contains_share_helper(expr) ||
+          isTRUE(analyses[[j]]$outputs_unknown)) {
       return(NULL)
     }
-    names <- c(names, vapply(analysis$records, `[[`, character(1), "name"))
+    names <- c(
+      names, vapply(analyses[[j]]$records, `[[`, character(1), "name")
+    )
   }
   names
 }
@@ -2623,7 +2629,9 @@ across_template_pattern <- function(template, columns = NULL) {
 }
 
 # The first of `context$source_hints` that bears on `source`. An `across()`
-# whose outputs are unknown bears on it only when its `.names` can produce it.
+# whose outputs are unknown bears on it only when its `.names` can produce it,
+# and its hint offers moving it first only when its `first_pattern`, where
+# known, says it would produce `source` there.
 share_source_hint <- function(context, source) {
   hint <- Find(function(hint) {
     is.null(hint$pattern) || grepl(hint$pattern, source, perl = TRUE)
