@@ -1007,9 +1007,9 @@ test_that("a selection that fails written first offers no move", {
 test_that("an unreadable `.names` template keeps the unknown hint", {
   data <- data.frame(g = c("a", "a", "b"), x = c(1, 2, 5), y = c(10, 20, 30))
   cases <- list(
-    list(names = "\003{sub('q', '', .col)}", source = "\003x"),
-    list(names = "\001{sub('q', '', .col)}", source = "\001x"),
-    list(names = "{sub('q', '', .col)}_{", source = "x")
+    list(names = "\003{sub('q', '', .col)}", source = "\003x", parses = TRUE),
+    list(names = "\001{sub('q', '', .col)}", source = "\001x", parses = TRUE),
+    list(names = "{sub('q', '', .col)}_{", source = "x", parses = FALSE)
   )
   for (case in cases) {
     refused <- expect_error(summarize_with_margins(
@@ -1022,6 +1022,11 @@ test_that("an unreadable `.names` template keeps the unknown hint", {
                  fixed = TRUE, info = case$names)
     expect_no_match(conditionMessage(refused), "is a column of the input",
                     fixed = TRUE, info = case$names)
+    # A template glue cannot parse fails written first too.
+    if (!case$parses) {
+      expect_no_match(conditionMessage(refused), "Write that", fixed = TRUE,
+                      info = case$names)
+    }
   }
 })
 

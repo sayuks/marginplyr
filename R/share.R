@@ -2458,8 +2458,8 @@ validate_share_request <- function(outputs,
 # has no hint. `preceding` is `NULL` where those summaries' names are not
 # known. Where the input's names alone settle the selection of an `across()`
 # that is not unpacked, `first_pattern` matches what it would produce written
-# first, nothing where written first its selection fails, and so decides
-# whether moving it can help.
+# first, nothing where written first its selection or its `.names` template
+# fails, and so decides whether moving it can help.
 unnamed_across_source_hint <- function(dot, name, position, columns,
                                        outputs_unknown, preceding) {
   expr <- rlang::quo_get_expr(dot)
@@ -2514,13 +2514,12 @@ unnamed_across_source_hint <- function(dot, name, position, columns,
   list(
     kind = "unknown", name = NULL, reorder = position > 1L && unpack_false,
     pattern = if (unpack_false) across_names_pattern(parsed$names, selected),
-    first_pattern = if (!is.null(first)) {
-      if (length(first) == 0L) {
-        # PCRE's empty negative lookahead, which no name matches.
-        "(?!)"
-      } else {
-        across_names_pattern(parsed$names, first)
-      }
+    first_pattern = if (!template_parses(parsed$names) ||
+                          (!is.null(first) && length(first) == 0L)) {
+      # PCRE's empty negative lookahead, which no name matches.
+      "(?!)"
+    } else if (!is.null(first)) {
+      across_names_pattern(parsed$names, first)
     }
   )
 }
@@ -2571,6 +2570,16 @@ settled_selection_names <- function(cols, env, columns, failed = NULL) {
     ),
     error = function(cnd) failed
   )
+}
+
+# Whether glue parses `names`, an `across()`'s `.names`, where it is one
+# string; a template it cannot parse fails in any position.
+template_parses <- function(names) {
+  !rlang::is_string(names) || !is.null(tryCatch(
+    glue::glue(names, .envir = emptyenv(),
+               .transformer = function(text, envir) ""),
+    error = function(cnd) NULL
+  ))
 }
 
 # The `across_template_pattern()` of `names`, an `across()`'s `.names`, over
@@ -5390,8 +5399,9 @@ constructed_function_literal <- function(expr, scope, lookup) {
   }
   if (identical(name, "as.function") &&
         is_known_base_frame_call(expr, name, scope, lookup)) {
+    # `as.function.default()` ignores what `...` passes.
     parts <- static_matched_arguments(expr, function(x, envir, ...) NULL)
-    if (!identical(setdiff(names(parts), "envir"), "x")) {
+    if (!"x" %in% names(parts)) {
       return(NULL)
     }
     elements <- constructed_list_elements(parts$x, scope, lookup)
@@ -5437,9 +5447,11 @@ constructed_function_literal <- function(expr, scope, lookup) {
     literal <- rlang::call2("~", body[[1L]])
   } else {
     formal_names <- names(formals) %||% rep("", length(formals))
-    if (!all(nzchar(formal_names)) || anyDuplicated(formal_names)) {
+    if (!all(nzchar(formal_names))) {
       return(NULL)
     }
+    # A repeated formal's first default is the one a call of it evaluates.
+    formals <- formals[!duplicated(formal_names)]
     literal <- rlang::call2(
       "function", if (length(formals)) as.pairlist(formals), body[[1L]]
     )
@@ -9058,8 +9070,8 @@ template_component_symbols <- function(expr, call_name, scope, lookup) {
                   quote(...)))) {
     return(NULL)
   }
-  # A qualified call names a Suggest that may be absent, and the call's own
-  # evaluation is what fails then.
+  # stringr is a Suggest that dbplyr's Imports supply today; should that change,
+  # a qualified call names an absent package and its own evaluation fails.
   fun <- tryCatch(getExportedValue(evaluator$package, call_name),
                   error = function(cnd) NULL)
   if (is.null(fun)) {

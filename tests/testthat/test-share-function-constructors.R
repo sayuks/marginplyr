@@ -77,10 +77,10 @@ test_that("a function built reading no earlier summary keeps its value", {
   expect_equal(result$literal, c(1, 3, 4))
 })
 
-# A constructor whose body or formals are held in a variable or computed, whose
-# formals are unnamed or repeated, or that is given an argument it ignores is
-# not read as a literal, and the call keeps the value it computes (#1831).
-test_that("a constructor not read as a literal keeps its value", {
+# A constructor whose body is held in a variable or computed is not read as a
+# literal, and one with repeated formals or an argument `as.function()` ignores
+# is read with its constant body; each keeps the value it computes (#1831).
+test_that("a constructor reading no earlier summary keeps its value", {
   data <- data.frame(g = c("a", "b"), x = c(1, 3))
   result <- summarize_with_margins(
     data,
@@ -100,12 +100,28 @@ test_that("a constructor not read as a literal keeps its value", {
   }
 })
 
-# A constructor call missing what it requires raises the error native dplyr
-# raises when the summary runs (#1831).
-test_that("a constructor missing its body raises its own error", {
+# A repeated formal's first default is the one the call evaluates, and
+# `as.function()` ignores what `...` passes, so both read the mask (#1831).
+test_that("a constructor read past repeated formals or ignored arguments", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), share = c(100, 300))
+  for (call in alist(
+    sum(as.function(list(quote(share)), environment(), NULL)()),
+    sum(rlang::new_function(list(a = quote(share), a = 2), quote(a))())
+  )) {
+    expect_error(summarize_with_margins(
+      data, value = sum(x), share = share_of_total(value), v = !!call,
+      .grouping = rollup(g)
+    ), "Ordinary summaries cannot use an earlier", class = "marginplyr_error",
+    info = rlang::expr_deparse(call))
+  }
+})
+
+# A constructor call missing an argument it requires, or given formals without
+# names, raises the error native dplyr raises when the summary runs (#1831).
+test_that("a malformed constructor call raises its own error", {
   data <- data.frame(g = c("a", "b"), x = c(1, 3))
   for (call in alist(
-    rlang::new_function(NULL), rlang::new_formula(NULL),
+    rlang::new_function(NULL), rlang::new_formula(NULL), as.function(),
     as.function(list(1, quote(2)))()
   )) {
     info <- rlang::expr_deparse(call)

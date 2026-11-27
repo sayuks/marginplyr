@@ -514,6 +514,7 @@ markers <- list(
     "Lazy execution boundaries",
     # The SQL cardinality boundary: which source the lazy check catches, and
     # what every other direct SQL source must return (#1817).
+    "surfaces as a database error when the",
     "direct SQL source must itself return one",
     # The page documents both denominators, and states that neither completes
     # keys. Losing either would leave one helper without a contract.

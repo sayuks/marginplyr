@@ -3941,7 +3941,8 @@ computed_selection_failure <- function(computed, cnd, env) {
         error = conditionMessage
       )
     }, character(1))
-    if (message %in% unbound) {
+    # A condition need not carry a message string.
+    if (rlang::is_string(message) && message %in% unbound) {
       return(part)
     }
   }

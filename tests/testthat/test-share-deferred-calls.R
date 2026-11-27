@@ -143,6 +143,22 @@ test_that("a call builder removing a local exposes the alias behind it", {
   }
 })
 
+# A builder's `.env` is where a function named by a string is found, as
+# `do.call()`'s `envir` is, so an `rm` of its own there removes nothing (#1820).
+test_that("a call builder's .env decides which rm it calls", {
+  data <- data.frame(group = c("a", "b"), x = c(1, 3))
+  own <- list2env(list(rm = function(...) invisible(NULL)))
+  result <- summarize_with_margins(
+    data, prior = sum(x),
+    value = (function(prior) {
+      rlang::exec("rm", "prior", .env = own)
+      sum(prior)
+    })(1),
+    fraction = share_of_total(value), .grouping = rollup(group)
+  )
+  expect_equal(result$value, rep(1, 3L))
+})
+
 test_that("a call builder reading no earlier summary keeps its value", {
   data <- data.frame(g = c("a", "b"), x = c(1, 3))
   # A caller's own function of the same name is not rlang's.

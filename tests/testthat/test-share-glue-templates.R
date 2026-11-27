@@ -85,10 +85,11 @@ test_that("data.table templates that read no earlier summary remain valid", {
   expect_share_dependency_values(data, independent_template_reads(), 7)
 })
 
-# stringr is a Suggest, so a qualified `stringr::str_glue()` can name a package
-# no library holds. The walk then reads no template, and the call's own
-# evaluation raises the error native dplyr raises. An evaluator table naming
-# such a package for `str_glue` stands in for the absent stringr (#1824).
+# stringr is a Suggest that dbplyr's Imports supply today, so it is never
+# absent; should that change, a qualified `stringr::str_glue()` names a package
+# no library holds, the walk reads no template, and the call's own evaluation
+# raises the error native dplyr raises. An evaluator table naming such a
+# package for `str_glue` stands in for that state (#1824).
 test_that("an evaluator whose package is absent raises its own error", {
   evaluators <- template_evaluators()
   evaluators$str_glue$package <- "marginplyrabsentpackage"

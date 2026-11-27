@@ -386,3 +386,21 @@ test_that("a predicate's condition with no message field stays its own", {
     "The key registry is offline.", fixed = TRUE, class = "registry_offline"
   )
 })
+
+# Without a conditionMessage() method the condition has no message at all, and
+# it still reaches the caller as tidyselect raises it (#1802).
+test_that("a predicate's condition with no message stays its own", {
+  offline <- function(x) {
+    stop(structure(
+      class = c("registry_offline", "error", "condition"), list(call = NULL)
+    ))
+  }
+  data <- computed_selection_data()
+  my_upper <- function(x) toupper(x)
+  expect_error(
+    inspect_grouping(
+      data, .by = c(where(offline), my_upper(region)), .grouping = rollup(dt)
+    ),
+    class = "registry_offline"
+  )
+})
