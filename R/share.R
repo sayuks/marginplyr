@@ -723,7 +723,8 @@ plan_share_expressions <- function(dots,
   source_hints <- lapply(seq_along(dots), function(i) {
     if (length(analyses[[i]]$records) == 0L) {
       unnamed_across_source_hint(
-        dots[[i]], dot_names[[i]], i, colnames(selection_proxy)
+        dots[[i]], dot_names[[i]], i, colnames(selection_proxy),
+        outputs_unknown = isTRUE(analyses[[i]]$outputs_unknown)
       )
     }
   })
@@ -738,7 +739,7 @@ plan_share_expressions <- function(dots,
     expr <- rlang::quo_get_expr(quo)
     env <- rlang::quo_get_env(quo)
     output_name <- dot_names[[i]]
-    planning_context["source_hint"] <- list(Find(
+    planning_context["source_hints"] <- list(Filter(
       Negate(is.null), source_hints[seq_len(i - 1L)]
     ))
 
@@ -1905,12 +1906,16 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
     # and selection predicates to that execution.
     if (defer_local && contains_summary_selection(expr) &&
           (i > 1L || nzchar(output_name) || independent_shares)) {
+      outputs_unknown <- FALSE
       output_names <- if (nzchar(output_name)) {
         output_name
       } else if (is_across_call(expr)) {
-        predictable_local_across_names(list(quo), c(
-          names(selection_proxy), preceding_names
-        ))
+        predicted <- predict_local_across_names(
+          quo, unique(c(names(selection_proxy), preceding_names)),
+          list(env = env, rebound = character())
+        )
+        outputs_unknown <- is.null(predicted)
+        predicted %||% character()
       } else {
         character()
       }
@@ -1929,15 +1934,19 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
       analyses[[i]] <- list(records = ordinary_summary_records(
         expr, env, proxy, output_names, output_name,
         eligibility, i, preceding_names, reparented, deferred_selection = TRUE
-      ), reparented = reparented)
+      ), reparented = reparented, outputs_unknown = outputs_unknown)
       preceding_names <- c(preceding_names, output_names)
       next
     }
 
+    outputs_unknown <- FALSE
     if (nzchar(output_name)) {
       output_names <- output_name
       eligibility <- if (is_across_call(expr)) "named_across" else "eligible"
     } else if (is_across_call(expr)) {
+      outputs_unknown <- across_output_names_unknown(
+        parse_across_arguments(expr), env
+      )
       output_names <- if (defer_local) {
         tryCatch(
           known_across_output_names(expr, env, selection_proxy),
@@ -1969,7 +1978,10 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
       expr, env, selection_proxy, output_names, output_name,
       eligibility, i, preceding_names, reparented
     )
-    analyses[[i]] <- list(records = records, reparented = reparented)
+    analyses[[i]] <- list(
+      records = records, reparented = reparented,
+      outputs_unknown = outputs_unknown
+    )
     # An argument name alone cannot establish a preceding alias dependency.
     if (!identical(eligibility, "frame_candidate")) {
       preceding_names <- c(preceding_names, output_names)
@@ -2363,8 +2375,9 @@ validate_share_request <- function(outputs,
       }
       # An earlier `across()` whose outputs are unknown is reported ahead of the
       # input-column hint, since it may be what produces the name.
-      if (!is.null(context$source_hint)) {
-        abort_share_source_hint(label, output, source, context$source_hint)
+      hint <- share_source_hint(context, source)
+      if (!is.null(hint)) {
+        abort_share_source_hint(label, output, source, hint)
       }
       if (source %in% context$data_vars) {
         abort_share_column_source(label, output, source, preceding)
@@ -2427,10 +2440,14 @@ validate_share_request <- function(outputs,
 # Why an unnamed `across()` at `position` names no output before the call runs,
 # when the caller can remove the reason: it reads a binding of theirs that has
 # not been evaluated yet, or its `.fns` is neither one function nor a literal
-# `list()`. The caller holds a dot whose outputs are unknown. Only `.fns` is
-# read without forcing in first position, where the selection and `.names` are
-# evaluated; later, all three are.
-unnamed_across_source_hint <- function(dot, name, position, columns) {
+# `list()`. The caller holds a dot that names no output. Only `.fns` is read
+# without forcing in first position, where the selection and `.names` are
+# evaluated; later, all three are. Otherwise, when `outputs_unknown` says the
+# analysis could not name its outputs rather than knew it names none, the hint
+# says so, with the `pattern` of the names a literal `.names` can produce
+# (#1810).
+unnamed_across_source_hint <- function(dot, name, position, columns,
+                                       outputs_unknown) {
   expr <- rlang::quo_get_expr(dot)
   if (nzchar(name) || !is_across_call(expr) || contains_share_helper(expr)) {
     return(NULL)
@@ -2449,10 +2466,7 @@ unnamed_across_source_hint <- function(dot, name, position, columns) {
         across_unpack_is_false(parsed$unpack, env)) {
     return(list(kind = "fns", name = NULL))
   }
-  if (position == 1L) {
-    return(NULL)
-  }
-  for (part in list(parsed$cols, parsed$names)) {
+  for (part in if (position > 1L) list(parsed$cols, parsed$names)) {
     part_env <- env
     if (rlang::is_quosure(part)) {
       part_env <- rlang::quo_get_env(part)
@@ -2467,7 +2481,38 @@ unnamed_across_source_hint <- function(dot, name, position, columns) {
       }
     }
   }
-  NULL
+  if (!outputs_unknown) {
+    return(NULL)
+  }
+  # Written first, the selection and `.names` are evaluated before the call
+  # names its outputs; an unpacked `across()` is named after its execution in
+  # either position, and so are the names that replace a `.names` template.
+  unpack_false <- across_unpack_is_false(parsed$unpack, env)
+  list(
+    kind = "unknown", name = NULL, reorder = position > 1L && unpack_false,
+    pattern = if (unpack_false && is_literal_across_template(parsed$names)) {
+      across_template_pattern(parsed$names)
+    }
+  )
+}
+
+# The regular expression matching every name a `.names` template interpolating
+# only `{.col}` and `{.fn}` can produce, whatever the columns and functions.
+across_template_pattern <- function(template) {
+  pieces <- regmatches(
+    template, gregexpr("\\{\\.(?:col|fn)\\}", template, perl = TRUE),
+    invert = TRUE
+  )[[1L]]
+  pieces <- gsub("([][.\\\\|()^$*+?])", "\\\\\\1", pieces, perl = TRUE)
+  paste0("^", paste(pieces, collapse = ".*"), "$")
+}
+
+# The first of `context$source_hints` that bears on `source`. An `across()`
+# whose outputs are unknown bears on it only when its `.names` can produce it.
+share_source_hint <- function(context, source) {
+  Find(function(hint) {
+    is.null(hint$pattern) || grepl(hint$pattern, source, perl = TRUE)
+  }, context$source_hints)
 }
 
 # Whether `name` resolves from `env` to a caller's unforced promise, which
@@ -2494,6 +2539,31 @@ abort_share_source_hint <- function(label, output, source, hint) {
   # nolint start: object_usage_linter.
   name <- hint$name
   # nolint end
+  if (identical(hint$kind, "unknown") && isTRUE(hint$reorder)) {
+    abort_marginplyr(c(
+      paste0(
+        "{label} {.var {output}} refers to unknown preceding ordinary ",
+        "summary {.var {source}}."
+      ),
+      i = paste0(
+        "A preceding {.fun across} has output names that are not known ",
+        "before the call runs."
+      ),
+      i = "Write that {.fun across} before the other summaries."
+    ))
+  }
+  if (identical(hint$kind, "unknown")) {
+    abort_marginplyr(c(
+      paste0(
+        "{label} {.var {output}} refers to unknown preceding ordinary ",
+        "summary {.var {source}}."
+      ),
+      i = paste0(
+        "A preceding {.fun across} has output names that are not known ",
+        "before the call runs."
+      )
+    ))
+  }
   if (identical(hint$kind, "fns")) {
     abort_marginplyr(c(
       paste0(
@@ -2546,6 +2616,39 @@ abort_share_across_source_hint <- function(source, kind, hint) {
   helper <- share_helper_name(kind)
   name <- hint$name
   # nolint end
+  if (identical(hint$kind, "unknown") && isTRUE(hint$reorder)) {
+    abort_marginplyr(
+      c(
+        paste0(
+          "{.fun across} refers to unknown summary {.var {source}} for ",
+          "{.fun {helper}}."
+        ),
+        i = paste0(
+          "A preceding {.fun across} has output names that are not known ",
+          "before the call runs."
+        ),
+        i = "Write that {.fun across} before the other summaries."
+      ),
+      class = "marginplyr_share_source_unknown_error",
+      source_summary = source
+    )
+  }
+  if (identical(hint$kind, "unknown")) {
+    abort_marginplyr(
+      c(
+        paste0(
+          "{.fun across} refers to unknown summary {.var {source}} for ",
+          "{.fun {helper}}."
+        ),
+        i = paste0(
+          "A preceding {.fun across} has output names that are not known ",
+          "before the call runs."
+        )
+      ),
+      class = "marginplyr_share_source_unknown_error",
+      source_summary = source
+    )
+  }
   if (identical(hint$kind, "fns")) {
     abort_marginplyr(
       c(
@@ -4512,8 +4615,9 @@ abort_share_source_name <- function(source, preceding, context, kind) {
     )
   }
 
-  if (!is.null(context$source_hint)) {
-    abort_share_across_source_hint(source, kind, context$source_hint)
+  hint <- share_source_hint(context, source)
+  if (!is.null(hint)) {
+    abort_share_across_source_hint(source, kind, hint)
   }
   preceding_candidates <- unique(vapply(
     preceding,

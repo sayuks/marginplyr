@@ -596,6 +596,135 @@ test_that("the unevaluated-binding hint needs a later across() reading one", {
   expect_no_match(conditionMessage(after_refused), hint, fixed = TRUE)
 })
 
+# An `across()` can name no output before the call runs for a reason the two
+# hints above do not cover, and may then be what produces an input column's
+# name, so a source of that name is not called a column of the input (#1810).
+unknown_output_cases <- rlang::exprs(
+  predicate = dplyr::across(dplyr::where(is.numeric), sum),
+  template = dplyr::across(c(x, y), sum, .names = "{sub('q', '', .col)}"),
+  rebound = dplyr::across(dplyr::all_of(cols), sum)
+)
+
+test_that("an across() with unknown outputs is not called an input column", {
+  data <- data.frame(g = c("a", "a", "b"), x = c(1, 2, 5), y = c(10, 20, 30))
+  cols <- c("x", "y")
+  unknown <- paste0(
+    "A preceding `across()` has output names that are not known before the ",
+    "call runs."
+  )
+  remedy <- "Write that `across()` before the other summaries."
+  inputs <- list(data.frame = identity)
+  if (suggest_available("data.table")) {
+    inputs$data.table <- data.table::as.data.table
+  }
+  for (input in names(inputs)) {
+    frame <- inputs[[input]](data)
+    for (label in names(unknown_output_cases)) {
+      across <- unknown_output_cases[[label]]
+      info <- paste(input, label)
+      # `median()` is a summary the planner cannot see through, so a variable
+      # read after it may have been rebound by then.
+      earlier <- if (label == "rebound") {
+        rlang::exprs(md = stats::median(x))
+      } else {
+        rlang::exprs(n = dplyr::n())
+      }
+      for (share in rlang::syms(c("share_of_total", "share_of_parent"))) {
+        refused <- expect_error(summarize_with_margins(
+          frame, !!!earlier, !!across, s = (!!share)(x), .grouping = rollup(g)
+        ), "unknown preceding ordinary summary `x`", class = "marginplyr_error",
+        info = info)
+        message <- conditionMessage(refused)
+        expect_match(message, unknown, fixed = TRUE, info = info)
+        expect_match(message, remedy, fixed = TRUE, info = info)
+        expect_no_match(message, "column of the input", fixed = TRUE,
+                        info = info)
+        expect_no_match(message, "such as", fixed = TRUE, info = info)
+      }
+      columnwise <- expect_error(summarize_with_margins(
+        frame, !!!earlier, !!across,
+        dplyr::across(x, share_of_total, .names = "s"), .grouping = rollup(g)
+      ), class = "marginplyr_share_source_unknown_error", info = info)
+      expect_match(conditionMessage(columnwise), unknown, fixed = TRUE,
+                   info = info)
+      expect_match(conditionMessage(columnwise), remedy, fixed = TRUE,
+                   info = info)
+      expect_no_match(conditionMessage(columnwise), "such as", fixed = TRUE,
+                      info = info)
+
+      reordered <- summarize_with_margins(
+        frame, !!across, !!!earlier, s = share_of_total(x),
+        .grouping = rollup(g)
+      )
+      reordered <- as.data.frame(reordered)
+      expect_equal(
+        reordered$s[match(c("a", "b", "Total"), reordered$g)],
+        c(0.375, 0.625, 1), info = info
+      )
+    }
+  }
+})
+
+# An unpacked `across()` is named after its execution in either position, so
+# writing it first is no remedy.
+test_that("an unpacked across() is not offered a reorder", {
+  data <- data.frame(g = c("a", "a", "b"), x = c(1, 2, 5), y = c(10, 20, 30))
+  unpacked <- rlang::expr(dplyr::across(
+    c(x, y), function(v) data.frame(s = sum(v)), .unpack = TRUE
+  ))
+  for (call in list(
+    rlang::expr(summarize_with_margins(
+      data, n = dplyr::n(), !!unpacked, s = share_of_total(x),
+      .grouping = rollup(g)
+    )),
+    rlang::expr(summarize_with_margins(
+      data, !!unpacked, n = dplyr::n(), s = share_of_total(x),
+      .grouping = rollup(g)
+    ))
+  )) {
+    refused <- expect_error(
+      eval(call), "unknown preceding ordinary summary `x`",
+      class = "marginplyr_error"
+    )
+    message <- conditionMessage(refused)
+    expect_match(
+      message, "has output names that are not known before the call runs",
+      fixed = TRUE
+    )
+    expect_no_match(message, "before the other summaries", fixed = TRUE)
+    expect_no_match(message, "column of the input", fixed = TRUE)
+  }
+})
+
+# An `across()` whose outputs are known, or whose literal `.names` cannot
+# produce the source, leaves the source an input column.
+test_that("an across() that cannot produce the source keeps the column hint", {
+  data <- data.frame(g = c("a", "a", "b"), x = c(1, 2, 5), y = c(10, 20, 30))
+  column <- "`x` is a column of the input, not a summary defined earlier"
+  for (call in rlang::exprs(
+    summarize_with_margins(
+      data, n = dplyr::n(),
+      dplyr::across(dplyr::where(is.numeric), sum, .names = "{.col}_t"),
+      s = share_of_total(x), .grouping = rollup(g)
+    ),
+    summarize_with_margins(
+      data, total = sum(x), dplyr::across(dplyr::starts_with("zzz"), sum),
+      s = share_of_total(x), .grouping = rollup(g)
+    ),
+    summarize_with_margins(
+      data, dplyr::across(dplyr::starts_with("zzz"), sum), total = sum(x),
+      s = share_of_total(x), .grouping = rollup(g)
+    )
+  )) {
+    refused <- expect_error(
+      eval(call), "unknown preceding ordinary summary `x`",
+      class = "marginplyr_error"
+    )
+    expect_match(conditionMessage(refused), column, fixed = TRUE)
+    expect_no_match(conditionMessage(refused), "not known", fixed = TRUE)
+  }
+})
+
 # The share planner reads `.fns` as one function or a literal `list()`; any
 # other spelling produces columns the planner has not proven (#1772).
 test_that("an unread `.fns` hints at a literal list()", {
