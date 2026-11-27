@@ -679,9 +679,11 @@ binding or qualify the operation's head. An unrecognized or computed operation
 head retains ordinary recursive traversal. Function literals, their defaults,
 and visibly evaluated language retain the traversal established above.
 
-For a `%>%` pipe with a recognized operation on its right, the left expression
-is the input and the right expression belongs to that operation. Native pipes
-already carry the input argument in R's parsed call.
+For a `%>%` pipe or magrittr's eager `%!>%` with a recognized operation on its
+right, the left expression is the input and the right expression belongs to
+that operation (#1827). `%$%` exposes its left side as an environment rather
+than supplying an input, so it is not one. Native pipes already carry the
+input argument in R's parsed call.
 
 The shared searches, rewrites, and share dependency walk use one
 argument-ownership reader. Inner column and summary names belong to their

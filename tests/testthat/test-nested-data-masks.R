@@ -632,3 +632,47 @@ test_that("the nested-verb registry names every data-mask verb (#1819)", {
     expect_identical(formals[[1L]], inputs[[verb]], label = verb)
   }
 })
+
+test_that("a verb on the right of %!>% owns its arguments (#1827)", {
+  `%!>%` <- magrittr::`%!>%`
+  input <- tibble::tibble(g = c("a", "a", "b"), v = c(1, 2, 4))
+  nested_g <- nested_verb_frame()
+  expect_nested_verb_value(input, rlang::quo(nrow(nested_g %!>% dplyr::filter(
+    !dplyr::if_any(dplyr::everything(), ~ .x == "x")
+  ))), 2L)
+  expect_nested_verb_value(input, rlang::quo(ncol(magrittr::`%!>%`(
+    nested_g,
+    dplyr::mutate(dplyr::across(
+      dplyr::everything(), ~ .x, .names = "{.col}_c"
+    ))
+  ))), 4L)
+  expect_nested_verb_value(input, rlang::quo(nrow(
+    nested_g %!>% summarize_with_margins(k = dplyr::n(), .grouping = NULL)
+  )), 1L)
+  for (pipe in c("%>%", "%!>%")) {
+    expr <- rlang::call2(
+      "nrow",
+      rlang::call2(
+        pipe, quote(nested_g), quote(dplyr::filter(grouping_bit(g) == 0L))
+      )
+    )
+    expect_error(
+      summarize_with_margins(input, n = !!expr, .grouping = rollup(g)),
+      "can only be used inside `summarize_with_margins()`",
+      fixed = TRUE
+    )
+  }
+})
+
+# `%$%` exposes its left side as an environment rather than inserting it as
+# the first argument, so it supplies no input and is not a data pipe.
+test_that("%$% keeps ordinary traversal (#1827)", {
+  `%$%` <- magrittr::`%$%`
+  input <- tibble::tibble(g = c("a", "a", "b"), v = c(1, 2, 4))
+  nested_g <- nested_verb_frame()
+  expect_nested_verb_value(input, rlang::quo(nested_g %$% sum(aa)), 6L)
+  expect_identical(
+    independent_mask_call_parts(quote(nested_g %$% dplyr::filter(aa > 1L))),
+    c(FALSE, FALSE)
+  )
+})
