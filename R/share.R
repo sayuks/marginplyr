@@ -797,7 +797,8 @@ plan_share_expressions <- function(dots,
         vapply(preceding_ordinary, `[[`, character(1), "name"),
         preceding_shares$names
       ),
-      reparented = analyses[[i]]$reparented
+      reparented = analyses[[i]]$reparented,
+      selection_strings = TRUE
     )
     if (length(share_dependency) > 0L) {
       dependency <- share_dependency[[1L]]
@@ -4435,7 +4436,9 @@ resolve_share_selection <- function(expr,
       if (is_unsupported_predicate(cnd)) {
         abort_share_predicate(kind, parent = cnd)
       }
-      abort_share_selection_error(cnd, preceding, context, kind)
+      abort_share_selection_error(
+        cnd, preceding_names, preceding, context, kind
+      )
     }
   )
 }
@@ -4446,8 +4449,12 @@ resolve_share_selection <- function(expr,
 # rather than being flattened into the message. That keeps the class and the
 # chain a caller sees identical to the one the ordinary summary path propagates
 # for the same expression, with only marginplyr's context added on top.
-abort_share_selection_error <- function(cnd, preceding, context, kind) {
-  missing <- share_selection_missing_names(cnd)
+abort_share_selection_error <- function(cnd,
+                                        preceding_names,
+                                        preceding,
+                                        context,
+                                        kind) {
+  missing <- share_selection_missing_names(cnd, preceding_names)
   if (length(missing) == 0L) {
     abort_marginplyr(
       c(
@@ -4558,18 +4565,29 @@ abort_share_source_name <- function(source, preceding, context, kind) {
   )
 }
 
-# The names a failed selection gave, in the order the chain holds them. What
-# each one turns out to be -- a summary defined twice, one that is ineligible,
-# or a name no summary answers at all -- is `abort_share_source_name()`'s
-# question, so this says only what was named. A subscript that is not character
-# names nothing it can report, and neither does the empty string, which
-# `all_of(c(""))` puts in `i` where no summary could answer it.
-share_selection_missing_names <- function(cnd) {
+# The names a failed selection gave that the share's proxy lacks, in the order
+# the chain holds them. What each one turns out to be -- a summary defined
+# twice, one that is ineligible, or a name no summary answers at all -- is
+# `abort_share_source_name()`'s question, so this says only what was missing.
+#
+# Only vctrs' out-of-bounds condition over the proxy's own `names` is read. Its
+# `i` is the whole subscript for a character vector such as `all_of()`'s and
+# the single name for a bare one, so the missing names are those `names` lacks.
+# A condition over another frame's names comes from a caller's helper selecting
+# there, and any other condition names nothing the proxy was asked for; both
+# answer nothing, so `abort_share_selection_error()` keeps them as the parent.
+share_selection_missing_names <- function(cnd, names) {
   subscripts <- unlist(
     lapply(
       condition_chain(cnd),
       function(condition) {
-        if (is.character(condition$i)) condition$i else character()
+        if (inherits(condition, "vctrs_error_subscript_oob") &&
+              is.character(condition$i) &&
+              identical(as.character(condition$names), as.character(names))) {
+          condition$i[!condition$i %in% names]
+        } else {
+          character()
+        }
       }
     ),
     use.names = FALSE
@@ -4586,7 +4604,7 @@ share_selection_missing_names <- function(cnd) {
   if (is.null(subscripts)) {
     return(character())
   }
-  unique(subscripts[nzchar(subscripts)])
+  unique(subscripts)
 }
 
 contains_selection_predicate <- function(expr) {
@@ -4632,10 +4650,18 @@ abort_share_predicate <- function(kind, parent = NULL) {
 # value into a following `mutate()`, or fold the alias into one expression --
 # and naming the marker instead would put a name no summary has into a message
 # about the caller's own summaries.
+#
+# `selection_strings` also reads a string literal a selection position names,
+# as `selection_string_names()` does. The forward check sets it, because
+# `local_summary_selection()` removes an earlier share from a later selection's
+# proxy and nothing restates the missing column that leaves. Still unread: a
+# name reaching `all_of()` through a variable, and the unnamed top-level
+# `across()` string forms, which fail on another path before this check runs.
 expression_alias_dependencies <- function(expr, aliases, env = emptyenv(),
                                           mask = character(),
                                           reparented = list(),
-                                          deferred_selection = FALSE) {
+                                          deferred_selection = FALSE,
+                                          selection_strings = FALSE) {
   if (length(aliases) == 0L) {
     return(character())
   }
@@ -4645,7 +4671,8 @@ expression_alias_dependencies <- function(expr, aliases, env = emptyenv(),
       function_rebound = lookup_rebound_names(
         expr, env, mask, function_lookup = TRUE
       ),
-      reparented = reparented, deferred_selection = deferred_selection
+      reparented = reparented, deferred_selection = deferred_selection,
+      selection_strings = selection_strings
     )
   ))
   if (unresolved_lookup_name() %in% symbols) {
@@ -4942,7 +4969,8 @@ call_part_symbols <- function(expr, scope, lookup) {
   call_head <- static_call_head(expr)
   call_name <- static_call_name(expr)
   parts <- scope_call_args(expr, call_name, scope_bound_names(scope), lookup)
-  selection <- if (isTRUE(lookup$deferred_selection)) {
+  selection <- if (isTRUE(lookup$deferred_selection) ||
+                     isTRUE(lookup$selection_strings)) {
     static_spelling_name(expr, "selection")
   }
   selection_positions <- if (identical(selection, "pick")) {
@@ -4996,12 +5024,16 @@ call_part_symbols <- function(expr, scope, lookup) {
         is_known_base_frame_call(expr, call_name, scope, lookup)) ||
        !is.null(scope_remapped_closure_list(expr, call_name, scope, lookup)))
   for (index in seq_along(parts)) {
-    read_symbols <- if (index %in% selection_positions) {
+    selects <- index %in% selection_positions
+    read_symbols <- if (selects && isTRUE(lookup$deferred_selection)) {
       selection_dependency_symbols
     } else {
       scoped_data_symbols
     }
     reads <- c(reads, read_symbols(parts[[index]], scope, parts_lookup))
+    if (selects && isTRUE(lookup$selection_strings)) {
+      reads <- c(reads, selection_string_names(parts[[index]]))
+    }
     scope <- scope_after_possible_removals(parts[[index]], scope, lookup)
   }
   unique(c(
@@ -5031,6 +5063,29 @@ selection_dependency_symbols <- function(expr, scope, lookup) {
     ), use.names = FALSE))
   }
   scoped_data_symbols(expr, scope, lookup)
+}
+
+# The column names a selection argument spells as string literals: bare, under
+# an operator tidyselect walks, or as the literal vector `all_of()` is given.
+# `any_of()` is not read, because it selects nothing rather than refusing a
+# name its data lacks (#1619); nor is any other helper's argument, which is a
+# pattern rather than a name.
+selection_string_names <- function(expr) {
+  if (rlang::is_quosure(expr)) {
+    return(selection_string_names(rlang::quo_get_expr(expr)))
+  }
+  if (is.character(expr) && is.null(attributes(expr))) {
+    return(expr[!is.na(expr) & nzchar(expr)])
+  }
+  args <- if (is_selection_walk_call(expr)) {
+    static_call_args(expr)
+  } else if (identical(static_call_name(expr), "all_of") &&
+               (static_call_ns(expr) %||% "dplyr") %in%
+                 c("dplyr", "tidyselect")) {
+    static_call_args(expr)
+  }
+  unlist(lapply(args, selection_string_names), use.names = FALSE) %||%
+    character()
 }
 
 # A statically selected literal branch, without evaluating its selector.

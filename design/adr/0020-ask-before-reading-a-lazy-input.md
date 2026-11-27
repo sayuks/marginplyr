@@ -551,6 +551,20 @@ it also refuses statements that never reach the macro. Recognising each syntax
 form in the scan was rejected: it mirrors DuckDB's grammar and still admits
 forms it does not know.
 
+## Amendment (#1834): the scan reads unquoted identifiers as DuckDB lexes them
+
+ASCII-only equivalence compares names; it does not decide where a name ends.
+DuckDB 1.5 and 2.0 read every character from U+0080 up as part of an unquoted
+identifier, except a few code points they strip as whitespace, so the scan
+reads unquoted names, call heads and search-path entries the same way, and a
+view or macro spelled with a non-ASCII name is resolved and refused as its
+ASCII twin is. Those whitespace code points are a second hand-kept constant,
+`duckdb_unicode_spaces`, which a test asserts against the DuckDB under test.
+SQL that is not valid UTF-8 after `enc2utf8()` is refused before any query,
+since it cannot be read as DuckDB would. Refusing typed metadata whenever SQL
+holds a non-ASCII character outside quotes was rejected: it refuses every query
+over a table or column with such a name.
+
 ## Amendment (#640): SQLite typed-order execution follows an explicit request
 
 ADR 0031's live SQLite result builds its typed compound query without executing

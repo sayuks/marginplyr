@@ -1426,12 +1426,14 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
     state$result <- tryCatch(withCallingHandlers({
       state$selecting <- TRUE
       # dplyr exposes a plain column list while resolving across selectors.
-      selected <- resolve_summary_selection(
+      # Marked because the handler below re-raises a failure inside the
+      # probe's generated `all_of()`.
+      selected <- with_deferred_selection(resolve_summary_selection(
         rewrite_grouping_expr(
           parsed$cols, plan, grouping_set = plan$sets[[1L]],
           sql = FALSE, con = NULL
         ), env, as.list(selection_data)
-      )
+      ))
       state$selecting <- FALSE
       args <- parsed$call_args
       if (parsed$names_index > 0L) {

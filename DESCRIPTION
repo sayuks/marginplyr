@@ -430,6 +430,7 @@ Config/testthat/start-first:
     dtplyr-row-call-metadata,
     suggest-guard-scan,
     grouping-selection-deprecation,
+    share-selection-strings,
     pipe-parenthesized-rhs
 VignetteBuilder:
     quarto

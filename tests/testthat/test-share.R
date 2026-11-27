@@ -3182,18 +3182,18 @@ test_that("a failed share selection keeps the original condition", {
 })
 
 test_that("the share-selection reader answers a chain naming nothing", {
-  # Two empty answers, and they are not reached the same way. A chain whose
-  # conditions hold no character subscript is the case above -- a selection
+  # Two empty answers, and they are not reached the same way. A chain holding
+  # no out-of-bounds subscript over the proxy is the case above -- a selection
   # expression that raised on its own -- and arrives here from the verb. A
   # chain holding no condition at all cannot: `abort_share_selection_error()`
   # is handed the argument of a `tryCatch()` handler. The second is asserted
   # anyway, because the branch keeping the answer a character vector rather
   # than `NULL` is otherwise a branch nothing runs.
   expect_identical(
-    share_selection_missing_names(rlang::error_cnd(message = "boom")),
+    share_selection_missing_names(rlang::error_cnd(message = "boom"), "total"),
     character()
   )
-  expect_identical(share_selection_missing_names(NULL), character())
+  expect_identical(share_selection_missing_names(NULL, "total"), character())
 })
 
 test_that("an ineligible share selection raises a parentless condition", {
@@ -3215,6 +3215,124 @@ test_that("an ineligible share selection raises a parentless condition", {
     class = "marginplyr_error"
   )
   expect_null(ineligible$parent)
+})
+
+test_that("a share selection by character vector names the missing summary", {
+  sales <- data.frame(
+    region = c("E", "E", "W"),
+    revenue = c(1, 2, 5),
+    units = c(3, 4, 6)
+  )
+  refused <- function(selection, helper) {
+    expect_error(
+      rlang::inject(summarize_with_margins(
+        sales,
+        revenue = sum(revenue),
+        units = sum(units),
+        dplyr::across(!!selection, !!helper, .names = "{.col}_share"),
+        .grouping = rollup(region)
+      )),
+      class = "marginplyr_error"
+    )
+  }
+  cols <- c("revenue", "nope")
+
+  # For a character subscript the condition tidyselect raises carries the whole
+  # subscript, not only the names it lacks; a bare-name selection is the
+  # reference, because there each name is looked up on its own.
+  for (helper in rlang::syms(c("share_of_parent", "share_of_total"))) {
+    reference <- refused(quote(c(revenue, nope)), helper)
+    expect_identical(reference$source_summary, "nope")
+    selections <- rlang::exprs(
+      dplyr::all_of(c("revenue", "nope")),
+      !dplyr::all_of(c("revenue", "nope")),
+      c(units, dplyr::all_of(c("revenue", "nope"))),
+      dplyr::all_of(cols)
+    )
+    for (selection in selections) {
+      label <- paste(rlang::as_label(helper), rlang::expr_deparse(selection))
+      error <- refused(selection, helper)
+      expect_identical(class(error), class(reference), info = label)
+      expect_identical(error$source_summary, "nope", info = label)
+      expect_null(error$parent, info = label)
+    }
+  }
+
+  expect_identical(
+    refused(
+      quote(dplyr::all_of(c("revenue", "region"))),
+      quote(share_of_parent)
+    )$source_summary,
+    "region"
+  )
+
+  # jarl-ignore duplicated_arguments: The collision is the failure under test.
+  duplicate <- expect_error(
+    summarize_with_margins(
+      sales,
+      revenue = sum(revenue),
+      revenue = mean(revenue),
+      units = sum(units),
+      dplyr::across(
+        dplyr::all_of(c("units", "revenue")),
+        share_of_parent,
+        .names = "{.col}_share"
+      ),
+      .grouping = rollup(region)
+    ),
+    class = "marginplyr_share_source_duplicate_error"
+  )
+  expect_identical(duplicate$source_summary, "revenue")
+
+  # The empty string names nothing a summary could answer, so the vector
+  # holding it is refused as `all_of("")` alone is.
+  empty <- refused(
+    quote(dplyr::all_of(c("revenue", ""))),
+    quote(share_of_parent)
+  )
+  expect_match(conditionMessage(empty), "Parent-share `across\\(\\)` selection")
+  expect_false(is.null(empty$parent))
+})
+
+test_that("a share selection helper's own subscript failure stays its own", {
+  sales <- data.frame(
+    region = c("E", "E", "W"),
+    revenue = c(1, 2, 5),
+    units = c(3, 4, 6)
+  )
+  # The helper fails selecting from another frame. What it reports is about
+  # that frame, not about the summaries the share can select.
+  config <- data.frame(revenue = 1)
+  share_cols <- function() {
+    names(dplyr::select(config, dplyr::all_of(c("revenue", "units"))))
+  }
+  own <- expect_error(share_cols())
+  innermost <- function(cnd) {
+    chain <- condition_chain(cnd)
+    chain[[length(chain)]]
+  }
+
+  error <- expect_error(
+    summarize_with_margins(
+      sales,
+      revenue = sum(revenue),
+      units = sum(units),
+      dplyr::across(
+        dplyr::all_of(share_cols()),
+        share_of_parent,
+        .names = "{.col}_share"
+      ),
+      .grouping = rollup(region)
+    ),
+    class = "marginplyr_error"
+  )
+  expect_match(conditionMessage(error), "Parent-share `across\\(\\)` selection")
+  expect_null(error$source_summary)
+  expect_identical(class(innermost(error)), class(innermost(own)))
+  expect_identical(
+    conditionMessage(innermost(error)),
+    conditionMessage(innermost(own))
+  )
 })
 
 test_that("a share selection tidyselect rejects keeps tidyselect's condition", {
