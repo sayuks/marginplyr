@@ -468,6 +468,73 @@ test_that("a constant argument names a later across() on its first call", {
   }
 })
 
+# A constant argument is read by the planner either way, so when a later
+# `across()` names no output for another reason, the refusal does not depend on
+# whether R has compiled the caller, and does not ask for a `force()` that
+# cannot help (#1811).
+refused_constant_argument_cases <- list(
+  selection = list(
+    across = rlang::expr(dplyr::across(
+      dplyr::all_of(arg), sum, .names = "{sub('q', '', .col)}_t"
+    )),
+    value = "x", source = quote(x_t)
+  ),
+  number = list(
+    across = rlang::expr(dplyr::across(
+      dplyr::num_range("x", arg), sum, .names = "{sub('q', '', .col)}_t"
+    )),
+    value = 1, source = quote(x1_t)
+  ),
+  logical = list(
+    across = rlang::expr(dplyr::across(
+      dplyr::starts_with("X", ignore.case = arg), sum,
+      .names = "{sub('q', '', .col)}_t"
+    )),
+    value = TRUE, source = quote(x_t)
+  ),
+  names = list(
+    across = rlang::expr(dplyr::across(
+      dplyr::where(is.numeric), sum, .names = arg
+    )),
+    value = NULL, source = quote(x)
+  ),
+  fns = list(
+    across = rlang::expr(dplyr::across(x, arg, .names = "{.col}_t")),
+    value = NULL, source = quote(x_t)
+  )
+)
+
+test_that("a constant argument gets one refusal on every call", {
+  data <- data.frame(
+    g = c("a", "a", "b"), x = c(1, 2, 5), x1 = c(1, 2, 5), y = c(10, 20, 30)
+  )
+  default <- compiler::enableJIT(-1L)
+  on.exit(compiler::enableJIT(default), add = TRUE)
+  for (jit in c(0L, default)) {
+    compiler::enableJIT(jit)
+    for (label in names(refused_constant_argument_cases)) {
+      case <- refused_constant_argument_cases[[label]]
+      info <- paste0(label, ", JIT ", jit)
+      report <- rlang::new_function(rlang::pairlist2(arg = ), rlang::expr(
+        summarize_with_margins(
+          data, n = dplyr::n(), !!case$across,
+          share = share_of_total(!!case$source), .grouping = rollup(g)
+        )
+      ))
+      caller <- rlang::new_function(NULL, rlang::expr(report(!!case$value)))
+      messages <- vapply(seq_len(3L), function(i) {
+        conditionMessage(expect_error(
+          caller(), "unknown preceding ordinary summary",
+          class = "marginplyr_error", info = info
+        ))
+      }, character(1))
+      expect_identical(messages[[2L]], messages[[1L]], info = info)
+      expect_identical(messages[[3L]], messages[[1L]], info = info)
+      expect_no_match(messages[[1L]], "force(", fixed = TRUE, info = info)
+    }
+  }
+})
+
 # A caller's own argument is a promise the planner does not force, so a later
 # `across()` that reads one names no output before the call runs (#1773).
 test_that("an unevaluated argument read by a later across() is named", {

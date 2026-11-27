@@ -1842,6 +1842,12 @@ promise_expression <- function(name, env) {
   eval(call("substitute", as.name(name), env), envir = baseenv())
 }
 
+# Whether `x` is `NULL` or an unclassed atomic constant, which is what the
+# planner reads from a context binding or a caller's promise expression.
+is_plain_constant <- function(x) {
+  is.null(x) || (is.atomic(x) && !is.object(x))
+}
+
 # Whether the planner reads a promise bound in `env` as its value: base and a
 # package environment hold lazy-load promises, which run no caller code, and a
 # caller's own delayed binding stays unread (#1793).
@@ -1864,7 +1870,7 @@ known_context_constant <- function(expr, lookup) {
   if (is_parenthesized(expr)) {
     return(known_context_constant(unparenthesized_value(expr), lookup))
   }
-  if (is.null(expr) || (is.atomic(expr) && !is.object(expr))) {
+  if (is_plain_constant(expr)) {
     return(list(value = expr))
   }
   if (!rlang::is_symbol(expr) || rlang::as_string(expr) %in% lookup$mask) {
@@ -1882,7 +1888,7 @@ known_context_constant <- function(expr, lookup) {
       } else {
         get(name, envir = current, inherits = FALSE)
       }
-      if (is.null(value) || (is.atomic(value) && !is.object(value))) {
+      if (is_plain_constant(value)) {
         return(list(value = value))
       }
       return(NULL)

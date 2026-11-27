@@ -2518,13 +2518,16 @@ share_source_hint <- function(context, source) {
 # Whether `name` resolves from `env` to a caller's unforced promise, which
 # `force()` would evaluate. A base or package environment's promises are read
 # as values, by `known_context_constant()` and `known_across_function_names()`
-# alike (`reads_promise_as_value()`).
+# alike (`reads_promise_as_value()`), and a promise of a constant is read as
+# that constant by `known_context_constant()`, so `force()` would change
+# neither (#1811).
 is_unevaluated_binding <- function(name, env) {
   while (!identical(env, emptyenv())) {
     if (exists(name, envir = env, inherits = FALSE)) {
       return(!bindingIsActive(name, env) &&
                rlang::env_binding_are_lazy(env, name) &&
-               !reads_promise_as_value(env))
+               !reads_promise_as_value(env) &&
+               !is_plain_constant(promise_expression(name, env)))
     }
     env <- parent.env(env)
   }
