@@ -51,9 +51,10 @@ test_that("inheriting unplaced data.table reads keep share refusals", {
   )
 })
 
-expect_unplaced_controls <- function(data) {
+# Each reads 7 and no earlier summary; quosures keep `external` in reach.
+unplaced_control_reads <- function() {
   external <- rlang::new_environment(list(prior = 7), parent = baseenv())
-  reads <- alist(
+  rlang::quos(
     sum(rlang::env_get(new.env(), "prior", default = 7)),
     {
       e <- new.env()
@@ -64,29 +65,11 @@ expect_unplaced_controls <- function(data) {
     sum(rlang::env_get(external, "prior", inherit = TRUE)),
     sum(rlang::env_get_list(external, "prior", inherit = TRUE)[[1L]])
   )
-  for (kind in c("parent", "total")) {
-    for (read in reads) {
-      share <- rlang::call2(paste0("share_of_", kind), quote(source))
-      forward <- summarize_with_margins(
-        data, source = sum(.data$x), prior = !!share, observed = !!read,
-        .grouping = rollup("g")
-      )
-      expect_equal(forward$observed, c(7, 7, 7))
-      expect_equal(forward$prior, c(0.25, 0.75, 1))
-      share <- rlang::call2(paste0("share_of_", kind), quote(observed))
-      reverse <- summarize_with_margins(
-        data, prior = sum(.data$x), observed = !!read, ratio = !!share,
-        .grouping = rollup("g")
-      )
-      expect_equal(reverse$observed, c(7, 7, 7))
-      expect_equal(reverse$ratio, c(1, 1, 1))
-    }
-  }
 }
 
 test_that("non-inheriting and external environment reads remain valid", {
   data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(100, 300))
-  expect_unplaced_controls(data)
+  expect_share_dependency_values(data, unplaced_control_reads(), 7)
 })
 
 test_that("non-inheriting and external data.table reads remain valid", {
@@ -94,5 +77,5 @@ test_that("non-inheriting and external data.table reads remain valid", {
   data <- data.table::data.table(
     g = c("a", "b"), x = c(1, 3), prior = c(100, 300)
   )
-  expect_unplaced_controls(data)
+  expect_share_dependency_values(data, unplaced_control_reads(), 7)
 })

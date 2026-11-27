@@ -37,11 +37,13 @@ test_that("literal template components keep data.table share dependencies", {
   expect_share_dependencies(data, glue_template_reads)
 })
 
-expect_independent_templates <- function(data) {
+# Each reads 7 and no earlier summary; quosures keep `external` and the
+# caller's own `glue` in reach.
+independent_template_reads <- function() {
   external <- rlang::new_environment(list(prior = 7), parent = baseenv())
   # A caller function named like glue's.
   glue <- function(...) 7
-  reads <- alist(
+  rlang::quos(
     as.numeric(glue::glue("{prior}", prior = 7)),
     nchar(glue::glue("{{prior}}")),
     as.numeric(glue::glue("{7 + 0 * sum(x)}")),
@@ -68,29 +70,11 @@ expect_independent_templates <- function(data) {
       as.numeric(glue::glue(template))
     }
   )
-  for (kind in c("parent", "total")) {
-    for (read in reads) {
-      share <- rlang::call2(paste0("share_of_", kind), quote(source))
-      forward <- summarize_with_margins(
-        data, source = sum(.data$x), prior = !!share, observed = !!read,
-        .grouping = rollup("g")
-      )
-      expect_equal(forward$observed, c(7, 7, 7))
-      expect_equal(forward$prior, c(0.25, 0.75, 1))
-      share <- rlang::call2(paste0("share_of_", kind), quote(observed))
-      reverse <- summarize_with_margins(
-        data, prior = sum(.data$x), observed = !!read, ratio = !!share,
-        .grouping = rollup("g")
-      )
-      expect_equal(reverse$observed, c(7, 7, 7))
-      expect_equal(reverse$ratio, c(1, 1, 1))
-    }
-  }
 }
 
 test_that("templates that read no earlier summary remain valid", {
   data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(100, 300))
-  expect_independent_templates(data)
+  expect_share_dependency_values(data, independent_template_reads(), 7)
 })
 
 test_that("data.table templates that read no earlier summary remain valid", {
@@ -98,7 +82,7 @@ test_that("data.table templates that read no earlier summary remain valid", {
   data <- data.table::data.table(
     g = c("a", "b"), x = c(1, 3), prior = c(100, 300)
   )
-  expect_independent_templates(data)
+  expect_share_dependency_values(data, independent_template_reads(), 7)
 })
 
 # stringr is a Suggest, so the walk recognizes a bare `str_glue` only as a
