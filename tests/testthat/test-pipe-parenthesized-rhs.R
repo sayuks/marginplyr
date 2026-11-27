@@ -26,15 +26,15 @@ pipe_rhs_cases <- function() {
   `%>%` <- magrittr::`%>%`
   `%T>%` <- magrittr::`%T>%` # nolint: object_name_linter.
   list(
-    rlang::quo(v %>% (function(x) sum(x))),
-    rlang::quo(v %>% (\(x) sum(x))),
-    rlang::quo(v %>% (base::sum)),
+    literal = rlang::quo(v %>% (function(x) sum(x))),
+    lambda = rlang::quo(v %>% (\(x) sum(x))),
+    exported = rlang::quo(v %>% (base::sum)),
     # jarl-ignore internal_function: The `:::` spelling is the case under test.
-    rlang::quo(v %>% (base:::sum)),
-    rlang::quo(magrittr::`%>%`(v, (function(x) sum(x)))),
-    rlang::quo(sum(v %T>% (function(x) invisible(x)))),
-    rlang::quo(sum(v %>% (function(x) x * 2))),
-    rlang::quo(sum(sapply(v, function(y) y %>% (base::sum))))
+    internal = rlang::quo(v %>% (base:::sum)),
+    prefix = rlang::quo(magrittr::`%>%`(v, (function(x) sum(x)))),
+    tee = rlang::quo(sum(v %T>% (function(x) invisible(x)))),
+    scaled = rlang::quo(sum(v %>% (function(x) x * 2))),
+    nested = rlang::quo(sum(sapply(v, function(y) y %>% (base::sum))))
   )
 }
 # nolint end
@@ -81,7 +81,9 @@ test_that("a pipe's parenthesized function keeps its pair on dtplyr", {
   withr::local_package("dplyr")
   withr::local_package("magrittr")
   input <- dtplyr::lazy_dt(pipe_rhs_input())
-  for (expr in pipe_rhs_cases()[c(1L, 2L, 5L, 6L, 7L)]) {
+  for (expr in pipe_rhs_cases()[
+    c("literal", "lambda", "prefix", "tee", "scaled")
+  ]) {
     expect_pipe_value(input, expr)
   }
 })
