@@ -374,6 +374,15 @@ test_that("rlang's scoped and active binders given zap() remove (#1822)", {
       f <- function() sum(prior)
       rlang::with_bindings(f(), prior = rlang::zap())
     })(1),
+    # `.expr` runs after the removal.
+    (function(prior) rlang::with_bindings(sum(prior), prior = rlang::zap()))(1),
+    (function(prior) {
+      rlang::with_bindings(.expr = sum(prior), prior = rlang::zap())
+    })(1),
+    {
+      prior <- 1
+      rlang::with_bindings(sum(prior), prior = rlang::zap())
+    },
     (function(prior) {
       rlang::env_bind_active(environment(), prior = rlang::zap())
       sum(prior)
@@ -443,6 +452,11 @@ test_that("rlang's scoped binders keep values that remove nothing", {
     (function(prior) {
       f <- function() sum(prior)
       rlang::with_bindings(f(), prior = 2)
+    })(1),
+    (function(prior) rlang::with_bindings(sum(prior), prior = 2))(1),
+    (function(prior) {
+      rlang::env_bind_active(environment(), prior = function() 2)
+      prior
     })(1)
   ), 2)
   data <- data.frame(g = c("a", "b"), x = c(10, 20))

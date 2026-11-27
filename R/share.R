@@ -4947,6 +4947,10 @@ scoped_data_symbols <- function(expr, scope, lookup) {
   if (!is.null(template)) {
     return(unique(c(call_part_symbols(expr, scope, lookup), template)))
   }
+  ordered <- with_bindings_as_block(expr, call_name, scope, lookup)
+  if (!is.null(ordered)) {
+    return(scoped_data_symbols(ordered, scope, lookup))
+  }
   evaluation <- evaluator_as_eval(expr, call_name, scope, lookup)
   if (!is.null(evaluation)) {
     return(scoped_data_symbols(evaluation, scope, lookup))
@@ -9365,6 +9369,27 @@ scope_after_evaluated_language <- function(language, frame, scope, lookup,
     return(run(frame))
   }
   Reduce(scope_possible_losses, lapply(seq_along(scope), run), scope)
+}
+
+# `rlang::with_bindings()` as the block it runs: the binding call without
+# `.expr`, whose removals rlang_scope_mutations() reads, and then `.expr`,
+# which rlang evaluates after binding (#1822). NULL for any other call, and
+# where a forwarded `...` leaves `.expr` unplaced.
+with_bindings_as_block <- function(expr, name, scope, lookup) {
+  if (!identical(name, "with_bindings") ||
+        !is_known_package_frame_call(expr, name, "rlang", scope, lookup) ||
+        any(vapply(static_call_args(expr), identical, logical(1),
+                   quote(...)))) {
+    return(NULL)
+  }
+  parts <- static_matched_arguments(expr, rlang::with_bindings,
+                                    expand_dots = FALSE)
+  if (is.null(parts) || !".expr" %in% names(parts)) {
+    return(NULL)
+  }
+  binder <- rlang::call2(static_call_head(expr), !!!parts[["..."]],
+                         !!!parts[names(parts) == ".env"])
+  rlang::call2("{", binder, parts$.expr)
 }
 
 # A known evaluator as the `eval()` of the code it runs: base `evalq()`, which
