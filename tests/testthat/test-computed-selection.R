@@ -308,9 +308,6 @@ test_that("a failure before a computed part is left to the caller", {
   key_cols <- function(x) {
     rlang::abort("The key registry is offline.", class = "registry_offline")
   }
-  key_pred <- function(x) {
-    rlang::abort("The key registry is offline.", class = "registry_offline")
-  }
   caught <- function(call) {
     rlang::try_fetch(call, registry_offline = function(cnd) "caught")
   }
@@ -320,12 +317,6 @@ test_that("a failure before a computed part is left to the caller", {
     )), "caught")
     expect_identical(caught(forwarded_verbs[[verb]](
       data, NULL, rollup(c(all_of(key_cols(region)), toupper(store)))
-    )), "caught")
-    expect_identical(caught(forwarded_verbs[[verb]](
-      data, c(where(key_pred), toupper(store)), rollup(dt)
-    )), "caught")
-    expect_identical(caught(forwarded_verbs[[verb]](
-      data, NULL, rollup(c(where(key_pred), toupper(store)))
     )), "caught")
   }
   for (call in list(
@@ -339,5 +330,21 @@ test_that("a failure before a computed part is left to the caller", {
     error <- expect_error(eval(call))
     expect_false(inherits(error, "marginplyr_error"))
     expect_match(conditionMessage(error), "all_of(nope)", fixed = TRUE)
+  }
+})
+
+# A function a namespace part returns is applied by tidyselect as a predicate,
+# outside its "In argument" wrapper, so its error names no part (#1802).
+test_that("a namespace part returning a function keeps the refusal", {
+  data <- computed_selection_data()
+  for (call in list(
+    quote(inspect_grouping(data, .by = identity(dt), .grouping = rollup(region))),
+    quote(inspect_grouping(data, .grouping = rollup(identity(dt)))),
+    quote(inspect_grouping(data, .grouping = rollup(c(value, identity(dt))))),
+    quote(inspect_grouping(
+      data, .by = c(value, force(dt)), .grouping = rollup(region)
+    ))
+  )) {
+    expect_error(eval(call), "is computed from `dt`", class = "marginplyr_error")
   }
 })

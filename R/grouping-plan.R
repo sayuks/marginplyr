@@ -3961,10 +3961,10 @@ computed_selection_failure <- function(computed, cnd, env) {
 # the part's label as the subscript error's `subscript_arg`; an error raised
 # while evaluating a part is wrapped by tidyselect in an "In argument"
 # condition whose message is rebuilt here as tidyselect builds it, since the
-# label is held nowhere else. Either naming another part answers `FALSE`, as
-# does a chain holding neither a subscript error nor a wrapper, which is
-# parented and carries no class of its own: no part was evaluated when it was
-# raised, as for a `where()` predicate. tidyselect leaves the wrapper's message
+# label is held nowhere else. Either naming another part answers `FALSE`. A
+# chain holding neither cannot tell: a `where()` predicate's error and the
+# error of a function a namespace part returned, which tidyselect applies as a
+# predicate, both reach it unwrapped. tidyselect leaves the wrapper's message
 # empty for a condition whose call is the bare head, so such a failure names
 # no part.
 failed_selection_part <- function(computed, cnd) {
@@ -3997,13 +3997,7 @@ failed_selection_part <- function(computed, cnd) {
       return(FALSE)
     }
   }
-  traced <- vapply(chain, function(link) {
-    inherits(link, "vctrs_error_subscript") || (
-      identical(class(link), c("rlang_error", "error", "condition")) &&
-        inherits(link$parent, "condition")
-    )
-  }, logical(1))
-  if (any(traced)) NULL else FALSE
+  NULL
 }
 
 # Two refusals rather than one with the subject interpolated, because the
