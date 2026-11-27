@@ -680,18 +680,24 @@ abort_duckdb_call_metadata <- function() {
   ))
 }
 
+# Keywords an unquoted, unqualified head before `(` spells as syntax, which no
+# caller macro of that name replaces there on DuckDB 1.5 or 2.0. `by` is not
+# one: 2.0 binds `by(v)` as a call.
+duckdb_call_syntax <- c(
+  "select", "from", "where", "on", "having", "qualify", "in", "exists", "as",
+  "with", "values", "using", "group", "order", "distinct", "not", "and", "or"
+)
+
 # Identify authored function calls without treating SQL declarations as calls.
 # The caller supplies this operation's catalog-only snapshot, never a binding.
 validate_duckdb_authored_calls <- function(tokens, catalog) {
   quoted <- attr(tokens, "quoted")
   heads <- which(c(tokens[-1L], "") == "(" & !c(quoted[-1L], FALSE))
   identifier <- duckdb_identifier_token(tokens[heads])
-  syntax <- c("select", "from", "where", "on", "having", "qualify", "in",
-              "exists", "as", "with", "values", "using",
-              "group", "by", "order", "distinct", "not", "and", "or")
   qualified <- heads > 1L & tokens[pmax(1L, heads - 1L)] == "."
   heads <- heads[quoted[heads] | (identifier &
-                                    (!tokens[heads] %in% syntax | qualified))]
+                                    (!tokens[heads] %in% duckdb_call_syntax |
+                                       qualified))]
   declarations <- attr(duckdb_metadata_ctes(tokens), "column_declarations")
   relations <- duckdb_metadata_relations(tokens, functions = TRUE)
   for (position in attr(relations, "positions")) {

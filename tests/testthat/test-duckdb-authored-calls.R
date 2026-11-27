@@ -478,6 +478,74 @@ test_that("unquoted non-ASCII macro heads are read as DuckDB does (#1834)", {
 })
 
 
+test_that("a by() call head reaches a caller macro named by (#1835)", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  writeLines(c("k", "101"), path)
+  DBI::dbWriteTable(con, "t", data.frame(g = c("a", "b"), v = 1:2))
+  authored <- function(sql) {
+    dplyr::tbl(con, dbplyr::sql(sql), vars = c("g", "v", "y"))
+  }
+  ordered <- list(
+    authored("SELECT g, v, 1 AS y FROM t GROUP BY (g), (v)"),
+    authored("SELECT g, v, 1 AS y FROM t ORDER BY (g)"),
+    authored(paste("SELECT g, v, row_number() OVER",
+                   "(PARTITION BY (g) ORDER BY (v)) AS y FROM t"))
+  )
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  # With no macro named `by`, BY before a parenthesis stays syntax.
+  for (input in ordered) {
+    expect_identical(inspect_grouping(
+      input, .grouping = grouping_set(where(is.numeric))
+    )$included, "(v, y)")
+  }
+  DBI::dbExecute(con, paste0(
+    'CREATE MACRO "by"(a) AS (SELECT first(k) FROM read_csv_auto(',
+    DBI::dbQuoteString(con, path), "))"
+  ))
+  inputs <- list(
+    authored("SELECT g, v, by(v) AS y FROM t"),
+    authored("SELECT g, v, by (v) AS y FROM t"),
+    dplyr::mutate(dplyr::tbl(con, "t"), y = by(v)),
+    dplyr::mutate(dplyr::tbl(con, "t"), y = dplyr::sql("by(v)"))
+  )
+  for (value in c("101", "source_tail", "absent")) {
+    if (value == "absent") unlink(path) else writeLines(c("k", value), path)
+    for (input in inputs) {
+      expect_error(inspect_grouping(
+        input, .grouping = grouping_set(where(is.numeric))
+      ), "DuckDB call", fixed = TRUE, class = "marginplyr_error")
+      expect_duckdb_catalog_only()
+    }
+  }
+})
+
+test_that("no word the call scan reads as syntax reaches a caller macro", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  reached <- function(sql) {
+    tryCatch(identical(DBI::dbGetQuery(con, sql)[[1L]], "reached"),
+             error = function(cnd) FALSE)
+  }
+  for (word in duckdb_call_syntax) {
+    name <- DBI::dbQuoteIdentifier(con, word)
+    DBI::dbExecute(con, paste0("CREATE MACRO ", name, "(a) AS 'reached'"))
+    expect_false(reached(paste0("SELECT ", word, "(1)")), label = word)
+    DBI::dbExecute(con, paste("DROP MACRO", name))
+    DBI::dbExecute(con, paste0(
+      "CREATE MACRO ", name, "(a) AS TABLE SELECT 'reached' AS r"
+    ))
+    expect_false(reached(paste0("SELECT * FROM ", word, "(1)")), label = word)
+    DBI::dbExecute(con, paste("DROP MACRO TABLE", name))
+  }
+})
+
+
 test_that("chained and parenthesis-less macro calls are checked (#1647)", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
