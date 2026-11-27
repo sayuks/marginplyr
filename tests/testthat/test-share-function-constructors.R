@@ -76,3 +76,46 @@ test_that("a function built reading no earlier summary keeps its value", {
   expect_equal(result$base, rep(1, 3L))
   expect_equal(result$literal, c(1, 3, 4))
 })
+
+# A constructor whose body or formals are held in a variable or computed, whose
+# formals are unnamed or repeated, or that is given an argument it ignores is
+# not read as a literal, and the call keeps the value it computes (#1831).
+test_that("a constructor not read as a literal keeps its value", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3))
+  result <- summarize_with_margins(
+    data,
+    value = sum(x),
+    share = share_of_total(value),
+    held = {
+      body <- quote(2)
+      rlang::new_function(NULL, body)()
+    },
+    computed = rlang::new_function(NULL, (function() quote(2))())(),
+    repeated = rlang::new_function(list(a = 1, a = 2), quote(2))(),
+    ignored = as.function(list(quote(2)), environment(), NULL)(),
+    .grouping = rollup(g)
+  )
+  for (column in c("held", "computed", "repeated", "ignored")) {
+    expect_equal(result[[column]], rep(2, 3L), info = column)
+  }
+})
+
+# A constructor call missing what it requires raises the error native dplyr
+# raises when the summary runs (#1831).
+test_that("a constructor missing its body raises its own error", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3))
+  for (call in alist(
+    rlang::new_function(NULL), rlang::new_formula(NULL),
+    as.function(list(1, quote(2)))()
+  )) {
+    info <- rlang::expr_deparse(call)
+    error <- expect_error(summarize_with_margins(
+      data, value = sum(x), share = share_of_total(value), v = !!call,
+      .grouping = rollup(g)
+    ), info = info)
+    expect_false(inherits(error, "marginplyr_error"), info = info)
+    native <- expect_error(dplyr::summarize(data, v = !!call), info = info)
+    expect_identical(conditionMessage(error$parent),
+                     conditionMessage(native$parent), info = info)
+  }
+})
