@@ -4819,12 +4819,9 @@ scoped_data_symbols <- function(expr, scope, lookup) {
       )
     )))
   }
-  if (identical(call_name, "as.list") &&
-        is_known_base_frame_call(expr, call_name, scope, lookup)) {
-    return(unique(c(
-      call_part_symbols(expr, scope, lookup),
-      materialized_env_symbols(expr, scope, lookup)
-    )))
+  materialized <- materialized_env_symbols(expr, call_name, scope, lookup)
+  if (length(materialized) > 0L) {
+    return(unique(c(call_part_symbols(expr, scope, lookup), materialized)))
   }
   evaluation <- evaluator_as_eval(expr, call_name, scope, lookup)
   if (!is.null(evaluation)) {
@@ -8578,9 +8575,29 @@ static_returned_caller_frame <- function(expr, scope, lookup) {
 
 # Converting a known mask to a list retains an unresolved dependency.
 # The conversion does not inherit bindings from a lexical frame.
-materialized_env_symbols <- function(expr, scope, lookup) {
-  args <- static_matched_arguments(expr, base::as.list)
-  if (is_static_mask_parent(args$x, scope, lookup)) {
+#
+# The converters read are base `as.list()`, its `as.list.environment()`
+# method, the functionals that coerce `X` with `as.list()` (`lapply()`,
+# `sapply()`, `vapply()`) and `eapply()`, each over an argument
+# `is_static_mask_parent()` proves. A mask handed to any other callee, a
+# caller-level reader function or a `do.call()`, or carried through
+# `rlang::env_clone()`, stays outside the walk (#1652, #1825).
+materialized_env_symbols <- function(expr, call_name, scope, lookup) {
+  converters <- list(
+    as.list = list(base::as.list, "x"),
+    as.list.environment = list(base::as.list.environment, "x"),
+    lapply = list(base::lapply, "X"),
+    sapply = list(base::sapply, "X"),
+    vapply = list(base::vapply, "X"),
+    eapply = list(base::eapply, "env")
+  )
+  if (is.null(call_name) || !call_name %in% names(converters) ||
+        !is_known_base_frame_call(expr, call_name, scope, lookup)) {
+    return(character())
+  }
+  converter <- converters[[call_name]]
+  args <- static_matched_arguments(expr, converter[[1L]])
+  if (is_static_mask_parent(args[[converter[[2L]]]], scope, lookup)) {
     return(unresolved_lookup_name())
   }
   character()
