@@ -435,7 +435,11 @@ Config/testthat/start-first:
     window-frame,
     share-assign-locals,
     share-glue-templates,
-    share-unplaced-environment-reads
+    share-unplaced-environment-reads,
+    share-deferred-calls,
+    share-eval-parent,
+    share-function-naming,
+    share-function-constructors
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
