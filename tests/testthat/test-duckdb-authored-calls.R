@@ -424,6 +424,60 @@ test_that("a caller macro is refused in every dbplyr spelling", {
   expect_equal(nrow(last_sent_queries()), 0L)
 })
 
+test_that("unquoted non-ASCII macro heads are read as DuckDB does (#1834)", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  writeLines(c("k", "101"), path)
+  reader <- paste0("read_csv_auto(", DBI::dbQuoteString(con, path), ")")
+  DBI::dbWriteTable(con, "t", data.frame(g = c("a", "b"), v = 1:2))
+  macro <- enc2utf8("mé")
+  DBI::dbExecute(con, enc2utf8(paste0(
+    'CREATE MACRO "mé"(a) AS (SELECT first(k) FROM ', reader, ")"
+  )))
+  DBI::dbExecute(con, paste0(
+    "CREATE MACRO hidden_first(a) AS (SELECT first(k) FROM ", reader, ")"
+  ))
+  DBI::dbExecute(con, enc2utf8(paste0(
+    'CREATE MACRO "tmé"() AS TABLE SELECT \'a\' AS g, k AS y FROM ',
+    reader
+  )))
+  authored <- function(sql) {
+    dplyr::tbl(con, dbplyr::sql(enc2utf8(sql)), vars = c("g", "y"))
+  }
+  t <- dplyr::tbl(con, "t")
+  inputs <- list(
+    authored("SELECT g, mé(v) AS y FROM t"),
+    authored("SELECT g, main.mé(v) AS y FROM t"),
+    authored("SELECT g, y FROM tmé()"),
+    # A code point DuckDB strips as whitespace still leaves a call head.
+    authored("SELECT g, hidden_first　(v) AS y FROM t"),
+    dplyr::mutate(t, y = !!rlang::call2(macro, quote(v))),
+    dplyr::mutate(t, y = dplyr::sql(enc2utf8("mé(v)")))
+  )
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  refused <- function(input) {
+    expect_error(inspect_grouping(
+      input, .grouping = grouping_set(where(is.numeric))
+    ), "DuckDB call", fixed = TRUE, class = "marginplyr_error")
+    expect_duckdb_catalog_only()
+  }
+  for (value in c("101", "source_tail")) {
+    writeLines(c("k", value), path)
+    for (input in inputs) {
+      expect_identical(is.numeric(dplyr::collect(utils::head(input, 0L))$y),
+                       identical(value, "101"))
+      refused(input)
+    }
+  }
+  unlink(path)
+  for (input in inputs) refused(input)
+})
+
+
 test_that("chained and parenthesis-less macro calls are checked (#1647)", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()

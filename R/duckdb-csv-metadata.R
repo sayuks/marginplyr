@@ -1,16 +1,44 @@
+# Code points beyond ASCII that DuckDB 1.5 and 2.0 read as whitespace between
+# tokens, as measured there; every other character from U+0080 up is an
+# identifier character in both.
+duckdb_unicode_spaces <- c(
+  0xa0, 0x2000:0x200b, 0x202f, 0x205f, 0x2060, 0x3000, 0xfeff
+)
+
+# PCRE fragments for those spaces and for the identifier characters DuckDB
+# reads unquoted. A pattern using them starts with `(*UTF)`.
+duckdb_unicode_space_class <- function() {
+  paste0(sprintf("\\x{%x}", duckdb_unicode_spaces), collapse = "")
+}
+duckdb_identifier_pattern <- function() {
+  wide <- paste0(
+    "(?![", duckdb_unicode_space_class(), "])[\\x{80}-\\x{10ffff}]"
+  )
+  paste0("(?:[A-Za-z_]|", wide, ")(?:[A-Za-z0-9_$]|", wide, ")*")
+}
+
+# Whether each unquoted token is an identifier DuckDB reads unquoted.
+duckdb_identifier_token <- function(tokens) {
+  grepl(paste0("(*UTF)^", duckdb_identifier_pattern(), "$"), tokens,
+        perl = TRUE)
+}
+
 # SQL lexical tokens for reader metadata guards, using ASCII identifier keys.
 # Quoted values stay opaque and nested comments are discarded. A string
 # continued across a line break, which DuckDB concatenates, is one token. A
 # backtick span is a quoted identifier where duckdb_backtick_identifiers() says
-# DuckDB reads it as one.
+# DuckDB reads it as one. SQL that is not valid UTF-8 after conversion is
+# refused rather than read.
 duckdb_metadata_tokens <- function(sql) {
+  sql <- enc2utf8(sql)
+  if (!all(validUTF8(sql))) abort_duckdb_unreadable_sql()
   # Whitespace holding a line break, optionally after a line comment.
   continue <- "(?:[ \\t\\f]*(?:--[^\\r\\n]*)?[\\r\\n])+[[:space:]]*"
   escaped <- "'(?:[^'\\\\]|\\\\.|'')*'"
   plain <- "'(?:[^']|'')*'"
   backtick <- duckdb_backtick_identifiers()
   pattern <- paste0(
-    "(?s)",
+    "(*UTF)(?s)",
     "(?<comment>/\\*(?:[^*/]|/(?!\\*)|\\*(?!/)|(?&comment))*\\*/)",
     "|--[^\\r\\n]*",
     "|[eE]", escaped, "(?:", continue, escaped, ")*",
@@ -18,7 +46,8 @@ duckdb_metadata_tokens <- function(sql) {
     "|(?<tag>\\$[A-Za-z_0-9]*\\$).*?\\k<tag>",
     '|"(?:[^"]|"")*"',
     if (backtick) "|`(?:[^`]|``)*`",
-    "|[[:alpha:]_][[:alnum:]_$]*|:=|[^[:space:]]"
+    "|", duckdb_identifier_pattern(),
+    "|:=|[^[:space:]", duckdb_unicode_space_class(), "]"
   )
   tokens <- regmatches(sql, gregexpr(pattern, sql, perl = TRUE))[[1L]]
   tokens <- tokens[!startsWith(tokens, "/*") & !startsWith(tokens, "--")]
@@ -154,7 +183,7 @@ duckdb_metadata_relations <- function(tokens, functions = FALSE) {
     frame <- frames[[n]]
     # WITH's final definition precedes the main query's TABLE/SELECT position.
     if (i %in% query_starts) frame$start <- TRUE
-    qualified <- grepl("^[[:alpha:]_][[:alnum:]_$]*$", token) &&
+    qualified <- duckdb_identifier_token(token) &&
       ((i > 1L && tokens[[i - 1L]] == "." && !quoted[[i - 1L]]) ||
          (frame$expect && i < length(tokens) &&
             tokens[[i + 1L]] == "." && !quoted[[i + 1L]]))
@@ -331,9 +360,8 @@ duckdb_relation_parts <- function(tokens, position, functions = FALSE) {
   while (last + 2L <= length(tokens) && tokens[[last + 1L]] == "." &&
            !quoted[[last + 1L]]) {
     part <- tokens[[last + 2L]]
-    if (!quoted[[last + 2L]] && !grepl(
-      "^[[:alpha:]_][[:alnum:]_$]*$|^e?'|^\\$[a-z_0-9]*\\$", part
-    )) break
+    if (!quoted[[last + 2L]] && !duckdb_identifier_token(part) &&
+          !grepl("^e?'|^\\$[a-z_0-9]*\\$", part)) break
     last <- last + 2L
   }
   function_head <- last < length(tokens) && tokens[[last + 1L]] == "(" &&
@@ -621,6 +649,21 @@ abort_duckdb_unstored_view <- function() {
   ))
 }
 
+# Refuse SQL the metadata scan cannot read as DuckDB does, before binding it.
+abort_duckdb_unreadable_sql <- function() {
+  abort_marginplyr(c(
+    "Can't safely determine column metadata for this DuckDB query.",
+    i = paste0(
+      "Its SQL is not valid UTF-8, so it can't be checked for source work ",
+      "without binding it."
+    ),
+    i = paste0(
+      "Convert the SQL to UTF-8, or collect the input explicitly with ",
+      "{.code dplyr::collect()} and pass the resulting data frame."
+    )
+  ))
+}
+
 # Refuse authored calls whose source dependencies are opaque before binding.
 abort_duckdb_call_metadata <- function() {
   abort_marginplyr(c(
@@ -642,10 +685,7 @@ abort_duckdb_call_metadata <- function() {
 validate_duckdb_authored_calls <- function(tokens, catalog) {
   quoted <- attr(tokens, "quoted")
   heads <- which(c(tokens[-1L], "") == "(" & !c(quoted[-1L], FALSE))
-  identifier <- grepl(paste0(
-    "(*UTF)^[a-z_\\x{80}-\\x{10ffff}]",
-    "[a-z_0-9$\\x{80}-\\x{10ffff}]*$"
-  ), tokens[heads], perl = TRUE)
+  identifier <- duckdb_identifier_token(tokens[heads])
   syntax <- c("select", "from", "where", "on", "having", "qualify", "in",
               "exists", "as", "with", "values", "using",
               "group", "by", "order", "distinct", "not", "and", "or")
@@ -713,10 +753,7 @@ validate_duckdb_view_metadata <- function(index, catalog, seen) {
                    !c(attr(body, "quoted")[-1L], FALSE))
   grammar <- catalog()
   noncall <- grammar$relation_name[grammar$kind == "keyword"]
-  identifier <- grepl(paste0(
-    "(*UTF)^[a-z_\\x{80}-\\x{10ffff}]",
-    "[a-z_0-9$\\x{80}-\\x{10ffff}]*$"
-  ), body[heads], perl = TRUE)
+  identifier <- duckdb_identifier_token(body[heads])
   # Stored FunctionExpression names quote every keyword (ADR 0020).
   heads <- heads[attr(body, "quoted")[heads] |
                    (identifier & !body[heads] %in% noncall)]
