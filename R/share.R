@@ -2450,10 +2450,11 @@ validate_share_request <- function(outputs,
 # without forcing in first position, where the selection and `.names` are
 # evaluated; later, all three are. Otherwise, when `outputs_unknown` says the
 # analysis could not name its outputs rather than knew it names none, the hint
-# says so, with the `pattern` of the names a literal `.names` can produce
-# (#1810). An `across()` whose selection the column names alone settle,
-# running no caller code, and select none of, names nothing whatever its
-# `.names`, in any position, and has no hint.
+# says so, with the `pattern` of the names a literal or default `.names` can
+# produce (#1810). An `across()` whose selection the column names alone
+# settle, running no caller code, and select none of, names nothing whatever
+# its `.names`, in any position, and has no hint; one they settle to some
+# columns has a pattern whose `{.col}` is one of them.
 unnamed_across_source_hint <- function(dot, name, position, columns,
                                        outputs_unknown) {
   expr <- rlang::quo_get_expr(dot)
@@ -2489,7 +2490,11 @@ unnamed_across_source_hint <- function(dot, name, position, columns,
       }
     }
   }
-  if (!outputs_unknown || selects_no_column(parsed$cols, env, columns)) {
+  if (!outputs_unknown) {
+    return(NULL)
+  }
+  selected <- settled_selection_names(parsed$cols, env, columns)
+  if (!is.null(selected) && length(selected) == 0L) {
     return(NULL)
   }
   # Written first, the selection and `.names` are evaluated before the call
@@ -2498,48 +2503,71 @@ unnamed_across_source_hint <- function(dot, name, position, columns,
   unpack_false <- across_unpack_is_false(parsed$unpack, env)
   list(
     kind = "unknown", name = NULL, reorder = position > 1L && unpack_false,
-    pattern = if (unpack_false && rlang::is_string(parsed$names)) {
-      across_template_pattern(parsed$names)
-    }
+    pattern = if (unpack_false) across_names_pattern(parsed$names, selected)
   )
 }
 
-# Whether `cols`, evaluated in `env`, is a selection tidyselect settles from
-# the column names alone without caller code, and selects none of `columns`.
-# `FALSE` where that is not known. A warning settling it raises, as `one_of()`
+# The names of the columns `cols`, evaluated in `env`, selects among `columns`,
+# where tidyselect settles it from the column names alone without caller code;
+# `NULL` where that is not known. A warning settling it raises, as `one_of()`
 # of an absent column does, is muffled: it is the execution's to raise.
-selects_no_column <- function(cols, env, columns) {
+settled_selection_names <- function(cols, env, columns) {
   if (rlang::is_quosure(cols)) {
     env <- rlang::quo_get_env(cols)
     cols <- rlang::quo_get_expr(cols)
   }
   if (rlang::is_missing(cols) ||
         !is_name_only_expr(cols, env, columns, allow_caller_code = FALSE)) {
-    return(FALSE)
+    return(NULL)
   }
   tryCatch(
     withCallingHandlers(
-      length(tidyselect::eval_select(
+      names(tidyselect::eval_select(
         rlang::new_quosure(cols, env), grouping_name_proxy(columns)
-      )) == 0L,
+      )),
       warning = function(cnd) invokeRestart("muffleWarning")
     ),
-    error = function(cnd) FALSE
+    error = function(cnd) NULL
   )
+}
+
+# The `across_template_pattern()` of `names`, an `across()`'s `.names`, over
+# the `selected` names of its columns where known. Left out, `.names` is one of
+# dplyr's two defaults, which depend on `.fns`. `NULL` for any other `.names`.
+across_names_pattern <- function(names, selected) {
+  templates <- if (rlang::is_missing(names) || is.null(names)) {
+    c("{.col}", "{.col}_{.fn}")
+  } else if (rlang::is_string(names)) {
+    names
+  }
+  patterns <- lapply(templates, across_template_pattern, columns = selected)
+  if (length(patterns) == 0L || any(vapply(patterns, is.null, logical(1)))) {
+    return(NULL)
+  }
+  paste(unlist(patterns), collapse = "|")
 }
 
 # The regular expression matching every name a literal `.names` template can
 # produce, whatever its components evaluate to: its literal text, as glue's
 # own parser splits it without evaluating anything, around each component.
+# A component that is `.col` alone is one of `columns` where they are given.
 # NULL where glue cannot parse it.
-across_template_pattern <- function(template) {
+across_template_pattern <- function(template, columns = NULL) {
   marker <- "\001"
-  if (grepl(marker, template, fixed = TRUE)) {
+  column <- "\003"
+  if (grepl(marker, template, fixed = TRUE) ||
+        grepl(column, template, fixed = TRUE)) {
     return(NULL)
   }
   expanded <- tryCatch(
     glue::glue(template, .envir = emptyenv(),
-               .transformer = function(text, envir) marker),
+               .transformer = function(text, envir) {
+                 if (!is.null(columns) && identical(trimws(text), ".col")) {
+                   column
+                 } else {
+                   marker
+                 }
+               }),
     error = function(cnd) NULL
   )
   if (is.null(expanded)) {
@@ -2549,7 +2577,13 @@ across_template_pattern <- function(template) {
   # ending in a component needs; the terminator keeps it and is removed.
   pieces <- strsplit(paste0(expanded, "\002"), marker, fixed = TRUE)[[1L]]
   pieces[[length(pieces)]] <- sub("\002$", "", pieces[[length(pieces)]])
-  pieces <- gsub("([][{}.\\\\|()^$*+?])", "\\\\\\1", pieces, perl = TRUE)
+  escape <- function(text) {
+    gsub("([][{}.\\\\|()^$*+?])", "\\\\\\1", text, perl = TRUE)
+  }
+  pieces <- gsub(
+    column, paste0("(?:", paste(escape(columns), collapse = "|"), ")"),
+    escape(pieces), fixed = TRUE
+  )
   paste0("^", paste(pieces, collapse = ".*"), "$")
 }
 
