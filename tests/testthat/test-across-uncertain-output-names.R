@@ -674,7 +674,8 @@ test_that("an empty `.fns` list names no output on SQLite", {
 # packages of their own and load them afresh for every call. `lazyacrossa`
 # exports `n_distinct()` and shares its output from its own namespace;
 # `lazyacrossb` imports it and does the same from its imports environment
-# (#1793).
+# (#1793). `lazyacrossa` also exports the constants `columns` and `template`,
+# and selects `columns` from its own namespace (#1809).
 lazy_load_fixture <- new.env(parent = emptyenv())
 
 lazy_load_fixture_lib <- function() {
@@ -716,10 +717,20 @@ lazy_load_fixture_lib <- function() {
       stop(paste(status, collapse = "\n"))
     }
   }
+  constant_call <- paste0(
+    "marginplyr::summarize_with_margins(data, n = dplyr::n(), ",
+    "dplyr::across(dplyr::all_of(columns), sum, .names = '{.col}_t'), ",
+    "s = marginplyr::share_of_total(x_t), ",
+    ".grouping = marginplyr::rollup(g))"
+  )
   write_fixture(
-    "lazyacrossa", c("export(n_distinct)", "export(own_share)"),
+    "lazyacrossa",
+    c("export(n_distinct)", "export(own_share)", "export(columns)",
+      "export(template)", "export(own_constant_share)"),
     c("n_distinct <- function(x) length(unique(x))",
-      paste0("own_share <- function(data) ", share_call))
+      paste0("own_share <- function(data) ", share_call),
+      "columns <- c('x', 'y')", "template <- '{.col}_t'",
+      paste0("own_constant_share <- function(data) ", constant_call))
   )
   write_fixture(
     "lazyacrossb",
@@ -854,5 +865,132 @@ test_that("an environment named like a package keeps its promise unread", {
       .grouping = marginplyr::rollup(g)
     )), caller), "unknown preceding ordinary summary `x_1`", info = name)
   }
+  expect_identical(reads, 0L)
+})
+
+# A constant read by a later `across()` selection or `.names` is a lazy-load
+# promise until something evaluates it, as the `.fns` above is, and is read as
+# its value from a base or package environment (#1809).
+expect_constant_share <- function(result, share = "s") {
+  result <- as.data.frame(dplyr::collect(result))
+  result <- result[match(c("a", "b", "Total"), result$g), , drop = FALSE]
+  expect_equal(result[[share]], c(0.375, 0.625, 1))
+}
+
+lazy_load_constant_calls <- rlang::exprs(
+  selection = marginplyr::summarize_with_margins(
+    data, n = dplyr::n(),
+    dplyr::across(dplyr::all_of(columns), sum, .names = "{.col}_t"),
+    s = marginplyr::share_of_total(x_t), .grouping = marginplyr::rollup(g)
+  ),
+  names = marginplyr::summarize_with_margins(
+    data, n = dplyr::n(), dplyr::across(c(x, y), sum, .names = template),
+    s = marginplyr::share_of_total(x_t), .grouping = marginplyr::rollup(g)
+  ),
+  columnwise = marginplyr::summarize_with_margins(
+    data, n = dplyr::n(),
+    dplyr::across(dplyr::all_of(columns), sum, .names = "{.col}_t"),
+    dplyr::across(x_t, marginplyr::share_of_total, .names = "s"),
+    .grouping = marginplyr::rollup(g)
+  )
+)
+
+expect_lazy_load_constants <- function(make_input) {
+  data <- data.frame(g = c("a", "a", "b"), x = c(1, 2, 5), y = c(10, 20, 30))
+  for (label in names(lazy_load_constant_calls)) {
+    with_fresh_lazy_load_fixture(function() {
+      attachNamespace("lazyacrossa")
+      attached <- as.environment("package:lazyacrossa")
+      expect_true(all(rlang::env_binding_are_lazy(
+        attached, c("columns", "template")
+      )))
+      caller <- rlang::new_environment(list(data = make_input(data)),
+                                       parent = globalenv())
+      expect_constant_share(eval(lazy_load_constant_calls[[label]], caller))
+    })
+  }
+  with_fresh_lazy_load_fixture(function() {
+    expect_true(rlang::env_binding_are_lazy(
+      asNamespace("lazyacrossa"), "columns"
+    ))
+    expect_constant_share(
+      getExportedValue("lazyacrossa", "own_constant_share")(make_input(data))
+    )
+  })
+}
+
+test_that("a lazy-load constant names a later across() on a data frame", {
+  expect_lazy_load_constants(identity)
+})
+
+test_that("a lazy-load constant names a later across() on a data.table", {
+  skip_if_suggest_absent("data.table")
+  expect_lazy_load_constants(data.table::as.data.table)
+})
+
+# Base's own constants are lazy-load promises from startup, and nothing else in
+# the suite reads these two; each case reads its own, since reading one forces
+# it. `baseenv()` is not a package environment.
+test_that("a base constant names a later across() on its first call", {
+  months <- list(
+    month.abb = c(
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct",
+      "Nov", "Dec"
+    ),
+    month.name = c(
+      "January", "February", "March", "April", "May", "June", "July",
+      "August", "September", "October", "November", "December"
+    )
+  )
+  inputs <- list(month.abb = identity, month.name = function(data) {
+    skip_if_suggest_absent("data.table")
+    data.table::as.data.table(data)
+  })
+  for (name in names(months)) {
+    expect_true(rlang::env_binding_are_lazy(baseenv(), name))
+    data <- data.frame(g = c("a", "a", "b"), matrix(
+      c(1, 2, 5), nrow = 3L, ncol = 12L
+    ))
+    names(data)[-1L] <- months[[name]]
+    first <- months[[name]][[1L]]
+    result <- summarize_with_margins(
+      inputs[[name]](data), n = dplyr::n(),
+      dplyr::across(
+        dplyr::all_of(!!rlang::sym(name)), sum, .names = "{.col}_t"
+      ),
+      s = share_of_total(!!rlang::sym(paste0(first, "_t"))),
+      .grouping = rollup(g)
+    )
+    expect_constant_share(result)
+  }
+})
+
+# A caller's delayed binding is not a lazy-load promise; the planner reads its
+# expression and leaves it unforced (#1793).
+test_that("a delayed caller constant read by a later across() stays unread", {
+  data <- data.frame(g = c("a", "a", "b"), x = c(1, 2, 5), y = c(10, 20, 30))
+  reads <- 0L
+  delayedAssign("columns", {
+    reads <<- reads + 1L
+    c("x", "y")
+  })
+  refused <- expect_error(summarize_with_margins(
+    data, n = dplyr::n(),
+    dplyr::across(dplyr::all_of(columns), sum, .names = "{.col}_t"),
+    s = share_of_total(x_t), .grouping = rollup(g)
+  ), "unknown preceding ordinary summary `x_t`", class = "marginplyr_error")
+  expect_match(conditionMessage(refused), "force(columns)", fixed = TRUE)
+  imitation <- rlang::new_environment(parent = globalenv())
+  attr(imitation, "name") <- "package:lazyacrossfake"
+  delayedAssign("columns", {
+    reads <<- reads + 1L
+    c("x", "y")
+  }, assign.env = imitation)
+  caller <- rlang::new_environment(list(data = data), parent = imitation)
+  expect_error(eval(quote(marginplyr::summarize_with_margins(
+    data, n = dplyr::n(),
+    dplyr::across(dplyr::all_of(columns), sum, .names = "{.col}_t"),
+    s = marginplyr::share_of_total(x_t), .grouping = marginplyr::rollup(g)
+  )), caller), "unknown preceding ordinary summary `x_t`")
   expect_identical(reads, 0L)
 })
