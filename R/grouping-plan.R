@@ -3906,13 +3906,15 @@ computed_selection_leaves <- function(expr, data_vars) {
 
 # The part among `computed` (from `computed_selection_leaves()`) that the
 # computed-expression refusal explains `cnd`, the selection's failure, by, or
-# `NULL`; `env` is where the selection's quosure is evaluated. R's
-# unbound-object error ending the chain is explained by the first part naming
-# that column. Any other failure is explained by the first part only when no
+# `NULL`; `env` is where the selection's quosure is evaluated. Where
+# `failed_selection_part()` names the part that raised the failure, that part
+# alone is decided; otherwise every part is. R's unbound-object error ending
+# the chain is explained by the first decided part naming that column. Any
+# other failure is explained by the first decided part only when no decided
 # part's head is the caller's own: a primitive, a `pkg::fun` spelling, or a
 # function closing over a namespace, such as `format(dt)` over a column named
-# like a function. Where a caller's own function is among the parts, the
-# failure may be its own condition and is re-raised (#1802).
+# like a function. Where a caller's own function is among them, the failure
+# may be its own condition and is re-raised (#1802).
 #
 # R's unbound-object error carries no class, so it is recognised by the message
 # R gives for the same symbol in `emptyenv()`, which follows the session's
@@ -3922,6 +3924,10 @@ computed_selection_leaves <- function(expr, data_vars) {
 computed_selection_failure <- function(computed, cnd, env) {
   if (length(computed) == 0L) {
     return(NULL)
+  }
+  failed <- failed_selection_part(computed, cnd)
+  if (!is.null(failed)) {
+    computed <- list(failed)
   }
   chain <- condition_chain(cnd)
   message <- conditionMessage(chain[[length(chain)]])
@@ -3944,6 +3950,36 @@ computed_selection_failure <- function(computed, cnd, env) {
     is.null(fn) || !(is.primitive(fn) || isNamespace(environment(fn)))
   }, logical(1))
   if (any(callers)) NULL else computed[[1L]]
+}
+
+# The part among `computed` that tidyselect reports as the one whose evaluation
+# failed, or `NULL` where its chain names none of them. A value a part
+# returned and tidyselect refused carries the part's label as the subscript
+# error's `subscript_arg`; an error raised while evaluating a part is wrapped
+# by tidyselect in an "In argument" condition whose message is rebuilt here
+# as tidyselect builds it, since the label is held nowhere else. tidyselect
+# leaves that message empty for a condition whose call is the bare head, so
+# such a failure names no part.
+failed_selection_part <- function(computed, cnd) {
+  labels <- vapply(
+    computed, function(part) rlang::as_label(part$expr), character(1)
+  )
+  wrapped <- cli::ansi_strip(vapply(labels, function(code) {
+    cli::format_inline("In argument: {.code {code}}.")
+  }, character(1)))
+  for (link in condition_chain(cnd)) {
+    found <- if (inherits(link, "vctrs_error_subscript")) {
+      match(link$subscript_arg, labels)
+    } else if (is.character(link$message) && length(link$message) == 1L) {
+      match(cli::ansi_strip(link$message), wrapped)
+    } else {
+      NA_integer_
+    }
+    if (length(found) == 1L && !is.na(found)) {
+      return(computed[[found]])
+    }
+  }
+  NULL
 }
 
 # Two refusals rather than one with the subject interpolated, because the

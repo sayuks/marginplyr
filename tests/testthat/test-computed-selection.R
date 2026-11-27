@@ -257,3 +257,44 @@ test_that("deciding the refusal runs and forces nothing of the caller's", {
   expect_false(inherits(error, "marginplyr_error"))
   expect_identical(forced, 0L)
 })
+
+# A failure is decided for the part tidyselect names as having raised it, not
+# for another part whose spelling it happens to match.
+test_that("a failure is decided for the part that raised it", {
+  data <- computed_selection_data()
+  ok_cols <- function(x) "region"
+  expect_computed_refusal(
+    inspect_grouping(
+      data, .by = c(format(dt), ok_cols(region)), .grouping = rollup(value)
+    ),
+    by_main,
+    "i `format(dt)` is computed from `dt`."
+  )
+  key_cols <- function(x) {
+    rlang::abort("The key registry is offline.", class = "registry_offline")
+  }
+  expect_computed_refusal(
+    inspect_grouping(
+      data, .grouping = rollup(c(toupper(dt), key_cols(region)))
+    ),
+    grouping_main,
+    "i `toupper(dt)` is computed from `dt`."
+  )
+  # The helper's own missing object is named like a column another part names.
+  free_read <- function(x) value_table
+  data$value_table <- data$value
+  for (call in list(
+    quote(inspect_grouping(
+      data, .by = c(free_read(region), toupper(value_table)),
+      .grouping = rollup(dt)
+    )),
+    quote(inspect_grouping(
+      data, .grouping = rollup(c(free_read(region), toupper(value_table)))
+    ))
+  )) {
+    error <- expect_error(eval(call))
+    expect_false(inherits(error, "marginplyr_error"))
+    expect_match(conditionMessage(error), "free_read(region)", fixed = TRUE)
+    expect_match(conditionMessage(error), "value_table", fixed = TRUE)
+  }
+})
