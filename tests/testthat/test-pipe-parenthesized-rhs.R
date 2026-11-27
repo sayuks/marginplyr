@@ -19,9 +19,12 @@ expect_pipe_value <- function(input, expr) {
   )
 }
 
+# magrittr fixes the pipes' names and their infix spellings are what is under
+# test; `v` is a column the summary's data mask resolves.
+# nolint start: object_usage_linter, pipe_consistency_linter.
 pipe_rhs_cases <- function() {
   `%>%` <- magrittr::`%>%`
-  `%T>%` <- magrittr::`%T>%`
+  `%T>%` <- magrittr::`%T>%` # nolint: object_name_linter.
   list(
     rlang::quo(v %>% (function(x) sum(x))),
     rlang::quo(v %>% (\(x) sum(x))),
@@ -34,6 +37,7 @@ pipe_rhs_cases <- function() {
     rlang::quo(sum(sapply(v, function(y) y %>% (base::sum))))
   )
 }
+# nolint end
 
 pipe_rhs_input <- function() {
   data.frame(g = c("a", "a", "b"), v = c(1, 2, 4))
@@ -47,6 +51,8 @@ test_that("a parenthesized function on a pipe's right keeps its pair", {
   }
 })
 
+# The infix pipe is under test, and `v` is a column of the summary's data mask.
+# nolint start: object_usage_linter, pipe_consistency_linter.
 test_that("the pair survives inside an across() lambda body", {
   `%>%` <- magrittr::`%>%`
   input <- tibble::as_tibble(pipe_rhs_input())
@@ -57,6 +63,7 @@ test_that("the pair survives inside an across() lambda body", {
   actual <- summarize_with_margins(input, !!expr, .grouping = NULL)
   expect_identical(actual$n, native$n)
 })
+# nolint end
 
 test_that("a pipe's parenthesized function keeps its pair on data.table", {
   skip_if_suggest_absent("data.table")

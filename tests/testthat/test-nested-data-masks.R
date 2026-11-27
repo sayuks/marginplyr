@@ -438,7 +438,7 @@ test_that("supported Arrow summaries stay lazy until collection", {
 # each grain both return the value the nested call gives evaluated alone.
 expect_nested_verb_value <- function(input, expr, alone) {
   outer <- dplyr::collect(summarize_with_margins(
-    input, n = !!expr, .grouping = rollup(g), .sort = "last"
+    input, n = !!expr, .grouping = rollup(dplyr::all_of("g")), .sort = "last"
   ))
   native <- dplyr::summarise(
     dplyr::collect(input), n = !!expr, .by = dplyr::all_of("g")
@@ -633,6 +633,8 @@ test_that("the nested-verb registry names every data-mask verb (#1819)", {
   }
 })
 
+# The eager pipe's infix spelling is what the registry is asked to recognise.
+# nolint start: pipe_consistency_linter.
 test_that("a verb on the right of %!>% owns its arguments (#1827)", {
   `%!>%` <- magrittr::`%!>%`
   input <- tibble::tibble(g = c("a", "a", "b"), v = c(1, 2, 4))
@@ -676,7 +678,11 @@ test_that("%$% keeps ordinary traversal (#1827)", {
     c(FALSE, FALSE)
   )
 })
+# nolint end
 
+# magrittr fixes the tee pipe's name, and its infix spelling is what the
+# registry is asked to recognise.
+# nolint start: object_name_linter, pipe_consistency_linter.
 test_that("a verb on the right of %T>% owns its arguments (#1826)", {
   `%T>%` <- magrittr::`%T>%`
   input <- tibble::tibble(g = c("a", "a", "b"), v = c(1, 2, 4))
@@ -694,3 +700,4 @@ test_that("a verb on the right of %T>% owns its arguments (#1826)", {
     fixed = TRUE
   )
 })
+# nolint end
