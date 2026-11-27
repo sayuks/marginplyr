@@ -51,6 +51,9 @@ test_that("a literal assign() of a value binds a data.table local", {
 })
 
 test_that("assignments that do not definitely bind the local stay refused", {
+  # The `globalenv()` read below writes there if its refusal regresses.
+  global_prior <- exists("prior", envir = globalenv(), inherits = FALSE)
+  if (!global_prior) withr::defer(rlang::env_unbind(globalenv(), "prior"))
   reads <- alist(
     {
       assign("prior", prior)
@@ -139,4 +142,7 @@ test_that("assignments that do not definitely bind the local stay refused", {
   expect_share_dependencies(
     assigned_local_data(), reads, "depends on earlier summary alias `prior`"
   )
+  if (!global_prior) {
+    expect_false(exists("prior", envir = globalenv(), inherits = FALSE))
+  }
 })
