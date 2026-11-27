@@ -4430,7 +4430,9 @@ resolve_share_selection <- function(expr,
       if (is_unsupported_predicate(cnd)) {
         abort_share_predicate(kind, parent = cnd)
       }
-      abort_share_selection_error(cnd, preceding, context, kind)
+      abort_share_selection_error(
+        cnd, preceding_names, preceding, context, kind
+      )
     }
   )
 }
@@ -4441,8 +4443,12 @@ resolve_share_selection <- function(expr,
 # rather than being flattened into the message. That keeps the class and the
 # chain a caller sees identical to the one the ordinary summary path propagates
 # for the same expression, with only marginplyr's context added on top.
-abort_share_selection_error <- function(cnd, preceding, context, kind) {
-  missing <- share_selection_missing_names(cnd)
+abort_share_selection_error <- function(cnd,
+                                        preceding_names,
+                                        preceding,
+                                        context,
+                                        kind) {
+  missing <- share_selection_missing_names(cnd, preceding_names)
   if (length(missing) == 0L) {
     abort_marginplyr(
       c(
@@ -4553,18 +4559,29 @@ abort_share_source_name <- function(source, preceding, context, kind) {
   )
 }
 
-# The names a failed selection gave, in the order the chain holds them. What
-# each one turns out to be -- a summary defined twice, one that is ineligible,
-# or a name no summary answers at all -- is `abort_share_source_name()`'s
-# question, so this says only what was named. A subscript that is not character
-# names nothing it can report, and neither does the empty string, which
-# `all_of(c(""))` puts in `i` where no summary could answer it.
-share_selection_missing_names <- function(cnd) {
+# The names a failed selection gave that the share's proxy lacks, in the order
+# the chain holds them. What each one turns out to be -- a summary defined
+# twice, one that is ineligible, or a name no summary answers at all -- is
+# `abort_share_source_name()`'s question, so this says only what was missing.
+#
+# Only vctrs' out-of-bounds condition over the proxy's own `names` is read. Its
+# `i` is the whole subscript for a character vector such as `all_of()`'s and
+# the single name for a bare one, so the missing names are those `names` lacks.
+# A condition over another frame's names comes from a caller's helper selecting
+# there, and any other condition names nothing the proxy was asked for; both
+# answer nothing, so `abort_share_selection_error()` keeps them as the parent.
+share_selection_missing_names <- function(cnd, names) {
   subscripts <- unlist(
     lapply(
       condition_chain(cnd),
       function(condition) {
-        if (is.character(condition$i)) condition$i else character()
+        if (inherits(condition, "vctrs_error_subscript_oob") &&
+              is.character(condition$i) &&
+              identical(as.character(condition$names), as.character(names))) {
+          condition$i[!condition$i %in% names]
+        } else {
+          character()
+        }
       }
     ),
     use.names = FALSE
@@ -4581,7 +4598,7 @@ share_selection_missing_names <- function(cnd) {
   if (is.null(subscripts)) {
     return(character())
   }
-  unique(subscripts[nzchar(subscripts)])
+  unique(subscripts)
 }
 
 contains_selection_predicate <- function(expr) {

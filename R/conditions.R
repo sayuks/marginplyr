@@ -61,11 +61,12 @@ abort_marginplyr <- function(message,
 # (#193).
 #
 # What to ask of these conditions stays with the caller, because the chain is
-# the only part such readers share: `share_selection_missing_names()` collects
-# the character subscripts in `i`, and `is_grouping_spec_subscript()` tests a
-# class against an argument's own label. This one decides nothing, which is
-# what separates it from the rest of this module -- everything else here raises
-# a Package condition or restates one a branch raised.
+# the only part such readers share: `share_selection_missing_names()` reads
+# the names an out-of-bounds subscript lacks, and
+# `is_grouping_spec_subscript()` tests a class against an argument's own label.
+# This one decides nothing, which is what separates it from the rest of this
+# module -- everything else here raises a Package condition or restates one a
+# branch raised.
 condition_chain <- function(cnd) {
   if (!inherits(cnd, "condition")) {
     return(list())
