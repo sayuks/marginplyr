@@ -15,7 +15,14 @@ expect_path_dependencies <- function(data) {
     sum(rlang::env_get(parent.env(environment()), "prior", inherit = FALSE,
                        last = environment())),
     sum(as.environment(parent.env(environment()))$prior),
-    (function() sum(parent.env(parent.frame())$prior))()
+    (function() sum(parent.env(parent.frame())$prior))(),
+    # rlang's `env` defaults to `caller_env()`, the frame the call is written
+    # in, as `current_env()` would place it (#1821).
+    sum(rlang::env_parent()$prior),
+    sum(rlang::env_get(rlang::env_parent(), "prior")),
+    sum(rlang::env_get_list(rlang::env_parent(), "prior")[[1L]]),
+    sum(rlang::env_get(rlang::env_parent(), "prior", inherit = TRUE)),
+    sum(rlang::env_get(nm = "prior", inherit = TRUE))
   )
   for (kind in c("parent", "total")) {
     for (read in reads) {
@@ -71,7 +78,12 @@ expect_independent_paths <- function(data) {
       (function() {
         sum(rlang::env_get(parent.env(environment()), "prior", inherit = TRUE))
       })()
-    })(7)
+    })(7),
+    (function(prior) local(sum(rlang::env_parent()$prior)))(7),
+    (function(prior) {
+      (function() sum(rlang::env_get(nm = "prior", inherit = TRUE)))()
+    })(7),
+    sum(rlang::env_get(nm = "prior", default = 7))
   )
   for (kind in c("parent", "total")) {
     for (read in reads) {

@@ -8519,7 +8519,12 @@ static_environment_frames <- function(expr, scope, lookup, definite = FALSE) {
   } else {
     static_matched_arguments(expr, rlang::env_parent)
   }
-  frames <- static_environment_frames(args$env, scope, lookup, definite)
+  # rlang's `env` defaults to `caller_env()`, the frame the call is written in.
+  frames <- if (rlang_parent && !is.null(args) && !"env" %in% names(args)) {
+    1L
+  } else {
+    static_environment_frames(args$env, scope, lookup, definite)
+  }
   steps <- if ("n" %in% names(args)) unparenthesized_value(args$n) else 1L
   if (length(frames) == 0L || is.object(steps) || !is.numeric(steps) ||
         length(steps) != 1L || !is.finite(steps) || steps < 0 ||
@@ -8588,7 +8593,12 @@ materialized_env_symbols <- function(expr, scope, lookup) {
 inheriting_env_get_symbols <- function(expr, scope, lookup, bulk = FALSE) {
   definition <- if (bulk) rlang::env_get_list else rlang::env_get
   args <- static_matched_arguments(expr, definition)
-  frames <- static_environment_frames(args$env, scope, lookup)
+  # rlang's `env` defaults to `caller_env()`, the frame the call is written in.
+  frames <- if (!is.null(args) && !"env" %in% names(args)) {
+    1L
+  } else {
+    static_environment_frames(args$env, scope, lookup)
+  }
   if (length(frames) == 0L) {
     return(character())
   }
