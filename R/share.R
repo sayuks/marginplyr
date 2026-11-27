@@ -2507,8 +2507,7 @@ unnamed_across_source_hint <- function(dot, name, position, columns,
 # Whether `cols`, evaluated in `env`, is a selection tidyselect settles from
 # the column names alone without caller code, and selects none of `columns`.
 # `FALSE` where that is not known. A warning settling it raises, as `one_of()`
-# of an absent column does, is muffled: the refusal this answers ends the call
-# before the execution that would raise it.
+# of an absent column does, is muffled: it is the execution's to raise.
 selects_no_column <- function(cols, env, columns) {
   if (rlang::is_quosure(cols)) {
     env <- rlang::quo_get_env(cols)
