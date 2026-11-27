@@ -39,6 +39,7 @@ Suggests:
     hms,
     knitr,
     lifecycle,
+    magrittr,
     quartabs (>= 0.1.1),
     quarto (>= 1.4),
     RPostgres (>= 1.4.4),
@@ -428,6 +429,9 @@ Config/testthat/start-first:
     list-grouping,
     dtplyr-row-call-metadata,
     suggest-guard-scan,
+    grouping-selection-deprecation,
+    share-selection-strings,
+    pipe-parenthesized-rhs,
     window-frame
 VignetteBuilder:
     quarto
