@@ -2098,6 +2098,11 @@ test_that("an injected nested specification prints as its constructor", {
     list(
       spec = rollup(!!grouping_set(a, b), c),
       call = "rollup(grouping_set(a, b), c)"
+    ),
+    # Injected inside a constructor call written in place.
+    list(
+      spec = grouping_sets(rollup(!!grouping_set(a, b), c)),
+      call = "grouping_sets(rollup(grouping_set(a, b), c))"
     )
   )
   for (case in cases) {
