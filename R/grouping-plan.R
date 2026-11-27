@@ -342,7 +342,9 @@ resolve_by_selection <- function(by_quo, data_proxy) {
       computed <- computed_selection_leaf(
         rlang::quo_get_expr(by_quo), selection_proxy_names(data_proxy)
       )
-      if (!is.null(computed)) {
+      if (is_computed_selection_failure(
+        computed, cnd, rlang::quo_get_env(by_quo)
+      )) {
         abort_computed_by(computed)
       }
       stop(cnd)
@@ -3532,7 +3534,9 @@ resolve_grouping_selection <- function(arg, data_proxy) {
         computed <- computed_selection_leaf(
           nested_arg_expr(arg), selection_proxy_names(data_proxy)
         )
-        if (!is.null(computed)) {
+        if (is_computed_selection_failure(
+          computed, cnd, rlang::quo_get_env(arg)
+        )) {
           abort_computed_grouping_arg(computed)
         }
         stop(cnd)
@@ -3869,9 +3873,9 @@ selection_proxy_names <- function(data_proxy) {
 }
 
 # The first part of a failed selection that computes a value from columns of
-# the input, as `list(expr, columns)`, or `NULL` where there is none. tidyselect
-# evaluates such a call without the columns in scope, so it failed for a
-# reason its own message cannot name. The walk descends the operators
+# the input, as `list(expr, columns)`, or `NULL` where there is none. This reads
+# the spelling alone; whether that part is why the selection failed is
+# `is_computed_selection_failure()`'s question. The walk descends the operators
 # tidyselect walks. A selection helper, a constructor, a pronoun subscript, an
 # operator whatever its qualification -- whose failure is tidyselect's own --
 # and a call naming no column are not computed columns.
@@ -3905,10 +3909,47 @@ computed_selection_leaf <- function(expr, data_vars) {
   list(expr = expr, columns = columns)
 }
 
+# Whether `cnd`, the failure of a selection whose first computed part is
+# `computed` (from `computed_selection_leaf()`, possibly `NULL`), is the one the
+# computed-expression refusal explains; `env` is where the selection's quosure
+# is evaluated. Two failures are: R's unbound-object error for a column the
+# part names, ending the chain, and any failure of a part whose head the caller
+# did not define -- a primitive, a `pkg::fun` spelling, or a function closing
+# over a namespace -- such as `format(dt)` over a column named like a function.
+# Any other failure of a caller's own function is its own condition and is
+# re-raised (#1802).
+#
+# R's unbound-object error carries no class, so it is recognised by the message
+# R gives for the same symbol in `emptyenv()`, which follows the session's
+# language as the original did. The head is read through
+# `selection_argument_function()`, which forces no caller binding and answers
+# `NULL`, read here as the caller's, for one it would have to force.
+is_computed_selection_failure <- function(computed, cnd, env) {
+  if (is.null(computed)) {
+    return(FALSE)
+  }
+  chain <- condition_chain(cnd)
+  unbound <- vapply(computed$columns, function(column) {
+    tryCatch(
+      eval(as.symbol(column), emptyenv()),
+      error = conditionMessage
+    )
+  }, character(1))
+  if (conditionMessage(chain[[length(chain)]]) %in% unbound) {
+    return(TRUE)
+  }
+  if (!is.null(static_call_ns(computed$expr))) {
+    return(TRUE)
+  }
+  fn <- selection_argument_function(computed$expr, env, character())
+  !is.null(fn) && (is.primitive(fn) || isNamespace(environment(fn)))
+}
+
 # Two refusals rather than one with the subject interpolated, because the
 # subject is markup in one and prose in the other. The failure they replace is
-# not carried as a cause: it is the lookup of a column the expression names,
-# which is what the refusal explains.
+# not carried as a cause: `is_computed_selection_failure()` admits only a
+# failure the expression's own spelling explains, which is what the refusal
+# states.
 abort_computed_by <- function(computed) {
   # Read only from the cli template below, which codetools cannot see.
   # nolint start: object_usage_linter.
