@@ -713,3 +713,21 @@ The array retains its type and is evaluated once per grouping row. The
 database raises a cardinality error at caller-requested execution. The
 construction-time read boundary remains ADR 0020's, and the check applies to
 both Parent and Total shares independently of the dialect's type check.
+
+## Amendment (#1845): the walk reads the callees it knows, and that set is open
+
+The dependency walk finds a read of an earlier share's name where the name is
+written, and where it is handed to a callee the walk knows by name: the base
+and rlang evaluators and lookups, `do.call()` and its rlang and purrr
+counterparts, a literal glue template, and the others #1807 to #1833 added one
+at a time. A callee it knows, given a value it cannot read, counts as a
+possible read and is refused. A callee it does not know is ordinary code.
+
+`investigation/family-sweeps-2026-11-28.md` measured what that leaves on a
+local data frame: thirteen calls across cli, glue, purrr, tibble and tidyr,
+handed the name as text or as held language, returned a value calculated from
+an input column of the share's name. Any package can export an evaluator, so
+naming those callees does not end the family, and a further one is not a
+finding of its own. #1845 holds the decision that ends it: the share's own
+name is bound during a local summary, so that a read through any callee gets
+the marker and not the column.

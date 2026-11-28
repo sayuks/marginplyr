@@ -325,7 +325,7 @@ GitHub Issues tracks issues and tickets; see `design/agents/issue-tracker.md`.
 
 ### Triage labels
 
-Triage uses the five standard roles: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, and `wontfix`. See `design/agents/triage-labels.md`.
+Triage uses five standard roles; see `design/agents/triage-labels.md`.
 
 ### Domain docs
 
@@ -345,6 +345,10 @@ maps the rest of what the skill expects onto this repository.
 ### Implementing a spec
 
 Run `implement-spec` with `design/agents/implement-spec.md`.
+
+### Bug hunts
+
+Follow `design/agents/bug-hunt.md`.
 
 ### Main compatibility and conflicts
 

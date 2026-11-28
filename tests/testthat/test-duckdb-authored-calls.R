@@ -1147,7 +1147,8 @@ test_that("each implicitly bound function name is reached without a head", {
     "!!" = "!! 2", "|/" = "|/ 4"
   )
   expect_true(all(duckdb_operator_name(names(operators))))
-  # The syntax that binds each name in duckdb_implicit_functions.
+  # Syntax that binds a name in duckdb_implicit_functions, here by the value
+  # the macro returns; test-duckdb-implicit-reach.R holds the whole list.
   forms <- c(
     count_star = "COUNT(*)", list_value = "[1]", struct_pack = "{'a': 1}",
     row = "(1, 2)", map = "MAP {'a': 1}",
@@ -1176,12 +1177,7 @@ test_that("each implicitly bound function name is reached without a head", {
   if (utils::packageVersion("duckdb") >= "2.0.0") {
     forms <- c(forms, factorial = "5!", regexp_matches = "'a' ~ 'a'")
   }
-  expect_setequal(names(forms), setdiff(
-    duckdb_implicit_functions,
-    if (utils::packageVersion("duckdb") < "2.0.0") {
-      c("factorial", "regexp_matches")
-    }
-  ))
+  expect_true(all(names(forms) %in% duckdb_implicit_functions))
   forms <- c(operators, forms)
   for (name in names(forms)) {
     macro <- DBI::dbQuoteIdentifier(con, name)

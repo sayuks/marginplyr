@@ -340,6 +340,9 @@ named after an operator or a function DuckDB calls for other syntax,
 such as \code{+} or \code{count_star} (behind \verb{COUNT(*)}), refuses typed
 metadata on its connection, since any statement could reach it. Call
 \code{\link[dplyr:compute]{dplyr::compute()}} or \code{\link[dplyr:collect]{dplyr::collect()}} first to use one.
+A \code{SHOW}, \code{DESCRIBE} (or \code{DESC}) or \code{SUMMARIZE} statement is refused
+while the database holds any macro you defined, since DuckDB turns it
+into a query over functions of its own choosing.
 DuckDB's own scalar macros, such as \code{nullif()}, are admitted only while
 the database holds no macro you defined, since one could replace a name
 inside their bodies.
