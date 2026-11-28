@@ -808,6 +808,20 @@ test_that("typed DuckDB selections use captured names after proxy dispatch", {
     inspect_grouping(remote, .grouping = grouping_set(where(is.character))),
     diagnostic, fixed = TRUE, class = "marginplyr_error"
   )
+  # `tolower(a)` reads the caller's `a` and resolves to the column `a`, so the
+  # computed-expression refusal would name it (#1840).
+  a <- "A"
+  expect_error(
+    inspect_grouping(remote, .by = c(where(is.character), tolower(a))),
+    diagnostic, fixed = TRUE, class = "marginplyr_error"
+  )
+  expect_error(
+    inspect_grouping(
+      remote,
+      .grouping = grouping_set(c(where(is.character), tolower(a)))
+    ),
+    diagnostic, fixed = TRUE, class = "marginplyr_error"
+  )
 
   rename <- FALSE
   expect_identical(

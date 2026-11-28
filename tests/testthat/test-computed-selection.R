@@ -405,9 +405,7 @@ test_that("a predicate's condition with no message stays its own", {
   )
 })
 
-# A refusal marginplyr raises once tidyselect has returned is about the columns
-# the selection resolved to, so a computed-looking part beside it does not
-# replace it: `tolower(key)` resolves here to `value`, a column (#1840).
+# `tolower(key)` resolves here to `value`, a column (#1840).
 test_that("a rename refusal is kept beside a computed-looking part", {
   data <- data.frame(
     region = c("E", "W"), store = c("A", "B"), value = 1:2, key = 1:2
@@ -425,6 +423,18 @@ test_that("a rename refusal is kept beside a computed-looking part", {
     spec <- rlang::inject(rlang::call2(
       constructor, quote(c(r = region, tolower(key)))
     ))
+    expect_error(
+      inspect_grouping(data, .grouping = !!spec),
+      "Can't rename Margin dimension:", fixed = TRUE,
+      class = "marginplyr_error"
+    )
+  }
+  nested <- rlang::exprs(
+    grouping_sets(rollup(c(r = region, tolower(key)))),
+    grouping_sets(store, rollup(c(r = region, tolower(key)))),
+    cube(store, c(r = region, tolower(key)))
+  )
+  for (spec in nested) {
     expect_error(
       inspect_grouping(data, .grouping = !!spec),
       "Can't rename Margin dimension:", fixed = TRUE,
