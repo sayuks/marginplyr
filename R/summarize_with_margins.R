@@ -724,14 +724,13 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
           names(summaries$dots)[position] <- alias
         }
         reserved_names <- c(reserved_names, unname(share_aliases))
-        summaries$selection_state$share_aliases <- unname(share_aliases)
+        # Public share names to aliases.
+        summaries$selection_state$share_aliases <- share_aliases
         summaries$selection_state$share_markers <- share_tokens
-        summaries$selection_state$share_bindings <- share_aliases
-        summaries$selection_state$share_kinds <- vapply(
-          share_pairs(summary_plan$requests), `[[`, character(1), "kind"
-        )
-        names(summaries$selection_state$share_kinds) <- vapply(
-          share_pairs(summary_plan$requests), `[[`, character(1), "output"
+        pairs <- share_pairs(summary_plan$requests)
+        summaries$selection_state$share_kinds <- rlang::set_names(
+          vapply(pairs, `[[`, character(1), "kind"),
+          vapply(pairs, `[[`, character(1), "output")
         )
       }
       declare_sqlite_types <- sqlite_declared_type_result(operation)
@@ -938,8 +937,8 @@ check_local_share_bindings <- function(result, bindings, markers, kinds) {
 # `output_names` the columns it produces. `state` is the branch's selection
 # state, `NULL` or holding no binding when the call has no local share.
 check_local_share_value <- function(value, output_names, state) {
-  bindings <- state$share_bindings
-  if (is.null(bindings)) {
+  bindings <- state$share_aliases
+  if (length(bindings) == 0L) {
     return(invisible(NULL))
   }
   held <- held_share_marker(value, state$share_markers)

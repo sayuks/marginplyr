@@ -1053,9 +1053,9 @@ summarize_margin_union <- function(.data,
           )
           branch_dots <- separate_local_across_labels(branch_dots)
           if (is.environment(summaries$selection_state) &&
-                !is.null(summaries$selection_state$share_bindings)) {
+                length(summaries$selection_state$share_aliases) > 0L) {
             branch_dots <- bind_local_share_names(
-              branch_dots, summaries$selection_state$share_bindings
+              branch_dots, summaries$selection_state$share_aliases
             )
           }
         }
@@ -1115,7 +1115,7 @@ summarize_margin_union <- function(.data,
               is.environment(summaries$selection_state) &&
               !is.null(summaries$selection_state$share_markers)) {
           result <- check_local_share_bindings(
-            result, summaries$selection_state$share_bindings,
+            result, summaries$selection_state$share_aliases,
             summaries$selection_state$share_markers,
             summaries$selection_state$share_kinds
           )
