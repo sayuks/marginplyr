@@ -1009,7 +1009,8 @@ test_that("an unreadable `.names` template keeps the unknown hint", {
   cases <- list(
     list(names = "\003{sub('q', '', .col)}", source = "\003x", parses = TRUE),
     list(names = "\001{sub('q', '', .col)}", source = "\001x", parses = TRUE),
-    list(names = "{sub('q', '', .col)}_{", source = "x", parses = FALSE)
+    list(names = "{sub('q', '', .col)}_{", source = "x", parses = FALSE),
+    list(names = "{.col}{1 +}", source = "xz", parses = FALSE)
   )
   for (case in cases) {
     refused <- expect_error(summarize_with_margins(

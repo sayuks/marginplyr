@@ -79,7 +79,8 @@ test_that("a function built reading no earlier summary keeps its value", {
 
 # A constructor whose body is held in a variable or computed is not read as a
 # literal, and one with repeated formals or an argument `as.function()` ignores
-# is read with its constant body; each keeps the value it computes (#1831).
+# is read with its constant body and defaults; each keeps the value it
+# computes (#1831).
 test_that("a constructor reading no earlier summary keeps its value", {
   data <- data.frame(g = c("a", "b"), x = c(1, 3))
   result <- summarize_with_margins(
@@ -100,13 +101,16 @@ test_that("a constructor reading no earlier summary keeps its value", {
   }
 })
 
-# A repeated formal's first default is the one the call evaluates, and
-# `as.function()` ignores what `...` passes, so both read the mask (#1831).
+# Every default of a repeated formal is read, since a body listing its frame
+# forces each, and `as.function()` ignores what `...` passes (#1831).
 test_that("a constructor read past repeated formals or ignored arguments", {
   data <- data.frame(g = c("a", "b"), x = c(1, 3), share = c(100, 300))
   for (call in alist(
     sum(as.function(list(quote(share)), environment(), NULL)()),
-    sum(rlang::new_function(list(a = quote(share), a = 2), quote(a))())
+    sum(rlang::new_function(list(a = quote(share), a = 2), quote(a))()),
+    sum(unlist(rlang::new_function(
+      list(a = 1, a = quote(share)), quote(as.list(environment()))
+    )()))
   )) {
     expect_error(summarize_with_margins(
       data, value = sum(x), share = share_of_total(value), v = !!call,

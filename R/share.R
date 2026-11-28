@@ -2456,10 +2456,11 @@ validate_share_request <- function(outputs,
 # `columns` and the `preceding` summaries alone settle, running no caller code,
 # and select none of, names nothing whatever its `.names`, in any position, and
 # has no hint. `preceding` is `NULL` where those summaries' names are not
-# known. Where the input's names alone settle the selection of an `across()`
-# that is not unpacked, `first_pattern` matches what it would produce written
-# first, nothing where written first its selection or its `.names` template
-# fails, and so decides whether moving it can help.
+# known. `first_pattern` matches nothing where a `.names` template does not
+# parse; otherwise, where the input's names alone settle the selection of an
+# `across()` that is not unpacked, it matches what that `across()` would
+# produce written first, nothing where its selection fails there. It decides
+# whether moving the `across()` can help.
 unnamed_across_source_hint <- function(dot, name, position, columns,
                                        outputs_unknown, preceding) {
   expr <- rlang::quo_get_expr(dot)
@@ -2572,12 +2573,18 @@ settled_selection_names <- function(cols, env, columns, failed = NULL) {
   )
 }
 
-# Whether glue parses `names`, an `across()`'s `.names`, where it is one
-# string; a template it cannot parse fails in any position.
+# Whether glue and R parse `names`, an `across()`'s `.names`, and each of its
+# components, where it is one string; a template that does not parse fails in
+# any position.
 template_parses <- function(names) {
   !rlang::is_string(names) || !is.null(tryCatch(
-    glue::glue(names, .envir = emptyenv(),
-               .transformer = function(text, envir) ""),
+    glue::glue(
+      names, .envir = emptyenv(),
+      .transformer = function(text, envir) {
+        parse(text = text, keep.source = FALSE)
+        ""
+      }
+    ),
     error = function(cnd) NULL
   ))
 }
@@ -5450,8 +5457,6 @@ constructed_function_literal <- function(expr, scope, lookup) {
     if (!all(nzchar(formal_names))) {
       return(NULL)
     }
-    # A repeated formal's first default is the one a call of it evaluates.
-    formals <- formals[!duplicated(formal_names)]
     literal <- rlang::call2(
       "function", if (length(formals)) as.pairlist(formals), body[[1L]]
     )
@@ -9070,8 +9075,8 @@ template_component_symbols <- function(expr, call_name, scope, lookup) {
                   quote(...)))) {
     return(NULL)
   }
-  # stringr is a Suggest that dbplyr's Imports supply today; should that change,
-  # a qualified call names an absent package and its own evaluation fails.
+  # A qualified call naming a package no library holds fails in its own
+  # evaluation.
   fun <- tryCatch(getExportedValue(evaluator$package, call_name),
                   error = function(cnd) NULL)
   if (is.null(fun)) {
