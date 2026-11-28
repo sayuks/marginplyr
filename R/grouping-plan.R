@@ -326,12 +326,8 @@ resolve_by_selection <- function(by_quo, data_proxy) {
   # A predicate reaches here only from the resolution against the input's own
   # proxy: the name-only reader withholds one from the names-only proxy, which
   # answers no predicate whatever the backend is.
-  tryCatch(
-    resolve_column_selection(
-      by_quo,
-      data_proxy,
-      on_rename = abort_by_rename
-    ),
+  selected <- tryCatch(
+    eval_column_selection(by_quo, data_proxy),
     error = function(cnd) {
       if (is_unsupported_predicate(cnd)) {
         abort_selection_predicate(
@@ -348,6 +344,7 @@ resolve_by_selection <- function(by_quo, data_proxy) {
       stop(cnd)
     }
   )
+  selected_column_names(selected, data_proxy, on_rename = abort_by_rename)
 }
 
 # The fixed keys a plan is built over, with their source: a grouped input's
@@ -3487,7 +3484,7 @@ is_name_only_splice_value <- function(value) {
 # is why neither is written as the other's fallback.
 #
 # The frames are read as the error unwinds and the condition after it, because
-# a predicate is applied inside `resolve_column_selection()` and the frames
+# a predicate is applied inside `eval_column_selection()` and the frames
 # that applied it are gone once it returns. What the handler keeps is the
 # condition it read them on, not that it read them: a calling handler runs for
 # every error signalled under the selection, one tidyselect goes on to recover
@@ -3496,13 +3493,9 @@ is_name_only_splice_value <- function(value) {
 resolve_grouping_selection <- function(arg, data_proxy) {
   selection_frame <- sys.nframe()
   predicate <- NULL
-  tryCatch(
+  selected <- tryCatch(
     withCallingHandlers(
-      resolve_column_selection(
-        arg,
-        data_proxy,
-        on_rename = abort_grouping_rename
-      ),
+      eval_column_selection(arg, data_proxy),
       error = function(cnd) {
         if (is_grouping_spec_predicate(selection_frame, nested_arg_expr(arg))) {
           predicate <<- cnd
@@ -3540,6 +3533,7 @@ resolve_grouping_selection <- function(arg, data_proxy) {
       abort_nested_grouping_spec(label)
     }
   )
+  selected_column_names(selected, data_proxy, on_rename = abort_grouping_rename)
 }
 
 # Whether a name `arg` reads is bound, where its quosure looks it up, to a
@@ -3605,7 +3599,7 @@ is_grouping_spec_predicate <- function(selection_frame, expr) {
 # opening these frames answers with none rather than raising, which leaves a
 # caller the untyped diagnostic they had before this refusal existed.
 #
-# The walk is what the first of them opens, `resolve_column_selection()` having
+# The walk is what the first of them opens, `eval_column_selection()` having
 # called `tidyselect::eval_select()`, and the first exported function reached
 # after it is where the walk stops being what is running: a selection helper
 # the caller wrote, holding what the caller handed it. `starts_with(spec)`,
@@ -3789,6 +3783,17 @@ abort_nested_grouping_spec <- function(label) {
   ))
 }
 
+# tidyselect's evaluation of the selection `arg` against `data_proxy`: the
+# positions it selected, under the names the caller gave them.
+eval_column_selection <- function(arg, data_proxy) {
+  tidyselect::eval_select(
+    arg,
+    data = data_proxy,
+    strict = TRUE,
+    error_call = margin_selection_call()
+  )
+}
+
 # tidyselect reports a selection under the names the caller gave it, so
 # `all_of(c(area = "region"))` selects `region` and calls it `area`. A column
 # a Margin verb selects — a grouping dimension or a fixed `.by` key alike — is
@@ -3798,13 +3803,11 @@ abort_nested_grouping_spec <- function(label) {
 # diagnostic says only that renaming is disallowed and never names the pair the
 # caller has to fix. A name that repeats its own column renames nothing and is
 # left alone.
-resolve_column_selection <- function(arg, data_proxy, on_rename) {
-  selected <- tidyselect::eval_select(
-    arg,
-    data = data_proxy,
-    strict = TRUE,
-    error_call = margin_selection_call()
-  )
+#
+# `selected` is what `eval_column_selection()` returned for `data_proxy`. These
+# refusals are about the columns it resolved to, so they are raised outside the
+# handlers that read a failure of that evaluation by the selection's spelling.
+selected_column_names <- function(selected, data_proxy, on_rename) {
   selected_names <- names(selected)
   # `tidyselect_data_proxy()` is how tidyselect itself sees the columns the
   # positions in `selected` index, so it reads a lazy table's columns rather
@@ -3866,7 +3869,7 @@ selection_rename_pairs <- function(selected_names, source_names) {
 }
 
 # The column names tidyselect sees for `data_proxy`, read from its metadata as
-# `resolve_column_selection()` reads them, so asking sends no query.
+# `selected_column_names()` reads them, so asking sends no query.
 selection_proxy_names <- function(data_proxy) {
   names(tidyselect::tidyselect_data_proxy(data_proxy))
 }
@@ -4003,9 +4006,9 @@ failed_selection_part <- function(computed, cnd) {
 
 # Two refusals rather than one with the subject interpolated, because the
 # subject is markup in one and prose in the other. The failure they replace is
-# not carried as a cause: `computed_selection_failure()` admits only a
-# failure the expression's own spelling explains, which is what the refusal
-# states.
+# one `eval_column_selection()` raised and `computed_selection_failure()`
+# attributed to `computed`. It is not carried as a cause, because the refusal
+# states that attribution in its place.
 abort_computed_by <- function(computed) {
   # Read only from the cli template below, which codetools cannot see.
   # nolint start: object_usage_linter.
