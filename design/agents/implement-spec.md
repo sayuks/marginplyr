@@ -19,10 +19,15 @@ Point each implementer at its ticket and at this section.
   after integration.
 - **Scratch files** — repro scripts, notes, anything written outside the
   worktree — go in the coordinator's notes directory from the skill's step 2,
-  or under `mktemp -d`. `$TMPDIR` is shared by concurrent sessions; on #1799 a
-  lane's repro script was overwritten there.
+  or under `mktemp -d "$TMPDIR/<name>.XXXXXX"`. `$TMPDIR` is shared by
+  concurrent sessions; on #1799 a lane's repro script was overwritten there.
+  A bare `mktemp -d` targets the system temporary directory, which the
+  sandbox refuses.
 - **The report** is the final message: branch, the head SHA the `source`
-  result names, that result, and anything the ticket left undecided. A
+  result names, that result, and anything the ticket left undecided. The
+  result is the run's terminal outcome, as
+  [*Observing one invocation*](local-checks.md#observing-one-invocation)
+  defines it, so a message sent while the run is going is not the report. A
   child's sandbox may not let it write a report file outside its worktree.
 
 ## Around the implementers
@@ -30,6 +35,10 @@ Point each implementer at its ticket and at this section.
 The integration branch's Review-ready follows
 [*Boundary and scope*](local-checks.md#boundary-and-scope) before step 8 marks
 the pull request ready.
+
+Before each push, read the last pushed SHA's finished checks, leaving any
+still running; step 8 marks the pull request ready only once every check on
+its head has finished and passed.
 
 Before step 7 hands the review's findings to the fixer, disposition each as
 *Answering a review* in `design/architecture.md` requires, and hand on the
