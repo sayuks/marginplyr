@@ -989,6 +989,12 @@ summarize_margin_union <- function(.data,
   on.exit(report_branch_warnings(conditions), add = TRUE)
 
   eager <- is.data.frame(.data)
+  # The selection state of a call binding a local share, else `NULL`.
+  share_state <- summaries$selection_state
+  if (!eager || !is.environment(share_state) ||
+        length(share_state$share_aliases) == 0L) {
+    share_state <- NULL
+  }
   unnamed_dots <- which(
     !nzchar(rlang::names2(dots)) | !is.na(summaries$assigned_names)
   )
@@ -1052,6 +1058,11 @@ summarize_margin_union <- function(.data,
             source_reads = frame_state$source_reads
           )
           branch_dots <- separate_local_across_labels(branch_dots)
+          if (!is.null(share_state)) {
+            branch_dots <- bind_local_share_names(
+              branch_dots, share_state$share_aliases
+            )
+          }
         }
         needs_placeholder <- length(grouping_set) == 0L &&
           (length(branch_dots) == 0L || backend$is_sql ||
@@ -1105,12 +1116,12 @@ summarize_margin_union <- function(.data,
         }
 
         # Branch binding drops the token attribute of an empty list marker.
-        if (is.data.frame(.data) &&
-              is.environment(summaries$selection_state) &&
-              !is.null(summaries$selection_state$share_markers)) {
-          check_local_share_markers(
-            result, summaries$selection_state$share_markers
+        if (!is.null(share_state)) {
+          result <- check_local_share_bindings(
+            result, share_state$share_aliases, share_state$share_markers,
+            share_state$share_kinds
           )
+          check_local_share_markers(result, share_state$share_markers)
         }
 
         # Without the placeholder: what this asks about is the names the summary

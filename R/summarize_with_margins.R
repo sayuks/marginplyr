@@ -724,8 +724,14 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
           names(summaries$dots)[position] <- alias
         }
         reserved_names <- c(reserved_names, unname(share_aliases))
-        summaries$selection_state$share_aliases <- unname(share_aliases)
+        # Public share names to aliases.
+        summaries$selection_state$share_aliases <- share_aliases
         summaries$selection_state$share_markers <- share_tokens
+        pairs <- share_pairs(summary_plan$requests)
+        summaries$selection_state$share_kinds <- rlang::set_names(
+          vapply(pairs, `[[`, character(1), "kind"),
+          vapply(pairs, `[[`, character(1), "output")
+        )
       }
       declare_sqlite_types <- sqlite_declared_type_result(operation)
       summaries$grouping_type_state <- if (declare_sqlite_types) {
@@ -861,6 +867,121 @@ check_local_share_markers <- function(result, markers) {
   invisible(NULL)
 }
 
+# Refuses an ordinary output named `name`, the name of a share of `kind`.
+abort_share_name_conflict <- function(name, kind) {
+  abort_marginplyr(paste0(
+    "{share_kind_modifier(kind)} output name {.var {name}} conflicts ",
+    "with an ordinary summary."
+  ))
+}
+
+# The branch dots with each local share marker, a dot named by its alias in
+# `bindings` (public names to aliases), respelled as an unnamed one-column frame
+# binding the marker under the share's public name, as ADR 0010's amendment
+# *the walk reads the callees it knows, and that set is open* decides. The dot
+# keeps its position, which every per-dot vector holds, and yields one column:
+# dplyr 1.2.1 counts an unnamed frame's columns when it reports which later
+# dot has the wrong size, so a wider frame there misreports that dot.
+bind_local_share_names <- function(dots, bindings) {
+  for (i in seq_along(bindings)) {
+    position <- match(bindings[[i]], rlang::names2(dots))
+    dot <- dots[[position]]
+    dots[[position]] <- rlang::quo_set_expr(dot, rlang::call2(
+      marginplyr_private_call("local_share_binding"),
+      names(bindings)[[i]], rlang::quo_get_expr(dot)
+    ))
+    names(dots)[[position]] <- ""
+  }
+  dots
+}
+
+# One row holding `marker` under the share's public `name`.
+local_share_binding <- function(name, marker) {
+  vctrs::new_data_frame(rlang::set_names(list(marker), name), n = 1L)
+}
+
+# One local branch's `result`, checked as ADR 0010's amendment *the walk reads
+# the callees it knows, and that set is open* decides for a result, with each
+# column `bind_local_share_names()` added renamed to its alias, before the
+# alias markers are checked. `bindings` maps public names to aliases, `markers`
+# aliases to tokens, and `kinds` public names to kinds.
+check_local_share_bindings <- function(result, bindings, markers, kinds) {
+  for (name in names(bindings)) {
+    alias <- bindings[[name]]
+    if (alias %in% names(result)) {
+      abort_share_alias_collision(alias)
+    }
+    value <- result[[name]]
+    if (!is.list(value) || !all(vapply(
+      value, identical, logical(1), markers[[alias]]
+    ))) {
+      abort_share_name_conflict(name, kinds[[name]])
+    }
+  }
+  # Copied and subset rather than renamed: `[.sf` keeps an sf result's
+  # attribute-geometry relation, which `names<-` leaves stale and
+  # `rename.sf()` misaligns when the geometry column comes first.
+  columns <- names(result)
+  for (name in names(bindings)) {
+    result[[bindings[[name]]]] <- result[[name]]
+  }
+  columns[match(names(bindings), columns)] <- unname(bindings)
+  result <- result[columns]
+  for (column in setdiff(names(result), unname(bindings))) {
+    held <- held_share_marker(result[[column]], markers)
+    if (!is.null(held)) {
+      name <- names(bindings)[match(held, unname(bindings))]
+      abort_earlier_share_use(name, kinds[[name]])
+    }
+  }
+  result
+}
+
+# Refuses one ordinary local summary as it is evaluated, under ADR 0010's
+# amendment *the walk reads the callees it knows, and that set is open*:
+# `value` is what it returned, or `NULL` where only its names are known, and
+# `output_names` the columns it produces. `state` is the branch's selection
+# state, `NULL` or holding no binding when the call has no local share.
+check_local_share_value <- function(value, output_names, state) {
+  bindings <- state$share_aliases
+  if (length(bindings) == 0L) {
+    return(invisible(NULL))
+  }
+  held <- held_share_marker(value, state$share_markers)
+  if (!is.null(held)) {
+    name <- names(bindings)[match(held, unname(bindings))]
+    abort_earlier_share_use(name, state$share_kinds[[name]])
+  }
+  conflict <- intersect(output_names, names(bindings))
+  if (length(conflict) > 0L) {
+    name <- conflict[[1L]]
+    abort_share_name_conflict(name, state$share_kinds[[name]])
+  }
+  invisible(NULL)
+}
+
+# The alias whose marker `value` holds at any depth of its list structure, or
+# `NULL` when it holds none.
+held_share_marker <- function(value, markers) {
+  if (is.environment(value)) {
+    for (alias in names(markers)) {
+      if (identical(value, markers[[alias]])) {
+        return(alias)
+      }
+    }
+    return(NULL)
+  }
+  if (is.list(value)) {
+    for (element in value) {
+      held <- held_share_marker(element, markers)
+      if (!is.null(held)) {
+        return(held)
+      }
+    }
+  }
+  NULL
+}
+
 # Restores public share names after all local branches have been combined.
 # The caller passes aliases and tokens whose markers passed each branch check;
 # nonempty result cells are checked again before the placeholders are reset.
@@ -872,12 +993,7 @@ restore_local_share_names <- function(staged_result, aliases,
     name <- conflicts[[1L]]
     pair <- Filter(function(pair) identical(pair$output, name),
                    share_pairs(requests))[[1L]]
-    # The cli template reads this binding; codetools cannot follow it.
-    kind <- pair$kind # nolint: object_usage_linter.
-    abort_marginplyr(paste0(
-      "{share_kind_modifier(kind)} output name {.var {name}} conflicts ",
-      "with an ordinary summary."
-    ))
+    abort_share_name_conflict(name, pair$kind)
   }
   for (alias in unname(aliases)) {
     value <- result[[alias]]

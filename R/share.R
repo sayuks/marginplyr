@@ -685,6 +685,21 @@ confirmed_share_records <- function(records) {
   }, records)
 }
 
+# Refuses an ordinary summary that uses the earlier share `name` of `kind`,
+# whether the dependency walk found the read or a local summary's value holds
+# the share's marker.
+abort_earlier_share_use <- function(name, kind) {
+  # Read only from the cli template below, which codetools cannot see.
+  label <- share_kind_label(kind) # nolint: object_usage_linter.
+  abort_marginplyr(c(
+    paste0(
+      "Ordinary summaries cannot use an earlier {label} ",
+      "({.var {name}}) in the same {.fun summarize_with_margins} call."
+    ),
+    i = "Use a following {.fun dplyr::mutate} for derived values."
+  ))
+}
+
 plan_share_expressions <- function(dots,
                                    selection_proxy,
                                    plan,
@@ -804,24 +819,9 @@ plan_share_expressions <- function(dots,
     )
     if (length(share_dependency) > 0L) {
       dependency <- share_dependency[[1L]]
-      # Read only from the cli template below, which codetools cannot see.
-      # Bound rather than written there because the expression does not fit a
-      # template line, and splitting one across the `paste0()` that keeps the
-      # line inside the margin would hide it from the reader entirely.
-      # nolint start: object_usage_linter.
-      dependency_label <- share_kind_label(share_name_kind(
-        preceding_shares,
-        dependency
-      ))
-      # nolint end
-      abort_marginplyr(c(
-        paste0(
-          "Ordinary summaries cannot use an earlier {dependency_label} ",
-          "({.var {dependency}}) in the same {.fun summarize_with_margins} ",
-          "call."
-        ),
-        i = "Use a following {.fun dplyr::mutate} for derived values."
-      ))
+      abort_earlier_share_use(
+        dependency, share_name_kind(preceding_shares, dependency)
+      )
     }
     preceding_ordinary <- c(preceding_ordinary, analyses[[i]]$records)
   }

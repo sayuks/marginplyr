@@ -135,6 +135,7 @@ main <- function() {
   check(1L, "Workflow executable contract changed")
   write(postgres_original, postgres)
   deadlines <- list(c("R-CMD-check.yaml", "R-CMD-check", "180", "179"),
+                    c("R-CMD-check.yaml", "duckdb-floor", "60", "59"),
                     c("release-matrix.yaml", "structure", "120", "119"),
                     c("release-matrix.yaml", "structure-verdict", "30", "29"),
                     c("release-matrix.yaml", "depends-only", "120", "119"),
