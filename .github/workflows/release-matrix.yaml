@@ -98,7 +98,8 @@
 # say which request they stand for:
 #
 #   full-1              hard dependencies plus every Suggest, and the package
-#                       itself (`build`, `structure`, and `R-CMD-check.yaml`).
+#                       itself (`build`, `structure`, and `R-CMD-check.yaml`'s
+#                       `R-CMD-check`).
 #   hard-1              hard dependencies plus rcmdcheck, testthat, and quarto
 #                       (`depends-only` and `tarball`).
 #   checktor-1          hard dependencies plus checktor (`checktor`). Separate
@@ -110,6 +111,11 @@
 #                       `generate-backend-matrix.R`, so a backend added to the
 #                       table cannot arrive sharing another's library. No
 #                       quarto: these jobs run `--ignore-vignettes`.
+#   duckdb-floor-1      hard dependencies plus testthat, DBI, and dbplyr, with
+#                       the DuckDB DESCRIPTION declares as its floor installed
+#                       on top (`R-CMD-check.yaml`'s `duckdb-floor`). It checks
+#                       no tarball; `verify-duckdb-floor.R` asserts the DuckDB
+#                       version before its tests run.
 #
 # A cache key is not self-checking -- a mistake in one produces a green run
 # that reads like a correct one -- so `verify-library-isolation.R` asserts the

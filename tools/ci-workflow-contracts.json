@@ -155,6 +155,50 @@
             }
           }
         ]
+      },
+      "duckdb-floor": {
+        "name": "DuckDB floor (ubuntu-latest, release)",
+        "runs-on": "ubuntu-latest",
+        "timeout-minutes": "60",
+        "env": {
+          "GITHUB_PAT": "${{ secrets.GITHUB_TOKEN }}"
+        },
+        "steps": [
+          {
+            "uses": "actions/checkout@v7"
+          },
+          {
+            "uses": "r-lib/actions/setup-r@v2",
+            "with": {
+              "r-version": "release",
+              "use-public-rspm": "true"
+            }
+          },
+          {
+            "uses": "r-lib/actions/setup-r-dependencies@v2",
+            "with": {
+              "dependencies": "\"hard\"",
+              "extra-packages": "any::testthat, any::DBI, any::dbplyr",
+              "cache-version": "duckdb-floor-1"
+            }
+          },
+          {
+            "name": "Verify the DuckDB floor selection fixtures",
+            "run": "Rscript tools/test-duckdb-floor.R"
+          },
+          {
+            "name": "Install the DuckDB floor",
+            "run": "Rscript .github/scripts/provision-duckdb-floor.R"
+          },
+          {
+            "name": "Provision DuckDB JSON extension",
+            "run": "Rscript .github/scripts/provision-duckdb-json.R"
+          },
+          {
+            "name": "Run the DuckDB tests against the floor",
+            "run": "Rscript .github/scripts/verify-duckdb-floor.R"
+          }
+        ]
       }
     }
   },
