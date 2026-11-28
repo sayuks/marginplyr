@@ -2577,16 +2577,8 @@ settled_selection_names <- function(cols, env, columns, failed = NULL) {
 # components, where it is one string; a template that does not parse fails in
 # any position.
 template_parses <- function(names) {
-  !rlang::is_string(names) || !is.null(tryCatch(
-    glue::glue(
-      names, .envir = emptyenv(),
-      .transformer = function(text, envir) {
-        parse(text = text, keep.source = FALSE)
-        ""
-      }
-    ),
-    error = function(cnd) NULL
-  ))
+  !rlang::is_string(names) ||
+    !is.null(template_components(names, markup = FALSE))
 }
 
 # The `across_template_pattern()` of `names`, an `across()`'s `.names`, over
