@@ -726,6 +726,13 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
         reserved_names <- c(reserved_names, unname(share_aliases))
         summaries$selection_state$share_aliases <- unname(share_aliases)
         summaries$selection_state$share_markers <- share_tokens
+        summaries$selection_state$share_bindings <- share_aliases
+        summaries$selection_state$share_kinds <- vapply(
+          share_pairs(summary_plan$requests), `[[`, character(1), "kind"
+        )
+        names(summaries$selection_state$share_kinds) <- vapply(
+          share_pairs(summary_plan$requests), `[[`, character(1), "output"
+        )
       }
       declare_sqlite_types <- sqlite_declared_type_result(operation)
       summaries$grouping_type_state <- if (declare_sqlite_types) {
@@ -861,6 +868,95 @@ check_local_share_markers <- function(result, markers) {
   invisible(NULL)
 }
 
+# Refuses an ordinary output named `name`, the name of a share of `kind`.
+abort_share_name_conflict <- function(name, kind) {
+  abort_marginplyr(paste0(
+    "{share_kind_modifier(kind)} output name {.var {name}} conflicts ",
+    "with an ordinary summary."
+  ))
+}
+
+# The branch dots with each local share marker, a dot named by its alias in
+# `bindings` (public names to aliases), respelled as one unnamed frame of two
+# columns: the alias and the share's public name, both holding the marker. dplyr
+# binds every column of an unnamed frame, so from the share's dot position on a
+# read of its name through any callee gets the marker (ADR 0010's amendment
+# *the walk reads the callees it knows*). Only what dplyr is handed changes; the
+# dot's position is the one every per-dot vector already holds.
+bind_local_share_names <- function(dots, bindings) {
+  for (i in seq_along(bindings)) {
+    position <- match(bindings[[i]], rlang::names2(dots))
+    dot <- dots[[position]]
+    dots[[position]] <- rlang::quo_set_expr(dot, rlang::call2(
+      marginplyr_private_call("local_share_binding"),
+      bindings[[i]], names(bindings)[[i]], rlang::quo_get_expr(dot)
+    ))
+    names(dots)[[position]] <- ""
+  }
+  dots
+}
+
+# One row holding `marker` under both `alias` and the share's public `name`.
+local_share_binding <- function(alias, name, marker) {
+  vctrs::new_data_frame(
+    rlang::set_names(list(marker, marker), c(alias, name)), n = 1L
+  )
+}
+
+# Checks and drops the public-name columns `bind_local_share_names()` added to
+# one local branch, before the alias markers are checked. dplyr replaces a
+# same-named column where it stands, so the column directly after its alias
+# holding the marker is the binding: one elsewhere was an earlier frame's, and
+# one holding anything else was a later frame's. Any other output holding a
+# marker read the share by a route the dependency walk does not see.
+check_local_share_bindings <- function(result, bindings, markers, kinds) {
+  result_names <- names(result)
+  for (name in names(bindings)) {
+    alias <- bindings[[name]]
+    value <- result[[name]]
+    token <- markers[[alias]]
+    adjacent <- identical(
+      match(name, result_names), match(alias, result_names) + 1L
+    )
+    if (!adjacent || !is.list(value) || !all(vapply(
+      value, identical, logical(1), token
+    ))) {
+      abort_share_name_conflict(name, kinds[[name]])
+    }
+  }
+  result <- result[setdiff(result_names, names(bindings))]
+  for (column in setdiff(names(result), unname(bindings))) {
+    held <- held_share_marker(result[[column]], markers)
+    if (!is.null(held)) {
+      name <- names(bindings)[match(held, unname(bindings))]
+      abort_earlier_share_use(name, kinds[[name]])
+    }
+  }
+  result
+}
+
+# The alias whose marker `value` holds at any depth of its list structure, or
+# `NULL` when it holds none.
+held_share_marker <- function(value, markers) {
+  if (is.environment(value)) {
+    for (alias in names(markers)) {
+      if (identical(value, markers[[alias]])) {
+        return(alias)
+      }
+    }
+    return(NULL)
+  }
+  if (is.list(value)) {
+    for (element in value) {
+      held <- held_share_marker(element, markers)
+      if (!is.null(held)) {
+        return(held)
+      }
+    }
+  }
+  NULL
+}
+
 # Restores public share names after all local branches have been combined.
 # The caller passes aliases and tokens whose markers passed each branch check;
 # nonempty result cells are checked again before the placeholders are reset.
@@ -872,12 +968,7 @@ restore_local_share_names <- function(staged_result, aliases,
     name <- conflicts[[1L]]
     pair <- Filter(function(pair) identical(pair$output, name),
                    share_pairs(requests))[[1L]]
-    # The cli template reads this binding; codetools cannot follow it.
-    kind <- pair$kind # nolint: object_usage_linter.
-    abort_marginplyr(paste0(
-      "{share_kind_modifier(kind)} output name {.var {name}} conflicts ",
-      "with an ordinary summary."
-    ))
+    abort_share_name_conflict(name, pair$kind)
   }
   for (alias in unname(aliases)) {
     value <- result[[alias]]

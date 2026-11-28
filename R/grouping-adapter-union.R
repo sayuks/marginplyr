@@ -1052,6 +1052,12 @@ summarize_margin_union <- function(.data,
             source_reads = frame_state$source_reads
           )
           branch_dots <- separate_local_across_labels(branch_dots)
+          if (is.environment(summaries$selection_state) &&
+                !is.null(summaries$selection_state$share_bindings)) {
+            branch_dots <- bind_local_share_names(
+              branch_dots, summaries$selection_state$share_bindings
+            )
+          }
         }
         needs_placeholder <- length(grouping_set) == 0L &&
           (length(branch_dots) == 0L || backend$is_sql ||
@@ -1108,6 +1114,11 @@ summarize_margin_union <- function(.data,
         if (is.data.frame(.data) &&
               is.environment(summaries$selection_state) &&
               !is.null(summaries$selection_state$share_markers)) {
+          result <- check_local_share_bindings(
+            result, summaries$selection_state$share_bindings,
+            summaries$selection_state$share_markers,
+            summaries$selection_state$share_kinds
+          )
           check_local_share_markers(
             result, summaries$selection_state$share_markers
           )

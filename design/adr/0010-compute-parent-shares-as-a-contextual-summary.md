@@ -728,6 +728,25 @@ local data frame: thirteen calls across cli, glue, purrr, tibble and tidyr,
 handed the name as text or as held language, returned a value calculated from
 an input column of the share's name. Any package can export an evaluator, so
 naming those callees does not end the family, and a further one is not a
-finding of its own. #1845 holds the decision that ends it: the share's own
-name is bound during a local summary, so that a read through any callee gets
-the marker and not the column.
+finding of its own. What ends it is binding the name (#1845).
+
+On a local data frame the share's dot position holds a marker, a one-element
+list holding a token no other value is identical to, and the share's public
+name is bound to that marker from that position on, beside its internal alias.
+A later summary reading the name through any callee therefore reads the
+marker, never an input column of that name nor a binding of the caller's.
+Two rules finish the contract:
+
+- An ordinary summary whose value holds a share's token, at any depth of its
+  list structure, is refused with the earlier-share condition the walk raises
+  for the written read.
+- A value made from the token without holding it, such as the text a template
+  renders for it, is not a number and is left.
+
+The binding is checked where dplyr leaves it, directly after the alias: a
+same-named column anywhere else, or one not holding the token, was created by
+an ordinary summary, and is the name conflict it was before. The walk stays as
+it is. It is what gives the written spellings their condition before anything
+is evaluated, and it no longer has to be complete for the result to be right.
+A `dtplyr` input has no marker and needs none: there the same reads end in
+"object not found" or a Package refusal.

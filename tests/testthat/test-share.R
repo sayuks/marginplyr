@@ -379,7 +379,8 @@ test_that("share collisions use expanded frame output names", {
     s = share_of_total(total), .grouping = rollup(g)
   ), "Total-share output name `s` conflicts with an ordinary summary")
   expect_s3_class(function_error, "marginplyr_error")
-  expect_identical(calls, 2L)
+  # The first branch to bind the share's name refuses the frame's.
+  expect_identical(calls, 1L)
 
   across_error <- expect_error(summarize_with_margins(
     data, total = sum(x),
