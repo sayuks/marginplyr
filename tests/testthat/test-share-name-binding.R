@@ -72,7 +72,7 @@ test_that("a later summary whose value holds a share's marker is refused", {
   expect_s3_class(nested, "marginplyr_error")
 })
 
-test_that("a later frame re-emitting a share's marker under its name is refused", {
+test_that("a later frame re-emitting a share under its name is refused", {
   data <- tibble::tibble(g = c("a", "a", "b"), v = c(1, 2, 4),
                          sh = c(100, 200, 300))
   error <- expect_error(summarize_with_margins(
