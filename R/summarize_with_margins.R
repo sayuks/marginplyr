@@ -877,12 +877,10 @@ abort_share_name_conflict <- function(name, kind) {
 }
 
 # The branch dots with each local share marker, a dot named by its alias in
-# `bindings` (public names to aliases), respelled as one unnamed frame of two
-# columns: the alias and the share's public name, both holding the marker. dplyr
-# binds every column of an unnamed frame, so from the share's dot position on a
-# read of its name through any callee gets the marker (ADR 0010's amendment
-# *the walk reads the callees it knows*). Only what dplyr is handed changes; the
-# dot's position is the one every per-dot vector already holds.
+# `bindings` (public names to aliases), respelled as one unnamed frame binding
+# the marker under both the alias and the share's public name, as ADR 0010's
+# amendment *the walk reads the callees it knows, and that set is open*
+# decides. The dot keeps its position, which every per-dot vector holds.
 bind_local_share_names <- function(dots, bindings) {
   for (i in seq_along(bindings)) {
     position <- match(bindings[[i]], rlang::names2(dots))
@@ -903,12 +901,11 @@ local_share_binding <- function(alias, name, marker) {
   )
 }
 
-# Checks and drops the public-name columns `bind_local_share_names()` added to
-# one local branch, before the alias markers are checked. dplyr replaces a
-# same-named column where it stands, so the column directly after its alias
-# holding the marker is the binding: one elsewhere was an earlier frame's, and
-# one holding anything else was a later frame's. Any other output holding a
-# marker read the share by a route the dependency walk does not see.
+# One local branch's `result`, checked as ADR 0010's amendment *the walk reads
+# the callees it knows, and that set is open* decides for a result, and
+# returned without the public-name columns `bind_local_share_names()` added,
+# before the alias markers are checked. `bindings` maps public names to
+# aliases, `markers` aliases to tokens, and `kinds` public names to kinds.
 check_local_share_bindings <- function(result, bindings, markers, kinds) {
   result_names <- names(result)
   for (name in names(bindings)) {
