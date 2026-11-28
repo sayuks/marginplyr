@@ -153,3 +153,17 @@ test_that("summaries reading no share keep their values and order", {
   expect_identical(names(grouped), c("k", "g", "s", "q", "sh", "m"))
   expect_identical(grouped$q, c(300, 300, 600))
 })
+
+test_that("a later summary of the wrong size is blamed as without a share", {
+  data <- tibble::tibble(g = c("a", "a", "b"), v = c(1, 2, 4))
+  for (text in c("z = v", "z = dplyr::pick(v)")) {
+    for (rest in c("", ", w = 1")) {
+      call <- str2lang(paste0(
+        "summarize_with_margins(data, s = sum(v), sh = share_of_total(s), ",
+        text, rest, ", .grouping = rollup(g))"
+      ))
+      expect_error(eval(call), "`z` must be size 1, not 2.", fixed = TRUE,
+                   label = paste0(text, rest))
+    }
+  }
+})

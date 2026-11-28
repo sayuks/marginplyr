@@ -876,51 +876,49 @@ abort_share_name_conflict <- function(name, kind) {
 }
 
 # The branch dots with each local share marker, a dot named by its alias in
-# `bindings` (public names to aliases), respelled as one unnamed frame binding
-# the marker under both the alias and the share's public name, as ADR 0010's
-# amendment *the walk reads the callees it knows, and that set is open*
-# decides. The dot keeps its position, which every per-dot vector holds.
+# `bindings` (public names to aliases), respelled as an unnamed one-column frame
+# binding the marker under the share's public name, as ADR 0010's amendment
+# *the walk reads the callees it knows, and that set is open* decides. The dot
+# keeps its position, which every per-dot vector holds, and yields one column:
+# dplyr 1.2.1 counts an unnamed frame's columns when it reports which later
+# dot has the wrong size, so a wider frame there misreports that dot.
 bind_local_share_names <- function(dots, bindings) {
   for (i in seq_along(bindings)) {
     position <- match(bindings[[i]], rlang::names2(dots))
     dot <- dots[[position]]
     dots[[position]] <- rlang::quo_set_expr(dot, rlang::call2(
       marginplyr_private_call("local_share_binding"),
-      bindings[[i]], names(bindings)[[i]], rlang::quo_get_expr(dot)
+      names(bindings)[[i]], rlang::quo_get_expr(dot)
     ))
     names(dots)[[position]] <- ""
   }
   dots
 }
 
-# One row holding `marker` under both `alias` and the share's public `name`.
-local_share_binding <- function(alias, name, marker) {
-  vctrs::new_data_frame(
-    rlang::set_names(list(marker, marker), c(alias, name)), n = 1L
-  )
+# One row holding `marker` under the share's public `name`.
+local_share_binding <- function(name, marker) {
+  vctrs::new_data_frame(rlang::set_names(list(marker), name), n = 1L)
 }
 
 # One local branch's `result`, checked as ADR 0010's amendment *the walk reads
-# the callees it knows, and that set is open* decides for a result, and
-# returned without the public-name columns `bind_local_share_names()` added,
-# before the alias markers are checked. `bindings` maps public names to
-# aliases, `markers` aliases to tokens, and `kinds` public names to kinds.
+# the callees it knows, and that set is open* decides for a result, with each
+# column `bind_local_share_names()` added renamed to its alias, before the
+# alias markers are checked. `bindings` maps public names to aliases, `markers`
+# aliases to tokens, and `kinds` public names to kinds.
 check_local_share_bindings <- function(result, bindings, markers, kinds) {
-  result_names <- names(result)
   for (name in names(bindings)) {
     alias <- bindings[[name]]
+    if (alias %in% names(result)) {
+      abort_share_alias_collision(alias)
+    }
     value <- result[[name]]
-    token <- markers[[alias]]
-    adjacent <- identical(
-      match(name, result_names), match(alias, result_names) + 1L
-    )
-    if (!adjacent || !is.list(value) || !all(vapply(
-      value, identical, logical(1), token
+    if (!is.list(value) || !all(vapply(
+      value, identical, logical(1), markers[[alias]]
     ))) {
       abort_share_name_conflict(name, kinds[[name]])
     }
+    names(result)[names(result) == name] <- alias
   }
-  result <- result[setdiff(result_names, names(bindings))]
   for (column in setdiff(names(result), unname(bindings))) {
     held <- held_share_marker(result[[column]], markers)
     if (!is.null(held)) {

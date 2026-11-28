@@ -731,9 +731,9 @@ naming those callees does not end the family, and a further one is not a
 finding of its own. What ends it is binding the name (#1845).
 
 On a local data frame the share's dot position holds a marker, a one-element
-list holding a token no other value is identical to, and the share's public
-name is bound to that marker from that position on, beside its internal alias.
-A later summary reading the name through any callee therefore reads the
+list holding a token no other value is identical to, bound under the share's
+public name from that position on; the column takes its internal alias once
+the branch is evaluated. A later summary reading the name through any callee therefore reads the
 marker, never an input column of that name nor a binding of the caller's.
 Two rules finish the contract:
 
@@ -749,9 +749,8 @@ it returns, or the names a top-level `across()` builds. The result alone
 cannot apply them, because dplyr replaces a same-named column where it stands,
 so a later frame re-emitting the token under the share's name leaves the
 binding's own column. The result is checked afterwards for what no evaluated
-summary reported: a binding column not directly after its alias, or not
-holding the token, is the name conflict, and any other column holding a token
-is the earlier-share use. The walk stays as it is. It is what gives the written spellings their condition before anything
+summary reported: a binding column not holding the token is the name
+conflict, and any other column holding a token is the earlier-share use. The walk stays as it is. It is what gives the written spellings their condition before anything
 is evaluated, and it no longer has to be complete for the result to be right.
 A `dtplyr` input has no marker and needs none: there the same reads end in
 "object not found" or a Package refusal.
