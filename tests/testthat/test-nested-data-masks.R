@@ -633,6 +633,38 @@ test_that("the nested-verb registry names every data-mask verb (#1819)", {
   }
 })
 
+# The written set above is this package's reading. dplyr's help pages mark an
+# argument evaluated against the verb's own input as `<data-masking>` or
+# `<tidy-select>`, so a verb the installed dplyr adds shows there first.
+test_that("each export dplyr documents as masking is registered (#1819)", {
+  section <- function(rd, tag) {
+    parts <- Filter(function(part) identical(attr(part, "Rd_tag"), tag), rd)
+    vapply(parts, function(part) paste(unlist(part), collapse = ""),
+           character(1))
+  }
+  exports <- getNamespaceExports("dplyr")
+  documented <- unlist(lapply(tools::Rd_db("dplyr"), function(rd) {
+    arguments <- paste(section(rd, "\\arguments"), collapse = "")
+    if (!grepl("<data-masking>|<tidy-select>", arguments)) return(NULL)
+    usage <- paste(section(rd, "\\usage"), collapse = "")
+    Filter(function(alias) {
+      grepl(paste0("(^|[^A-Za-z0-9_.])", alias, "[(]"), usage)
+    }, intersect(section(rd, "\\alias"), exports))
+  }), use.names = FALSE)
+  # The Contextual selections and the scoped verbs' helpers capture an
+  # expression for a verb and own no input; `with_groups()` takes its verb as
+  # a value (#1652).
+  helpers <- c(
+    static_spelling_names("selection"),
+    "all_vars", "any_vars", "funs", "vars", "with_groups"
+  )
+  expect_true(all(helpers %in% documented))
+  expect_setequal(
+    setdiff(documented, helpers),
+    intersect(static_spelling_names("dplyr_mask"), documented)
+  )
+})
+
 # The eager pipe's infix spelling is what the registry is asked to recognise.
 # nolint start: pipe_consistency_linter.
 test_that("a verb on the right of %!>% owns its arguments (#1827)", {

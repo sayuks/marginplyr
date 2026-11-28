@@ -440,7 +440,8 @@ Config/testthat/start-first:
     share-eval-parent,
     share-function-naming,
     share-function-constructors,
-    share-str-glue-process
+    share-str-glue-process,
+    duckdb-implicit-reach
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool

@@ -671,7 +671,12 @@ The registry records these ordinary operation spellings, their namespaces,
 and their input formal. It covers every exported dplyr verb that evaluates
 caller-written arguments against its own input, as a data mask or a tidyselect
 selection, at the dplyr version `DESCRIPTION` requires, superseded verbs
-included, and tidyr's `uncount()` (#1819). A verb taking a function, such as
+included, and tidyr's `uncount()` (#1819). tidyr's other verbs are not
+registered (#1844): a spelling is recognized with its namespace absent, so
+`extract`, `fill`, `expand` or `nest` written bare would claim another
+package's call and take its arguments out of the dependency walk. A nested
+tidyr verb whose column shares an earlier summary's name is refused as a
+dependency instead, which renaming answers. A verb taking a function, such as
 `group_modify()` or `with_groups()`, is not one: which mask owns that
 function's body depends on its value (#1652). Recognition follows the same namespace and redundant
 parenthesis rules as other registered spellings; it does not resolve a caller

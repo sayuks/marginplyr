@@ -599,18 +599,36 @@ duckdb_value_function_heads <- function(tokens) {
           !unquoted(-1L, "as"))
 }
 
-# Functions DuckDB binds from syntax with no call head: literal constructors
-# and keyword forms, as measured on DuckDB 1.5 and 2.0. A caller macro of
-# such a name replaces the function wherever that syntax stands, which a head
-# scan cannot see. Operators are decided by duckdb_operator_name() instead.
+# Functions and table functions DuckDB binds from syntax with no call head:
+# literal constructors, keyword forms, UNPIVOT and a Parquet file named as a
+# relation. A caller macro of such a name replaces the function wherever that
+# syntax stands, which a head scan cannot see. The names are those DuckDB 1.5
+# and 2.0 reach from the probes of `tests/testthat/helper-duckdb-reach.R`.
+# Operators are decided by duckdb_operator_name() instead, and the statements
+# of `duckdb_rewritten_statements` by their keyword.
 duckdb_implicit_functions <- c(
   "count_star", "list_value", "struct_pack", "row", "map", "date_part",
   "timezone", "ltrim", "rtrim", "regexp_full_match", "like_escape",
-  "ilike_escape", "list_apply", "contains", "to_millennia", "to_centuries",
+  "ilike_escape", "not_like_escape", "not_ilike_escape", "list_apply",
+  "list_filter", "contains", "array_agg", "to_millennia", "to_centuries",
   "to_decades", "to_years", "to_quarters", "to_months", "to_weeks", "to_days",
   "to_hours", "to_minutes", "to_seconds", "to_milliseconds", "to_microseconds",
-  "trunc", "factorial", "regexp_matches"
+  "trunc", "factorial", "!__postfix", "regexp_matches", "unpivot_list",
+  "parquet_scan"
 )
+
+# Statements DuckDB rewrites into a query over functions of its own choosing,
+# which differ between 1.5 and 2.0: `min` and `approx_quantile` behind
+# SUMMARIZE, `duckdb_tables` and `in_search_path` behind SHOW (ADR 0020).
+duckdb_rewritten_statements <- c("show", "describe", "summarize")
+
+# Whether `tokens` hold a rewritten statement's keyword while a caller macro
+# exists for its query to reach. Reads this operation's catalog snapshot only
+# where the keyword stands.
+duckdb_rewrite_reaches_macro <- function(tokens, catalog) {
+  any(tokens %in% duckdb_rewritten_statements & !attr(tokens, "quoted")) &&
+    any(duckdb_caller_macros(catalog()))
+}
 
 # Whether each of `names` consists only of operator characters. DuckDB binds
 # an operator token it has no rule of its own for as the function of that
@@ -750,6 +768,9 @@ validate_duckdb_authored_calls <- function(tokens, catalog) {
       abort_duckdb_call_metadata()
     }
   }
+  if (duckdb_rewrite_reaches_macro(tokens, catalog)) {
+    abort_duckdb_call_metadata()
+  }
   # Any statement may hold the syntax that reaches an implicitly bound name,
   # so a caller macro of one refuses the operation. The check reads only a
   # snapshot this operation already took (ADR 0020).
@@ -801,6 +822,9 @@ validate_duckdb_view_metadata <- function(index, catalog, seen) {
     if (duckdb_head_reaches_macro(body, head, catalog(), namespace)) {
       abort_duckdb_view_metadata()
     }
+  }
+  if (duckdb_rewrite_reaches_macro(body, catalog)) {
+    abort_duckdb_view_metadata()
   }
   validate_duckdb_csv_metadata(
     body, catalog, namespace = namespace, seen = c(seen, index)

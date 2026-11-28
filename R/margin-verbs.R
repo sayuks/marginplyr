@@ -327,6 +327,9 @@
 #'   such as `+` or `count_star` (behind `COUNT(*)`), refuses typed
 #'   metadata on its connection, since any statement could reach it. Call
 #'   [dplyr::compute()] or [dplyr::collect()] first to use one.
+#'   A `SHOW`, `DESCRIBE` or `SUMMARIZE` statement is refused while the
+#'   database holds any macro you defined, since DuckDB turns it into a query
+#'   over functions of its own choosing.
 #'   DuckDB's own scalar macros, such as `nullif()`, are admitted only while
 #'   the database holds no macro you defined, since one could replace a name
 #'   inside their bodies.

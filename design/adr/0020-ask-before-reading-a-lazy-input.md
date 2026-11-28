@@ -540,11 +540,27 @@ for as the function of that name, so the names a caller can reach that way are
 open-ended, and a caller macro named only with operator characters refuses,
 including the comparison operators DuckDB 2.0 does not reach from syntax,
 since excluding them would be a second list measured on one version. The other
-names are one hand-kept constant, `duckdb_implicit_functions`, which a test
-asserts each reached without a call head on the DuckDB under test, so a name
-DuckDB adds later is admitted until it is listed. A name only one supported version reaches from syntax, such as
+names are one hand-kept constant, `duckdb_implicit_functions`. A test holds it
+from DuckDB's side (#1843): it shadows every function name of the system
+catalog with a caller macro, binds a set of syntax forms, every function name
+and keyword as a bare word and each as a call head, and fails when a
+statement reaches a macro the scan admits, or when a listed name is reached by
+none of them. The same reaches are asked again through a stored view of each
+form, since DuckDB rewrites a view's definition. What stays admitted is a name
+reached only from syntax those forms do not hold.
+
+`SHOW`, `DESCRIBE` and `SUMMARIZE` are decided by their keyword instead: an
+authored statement or a stored view holding one is refused while the snapshot
+holds any caller macro. DuckDB rewrites each into a query over functions of its
+own choosing, and the two supported versions choose differently -- `min` and
+`approx_quantile` behind `SUMMARIZE` on both, `in_search_path` and
+`current_database` behind `SHOW` on 1.5, `pragma_show` on 2.0 -- so their names
+are DuckDB's to change. Listing them was rejected for a second reason: a caller
+macro named `current_database` would refuse every statement on the connection,
+where a statement holding none of these keywords does not reach it. The rule
+names three statements rather than a syntax form, so it mirrors no grammar. A name only one supported version reaches from syntax, such as
 `factorial` behind postfix `!` on DuckDB 2.0 (#1818), is listed for every
-version, and the test asserts its form where that version runs. The check reads only a snapshot the operation already took and adds
+version, and the test names the ones the version it runs on does not reach. The check reads only a snapshot the operation already took and adds
 no query, so a statement that names no relation and no call head binds without
 it. Refusing a caller macro named like any built-in function was rejected:
 it also refuses statements that never reach the macro. Recognising each syntax
