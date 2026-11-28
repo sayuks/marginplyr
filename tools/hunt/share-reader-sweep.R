@@ -135,6 +135,7 @@ if (identical(args[[1L]], "--worker")) {
 repo <- normalizePath(args[[1L]])
 out <- args[[2L]]
 dir.create(out, showWarnings = FALSE, recursive = TRUE)
+out <- normalizePath(out)
 script <- normalizePath(sub("^--file=", "", grep(
   "^--file=", commandArgs(FALSE), value = TRUE
 )))
@@ -160,6 +161,12 @@ found <- unlist(lapply(Sys.glob(file.path(out, "*.found")), readLines))
 cat(length(found), "reading calls\n")
 
 suppressMessages(pkgload::load_all(repo, quiet = TRUE))
+# A reading call can write where it stands: `dump()` does, and a plot opens a
+# device.
+work <- file.path(tempdir(), "verdicts")
+dir.create(work)
+setwd(work)
+grDevices::pdf(NULL)
 input <- tibble::tibble(g = c("a", "a", "b"), v = c(1, 2, 4),
                         marginplyr_probe = c(100, 200, 300))
 invisible(list2env(held, environment()))
@@ -169,11 +176,15 @@ quietly <- function(call, env) {
   on.exit(sink(), add = TRUE)
   suppressWarnings(suppressMessages(eval(call, env)))
 }
-verdict <- function(text) {
-  call <- parse(text = sprintf(paste0(
+# The Margin summary in which `text` is a later summary after the share.
+later_call <- function(text) {
+  parse(text = sprintf(paste0(
     "summarize_with_margins(input, s = sum(v), ",
     "marginplyr_probe = share_of_total(s), z = %s, .grouping = rollup(g))"
   ), text))[[1L]]
+}
+verdict <- function(text) {
+  call <- later_call(text)
   setTimeLimit(elapsed = 20, transient = TRUE)
   on.exit(setTimeLimit(elapsed = Inf), add = TRUE)
   tryCatch({
@@ -189,20 +200,18 @@ verdicts <- vapply(found, verdict, character(1))
 # over two inputs that differ in that column alone.
 later_summary <- function(text, column) {
   input$marginplyr_probe <- column
-  call <- parse(text = sprintf(paste0(
-    "summarize_with_margins(input, s = sum(v), ",
-    "marginplyr_probe = share_of_total(s), z = %s, .grouping = rollup(g))"
-  ), text))[[1L]]
-  tryCatch(quietly(call, environment())$z, error = function(cnd) "error")
+  tryCatch(quietly(later_call(text), environment())$z,
+           error = function(cnd) "error")
 }
 # cli numbers the elements it emits, so a value holding such an id differs
 # between any two calls.
-counted <- function(value) {
+holds_cli_id <- function(value) {
   is.character(unlist(value)) && any(grepl("^cli-[0-9]+-[0-9]+$", unlist(value)))
 }
 follows <- vapply(found[verdicts == "value"], function(text) {
   first <- later_summary(text, c(100, 200, 300))
-  !counted(first) && !identical(first, later_summary(text, c(5, 6, 7)))
+  !holds_cli_id(first) &&
+    !identical(first, later_summary(text, c(5, 6, 7)))
 }, logical(1))
 verdicts[verdicts == "value"][follows] <- "follows the input column"
 

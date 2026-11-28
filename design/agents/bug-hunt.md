@@ -131,8 +131,8 @@ only for families that have no sweep. Steps 5 to 7 apply unchanged.
 Write the dated note and its script directory under `investigation/`, following
 `investigation/README.md`; every script exits 0 from the repository root.
 Append the hunt's decisions to `tools/hunt/decided-shapes.md`. Commit, run
-Review-ready with `--scope source`, push, and open the pull request under
-[PR preparation](pr.md).
+Review-ready with the scope [Local checks](local-checks.md) selects, push, and
+open the pull request under [PR preparation](pr.md).
 
 Report a verdict table (confirmed, decided here, rejected) with issue numbers,
 the agents run against the plan, the lanes not run, and each decision that
@@ -150,8 +150,8 @@ the second:
 
 - the lookup is a script (step 5);
 - a failed refuter is not moved to another model unread (step 6);
-- 19 of the 35 issues filed came from the two families step 2 now sweeps, 12
-  of them from one dependency walk.
+- 22 of the 35 issues filed came from the three families step 2 sweeps, 12 of
+  them from one dependency walk.
 
 Give Fable the coordinator's seat and the refutation of a claim at P2 or
 above that another model found. Give contract-reading lanes to Opus and lanes

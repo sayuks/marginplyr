@@ -18,7 +18,7 @@ preflight's two constants to their state at the snapshot before it measures.
 
 | Family | Asked of | Result at the snapshot | Outcome |
 | --- | --- | --- | --- |
-| Names DuckDB binds with no call head | DuckDB 2.0.1 and 1.5.6, every system function name shadowed by a caller macro | With a catalog snapshot in hand, 44 of 403 confirmed reaches admitted on 2.0.1 and 49 of 407 on 1.5.6: 25 names | [#1843](https://github.com/sayuks/marginplyr/issues/1843), repaired with the sweep kept as a test |
+| Names DuckDB binds with no call head | DuckDB 2.0.1 and 1.5.6, every system function name shadowed by a caller macro | With a catalog snapshot in hand, 44 of 403 confirmed reaches admitted on 2.0.1 and 49 of 407 on 1.5.6: 25 names | [#1843](https://github.com/sayuks/marginplyr/issues/1843), repaired with the sweep kept as a test; its review added `DESC`, DuckDB's own views and one more name |
 | dplyr verbs that own a data mask | dplyr 1.2.1's help pages | 39 exports documented with a `<data-masking>` or `<tidy-select>` argument: 29 registered, 10 helpers | No gap; kept as a test |
 | tidyr verbs | tidyr 1.3.2's help pages | 46 exports so documented, `uncount()` alone registered; seven of nine verbs tried were refused as a share-source dependency | [#1844](https://github.com/sayuks/marginplyr/issues/1844), closed as not planned |
 | Reads of an earlier share by a name not written | Every exported function of 17 packages, 21 argument shapes | 466 calls read the name; 28 refused, 354 ended in an error, 13 returned a value that followed the input column | [#1845](https://github.com/sayuks/marginplyr/issues/1845) |
@@ -80,9 +80,48 @@ UNION ALL SELECT n + 1 FROM c WHERE n < 3) SELECT * FROM c` beside a macro
 named `+`, and `SELECT distinct(1, 2)` and `SELECT not(1, 2)` beside one named
 `row`.
 
+### What the repair's review added
+
+The review of the repair reproduced three things the sweep had not asked.
+`DESC` is DuckDB's spelling of `DESCRIBE`, and `DESC TABLES` reached a table
+macro `duckdb_tables` unrefused. The keyword rule matched the word anywhere,
+so `SELECT v AS show FROM t` was refused beside an unrelated macro. DuckDB 1.5
+and 2.0 accepted `SHOW`, `DESCRIBE`, `DESC` and `SUMMARIZE` as the first word
+of a statement or after an opening parenthesis, a `WITH` before one being a
+parser error on both, and 2.0.1 also after a set operator
+(`SELECT 'x' AS name UNION ALL SHOW TABLES`), which a second review round
+found. And `SELECT table_name FROM information_schema.tables`
+reached the same macro: a two-part name whose schema no search path held
+matched no catalog row, so the view was read as an unknown relation.
+
+The sweep was widened to bind each of DuckDB's 47 own views with and without
+its schema, and its verdict to ask the preflight of the authored text and of
+the rendered statement, as an operation does. Fifteen reaches through
+`information_schema` views were admitted on both versions, and the view
+`duckdb_logs` reached a table macro named `duckdb_log_contexts`, which the
+`duckdb_logs()` function binds by name.
+
+The second review round showed the sweep stopping early: with every name
+shadowed by a macro whose body was a scalar subquery, DuckDB 2.0.1 ended 84 of
+434 probe statements in an error naming no macro (`Window function macro
+bodies must contain exactly one aggregate function`), which hid `row_number`
+behind `duckdb_logs`. The macro body became a call to a dropped macro, bound a
+second time as one aggregate over that call, and a macro DuckDB names and
+declines to expand (`is not a scalar function`, `is a Macro Function`, `Macro
+f() does not support the supplied arguments`) steps aside so the binding goes
+on. That found `struct_extract` behind the filtered list comprehension on both
+versions. What still stopped under both bodies was every `PIVOT` form, and on
+1.5.6 every subscript and field access (`Cannot copy bound expression`).
+
+With the two-part lookup ending in DuckDB's own catalog and
+`duckdb_log_contexts`, `row_number` and `struct_extract` listed, 636 of 636
+asked reaches were refused on 2.0.1 and 630 of 630 on 1.5.6, and 469 of 469
+and 481 of 481 through stored views. With no caller macro, none of the 47
+views was refused on either version.
+
 With duckdb 1.5.6 first on the library path, the ten DuckDB test files of the
 snapshot that need no json extension ran 99 tests and 14,451 expectations with
-no failure. No CI job runs that version;
+no failure. As of 2026-11-28 no CI job ran that version;
 [#1846](https://github.com/sayuks/marginplyr/issues/1846) asks for one.
 
 ## Data-mask verbs

@@ -241,7 +241,8 @@ duckdb_reach_probes <- function(parquet) {
     "SELECT * FROM (SHOW TABLES)", "FROM (PIVOT t ON g USING sum(v))",
     "SELECT * FROM (SELECT g, v FROM t) PIVOT (count(*) FOR g IN ('a'))",
     "DESCRIBE DATABASES", "SHOW TABLE t", "DESCRIBE SELECT * FROM t",
-    "SUMMARIZE TABLE t", "SHOW memory.main.t", "DESCRIBE main.t"
+    "SUMMARIZE TABLE t", "SHOW memory.main.t", "DESCRIBE main.t", "DESC t",
+    "DESC TABLES", "DESC", "DESC SELECT g, v FROM t"
   )
   # Forms one supported DuckDB version, or one with an extension loaded,
   # binds and another refuses.
@@ -251,7 +252,8 @@ duckdb_reach_probes <- function(parquet) {
     "OVERLAY(g PLACING 'x' FROM 1)", "OVERLAY(g PLACING 'x' FROM 1 FOR 1)",
     "COLUMNS(c -> c LIKE 'v')", "list_transform(l, e -> e + 1)",
     "list_filter(l, e -> e > 1)", "list_reduce(l, (a, b) -> a + b)",
-    "SHOW search_path",
+    "SHOW search_path", "SELECT 'x' AS name UNION ALL SHOW TABLES",
+    "SELECT 'x' AS column_name UNION ALL BY NAME DESC t",
     # A replacement scan of the Parquet file `duckdb_reach_tables()` wrote.
     paste0("SELECT * FROM ", parquet)
   )
@@ -278,34 +280,44 @@ duckdb_reach_tables <- function(con, dir) {
 # The statement a probe stands for.
 duckdb_reach_statement <- function(probe) {
   whole <- grepl(paste0(
-    "^(SELECT|FROM|WITH|VALUES|PIVOT|UNPIVOT|SUMMARIZE|DESCRIBE|SHOW|TABLE)",
-    "( |$)"
+    "^(SELECT|FROM|WITH|VALUES|PIVOT|UNPIVOT|SUMMARIZE|DESCRIBE|DESC|SHOW|",
+    "TABLE)( |$)"
   ), probe)
   ifelse(whole, probe, paste("SELECT g, v,", probe, "AS y FROM t"))
 }
 
-# The condition message of binding `sql` as the zero-row subquery a Margin verb
-# sends for a typed proxy, or `NULL` where it binds. Converting the empty
-# result to R can warn about a column type, which is not what is asked.
+# The zero-row statement dbplyr renders over authored SQL, which is the text a
+# Margin verb's typed proxy binds.
+duckdb_reach_rendered <- function(sql) {
+  paste0("SELECT q01.* FROM (", sql, ") q01 LIMIT 0")
+}
+
+# The condition message of binding `sql` as that statement, or `NULL` where it
+# binds. Converting the empty result to R can warn about a column type, which
+# is not what is asked.
 duckdb_reach_bind <- function(con, sql) {
   tryCatch({
-    suppressWarnings(DBI::dbGetQuery(
-      con, paste0("SELECT * FROM (", sql, ") q01 WHERE (0 = 1)")
-    ))
+    suppressWarnings(DBI::dbGetQuery(con, duckdb_reach_rendered(sql)))
     NULL
   }, error = function(cnd) conditionMessage(cnd))
 }
 
-# Define a caller macro `name`, scalar or table, over a table dropped at once:
-# DuckDB checks the body when the macro is created and again when a statement
-# binds it, so binding it afterwards fails naming `marker`. FALSE where DuckDB
-# refuses the definition.
-duckdb_reach_shadow <- function(con, name, table, marker) {
-  DBI::dbExecute(con, paste0("CREATE TABLE ", marker, "(r INTEGER)"))
-  body <- if (table) {
-    paste0("TABLE SELECT r FROM ", marker)
+# Define a caller macro `name`, scalar or table, whose body names something
+# dropped at once: DuckDB checks the body when the macro is created and again
+# when a statement binds it, so binding it afterwards fails naming `marker`.
+# A table macro selects from a dropped table. A scalar macro calls a dropped
+# macro, or with `aggregate` one aggregate over that call, which is what
+# DuckDB 2.0 requires of a macro standing where a window function does; each
+# binds in places the other does not. FALSE where DuckDB refuses the
+# definition.
+duckdb_reach_shadow <- function(con, name, table, marker, aggregate = FALSE) {
+  if (table) {
+    DBI::dbExecute(con, paste0("CREATE TABLE ", marker, "(r INTEGER)"))
+    body <- paste0("TABLE SELECT r FROM ", marker)
   } else {
-    paste0("(SELECT r FROM ", marker, ")")
+    DBI::dbExecute(con, paste0("CREATE MACRO ", marker, "() AS 1"))
+    body <- paste0(marker, "()")
+    if (aggregate) body <- paste0("system.main.max(", body, ")")
   }
   created <- tryCatch({
     DBI::dbExecute(con, paste0(
@@ -314,7 +326,7 @@ duckdb_reach_shadow <- function(con, name, table, marker) {
     ))
     TRUE
   }, error = function(cnd) FALSE)
-  DBI::dbExecute(con, paste0("DROP TABLE ", marker))
+  DBI::dbExecute(con, paste("DROP", if (table) "TABLE" else "MACRO", marker))
   created
 }
 
@@ -325,11 +337,16 @@ duckdb_reach_unshadow <- function(con, name, table) {
   invisible(NULL)
 }
 
-# Shadow every system function name, then bind each probe, every function name
-# and keyword as a bare word, and each of those as a call head. Returns the
-# probes with whether each binds while no caller macro exists, and one row per
-# statement and macro it reached other than the head it wrote. `dir` is a
-# directory the caller removes. Leaves no macro behind.
+# Shadow every system function name, then bind each probe, each system view,
+# every function name and keyword as a bare word, and each of those as a call
+# head. The probes and views are bound under both macro bodies. Returns the
+# probes with whether each binds while no caller macro exists; the probe
+# statements whose binding stopped, under both bodies, at an error that names
+# no macro and is not DuckDB declining to expand one (`blocked`); and one row
+# per statement and macro it reached: `written` says whether the statement
+# spells that name as a call head, which a call-head statement's own name
+# never is, its macro having stepped aside. `dir` is a directory the caller
+# removes. Leaves no macro behind.
 duckdb_reach_sweep <- function(con, dir) {
   probes <- duckdb_reach_probes(duckdb_reach_tables(con, dir))
   functions <- DBI::dbGetQuery(con, paste(
@@ -343,21 +360,36 @@ duckdb_reach_sweep <- function(con, dir) {
   keywords <- DBI::dbGetQuery(
     con, "SELECT keyword_name FROM duckdb_keywords()"
   )$keyword_name
-  probes <- lapply(probes, function(set) {
-    statements <- duckdb_reach_statement(set)
-    data.frame(probe = set, sql = statements, live = vapply(
+  # DuckDB's own views are stored queries over its functions, named with and
+  # without their schema.
+  views <- DBI::dbGetQuery(con, paste(
+    "SELECT schema_name, view_name FROM duckdb_views()",
+    "WHERE internal ORDER BY ALL"
+  ))
+  views <- paste("SELECT * FROM", unique(c(
+    paste(views$schema_name, views$view_name, sep = "."), views$view_name
+  )))
+  probes <- lapply(probes, function(forms) {
+    statements <- duckdb_reach_statement(forms)
+    data.frame(probe = forms, sql = statements, live = vapply(
       statements, function(sql) is.null(duckdb_reach_bind(con, sql)),
       logical(1), USE.NAMES = FALSE
     ))
   })
+  views <- views[vapply(views, function(sql) {
+    is.null(duckdb_reach_bind(con, sql))
+  }, logical(1))]
+  corpus <- c(unlist(lapply(probes, function(forms) forms$sql[forms$live]),
+                     use.names = FALSE), views)
 
   functions$marker <- paste0("marginplyr_reach_", seq_len(nrow(functions)))
   shadowed <- logical(nrow(functions))
-  set <- function(row, on) {
+  aggregate <- FALSE
+  shadow <- function(row, on) {
     if (on) {
       shadowed[[row]] <<- duckdb_reach_shadow(
         con, functions$name[[row]], functions$is_table[[row]],
-        functions$marker[[row]]
+        functions$marker[[row]], aggregate
       )
     } else if (shadowed[[row]]) {
       duckdb_reach_unshadow(con, functions$name[[row]],
@@ -365,37 +397,78 @@ duckdb_reach_sweep <- function(con, dir) {
       shadowed[[row]] <<- FALSE
     }
   }
-  for (row in seq_len(nrow(functions))) set(row, TRUE)
-  on.exit(for (row in which(shadowed)) set(row, FALSE), add = TRUE)
+  shadow_all <- function(on) {
+    for (row in if (on) seq_len(nrow(functions)) else which(shadowed)) {
+      shadow(row, on)
+    }
+  }
+  on.exit(shadow_all(FALSE), add = TRUE)
 
-  # The rows of `functions` binding `sql` reaches, outermost first.
+  # The rows of `functions` binding `sql` reaches, outermost first, with
+  # `stopped` set where the binding ended in an error that names no macro.
+  # Where DuckDB names a macro it met and would not expand -- one standing
+  # where only a function may, or given arguments it does not take -- that
+  # macro steps aside unrecorded and the binding goes on.
+  declined <- c(
+    "Macro (.+)\\(\\) ", "Error: (.+) is not an? [a-z]+ function",
+    "Function \"(.+)\" is a Macro Function"
+  )
+  declined_rows <- function(message) {
+    names <- unlist(lapply(declined, function(pattern) {
+      hit <- regmatches(message, regexec(pattern, message))[[1L]]
+      if (length(hit)) hit[[2L]]
+    }))
+    which(functions$name %in% names & shadowed)
+  }
   reach <- function(sql) {
-    found <- integer()
+    found <- aside <- integer()
+    stopped <- FALSE
     repeat {
       message <- duckdb_reach_bind(con, sql)
       if (is.null(message)) break
       marker <- regmatches(message, regexpr("marginplyr_reach_[0-9]+", message))
-      if (!length(marker)) break
+      if (!length(marker)) {
+        rows <- declined_rows(message)
+        stopped <- !length(rows)
+        if (stopped) break
+        aside <- c(aside, rows)
+        for (row in rows) shadow(row, FALSE)
+        next
+      }
       row <- match(marker, functions$marker)
       found <- c(found, row)
-      set(row, FALSE)
+      shadow(row, FALSE)
     }
-    for (row in found) set(row, TRUE)
-    found
+    for (row in c(found, aside)) shadow(row, TRUE)
+    structure(found, stopped = stopped, message = message)
   }
   pairs <- list()
+  stops <- list()
   record <- function(kind, sql) {
     rows <- reach(sql)
+    if (attr(rows, "stopped")) {
+      stops[[length(stops) + 1L]] <<- data.frame(
+        sql = sql, aggregate = aggregate, message = attr(rows, "message")
+      )
+    }
     if (length(rows)) {
       pairs[[length(pairs) + 1L]] <<- data.frame(
         kind = kind, sql = sql, reached = functions$name[rows],
-        table = functions$is_table[rows]
+        table = functions$is_table[rows],
+        written = vapply(functions$name[rows], function(name) {
+          grepl("^[a-z0-9_]+$", name) &&
+            grepl(paste0("(^|[^a-z0-9_])", name, "[(]"), tolower(sql))
+        }, logical(1), USE.NAMES = FALSE)
       )
     }
   }
-  for (set_probes in probes) {
-    for (sql in set_probes$sql[set_probes$live]) record("corpus", sql)
-  }
+  aggregate <- TRUE
+  shadow_all(TRUE)
+  for (sql in corpus) record("corpus", sql)
+  shadow_all(FALSE)
+  aggregate <- FALSE
+  shadow_all(TRUE)
+  for (sql in corpus) record("corpus", sql)
   words <- unique(c(functions$name, keywords))
   words <- sort(words[grepl("^[a-z_][a-z0-9_]*$", words)])
   arguments <- function(count) {
@@ -408,7 +481,7 @@ duckdb_reach_sweep <- function(con, dir) {
     # is what expands its body.
     own <- which(functions$name == word)
     shadows <- own[shadowed[own]]
-    for (row in shadows) set(row, FALSE)
+    for (row in shadows) shadow(row, FALSE)
     declared <- function(table) {
       unlist(functions$arities[own[functions$is_table[own] == table]])
     }
@@ -420,16 +493,22 @@ duckdb_reach_sweep <- function(con, dir) {
                   paste0("SELECT * FROM ", word, tabular))) {
       record("call", sql)
     }
-    for (row in shadows) set(row, TRUE)
+    for (row in shadows) shadow(row, TRUE)
   }
-  list(probes = probes, pairs = do.call(rbind, pairs))
+  stops <- do.call(rbind, stops)
+  list(probes = probes, stops = stops, blocked = intersect(
+    stops$sql[stops$aggregate], stops$sql[!stops$aggregate]
+  ), pairs = unique(do.call(rbind, pairs)))
 }
 
 # For each row of a sweep's `pairs`, with that macro as the only caller macro:
-# whether the statement reaches it (`confirmed`), whether the preflight read
-# the catalog for the statement (`asked`), and whether it refused (`refused`).
-# A probe DuckDB stores as a view is asked again through the view
-# (`stored_confirmed`, `stored_refused`), whose definition DuckDB rewrites.
+# whether the statement reaches it under either macro body (`confirmed`),
+# whether the preflight read the catalog for the statement (`asked`), and
+# whether it refused (`refused`).
+# The preflight is asked as an operation asks it: of the authored text, then
+# of the rendered statement. A probe DuckDB stores as a view is asked again
+# through the view (`stored_confirmed`, `stored_refused`), whose definition
+# DuckDB rewrites.
 duckdb_reach_verdicts <- function(con, pairs) {
   pairs$confirmed <- pairs$asked <- pairs$refused <- NA
   pairs$stored_confirmed <- pairs$stored_refused <- NA
@@ -448,9 +527,23 @@ duckdb_reach_verdicts <- function(con, pairs) {
   for (i in seq_len(nrow(macros))) {
     name <- macros$reached[[i]]
     table <- macros$table[[i]]
+    rows <- which(pairs$reached == name & pairs$table == table)
+    reached <- function(sql) {
+      message <- duckdb_reach_bind(con, sql)
+      !is.null(message) &&
+        grepl("marginplyr_reach_alone", message, fixed = TRUE)
+    }
+    # The preflight reads the same catalog under either body, so it is asked
+    # under the second alone.
+    windowed <- logical(length(rows))
+    if (!table) {
+      duckdb_reach_shadow(con, name, table, "marginplyr_reach_alone", TRUE)
+      windowed <- vapply(pairs$sql[rows], reached, logical(1))
+      duckdb_reach_unshadow(con, name, table)
+    }
     duckdb_reach_shadow(con, name, table, "marginplyr_reach_alone")
     snapshot <- duckdb_metadata_catalog(con)
-    for (row in which(pairs$reached == name & pairs$table == table)) {
+    for (row in rows) {
       # As an operation holds it: nothing until something asks to read it.
       asked <- new.env(parent = emptyenv())
       asked$read <- FALSE
@@ -458,24 +551,22 @@ duckdb_reach_verdicts <- function(con, pairs) {
         if (read) asked$read <- TRUE
         if (asked$read) snapshot
       }
-      message <- duckdb_reach_bind(con, pairs$sql[[row]])
-      pairs$confirmed[[row]] <- !is.null(message) &&
-        grepl("marginplyr_reach_alone", message, fixed = TRUE)
-      pairs$refused[[row]] <- tryCatch({
-        validate_duckdb_csv_metadata(pairs$sql[[row]], catalog)
-        FALSE
-      }, marginplyr_error = function(cnd) TRUE)
+      refused <- function(sql) {
+        tryCatch({
+          validate_duckdb_csv_metadata(sql, catalog)
+          validate_duckdb_csv_metadata(duckdb_reach_rendered(sql), catalog)
+          FALSE
+        }, marginplyr_error = function(cnd) TRUE)
+      }
+      pairs$confirmed[[row]] <- reached(pairs$sql[[row]]) ||
+        windowed[[match(row, rows)]]
+      pairs$refused[[row]] <- refused(pairs$sql[[row]])
       pairs$asked[[row]] <- asked$read
       view <- views[match(pairs$sql[[row]], statements)]
       if (is.na(view)) next
-      message <- duckdb_reach_bind(con, paste("SELECT * FROM", view))
-      pairs$stored_confirmed[[row]] <- !is.null(message) &&
-        grepl("marginplyr_reach_alone", message, fixed = TRUE)
+      pairs$stored_confirmed[[row]] <- reached(paste("SELECT * FROM", view))
       # As validate_duckdb_csv_query() spells a captured table path.
-      pairs$stored_refused[[row]] <- tryCatch({
-        validate_duckdb_csv_metadata(paste("TABLE", view), catalog)
-        FALSE
-      }, marginplyr_error = function(cnd) TRUE)
+      pairs$stored_refused[[row]] <- refused(paste("TABLE", view))
     }
     duckdb_reach_unshadow(con, name, table)
   }

@@ -143,9 +143,10 @@ Second round, repaired by PR #1838:
 
 ## The sweeps of 2026-11-28
 
-- #1843: seven more names DuckDB binds with no call head are listed, and
-  `SHOW`, `DESCRIBE` and `SUMMARIZE` are refused by their keyword beside any
-  caller macro. `tests/testthat/test-duckdb-implicit-reach.R` now asks DuckDB
+- #1843: ten more names DuckDB binds with no call head are listed; `SHOW`,
+  `DESCRIBE`, `DESC` and `SUMMARIZE` are refused as statements beside any
+  caller macro; and a two-part name is looked up in DuckDB's own
+  catalog last, so `information_schema.tables` is read as a stored view. `tests/testthat/test-duckdb-implicit-reach.R` now asks DuckDB
   for this family, so a name it reaches from a form in
   `tests/testthat/helper-duckdb-reach.R` fails that test rather than waiting
   for a hunt. Still admitted by ADR 0020: a statement naming no relation and

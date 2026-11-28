@@ -464,6 +464,9 @@ duckdb_metadata_catalog_match <- function(parts, catalog, namespace = NULL,
       paths <- Filter(function(path) path[[2L]] %in% c(prefix, ""), paths)
       paths <- lapply(paths, function(path) c(path[[1L]], prefix))
       if (!length(paths)) paths <- list(c(default, prefix))
+      # DuckDB's own catalog answers last, for a schema only it holds:
+      # `information_schema`.
+      paths <- c(paths, list(c("system", prefix)))
     }
   }
   for (path in paths) {
@@ -600,34 +603,58 @@ duckdb_value_function_heads <- function(tokens) {
 }
 
 # Functions and table functions DuckDB binds from syntax with no call head:
-# literal constructors, keyword forms, UNPIVOT and a Parquet file named as a
-# relation. A caller macro of such a name replaces the function wherever that
-# syntax stands, which a head scan cannot see. The names are those DuckDB 1.5
-# and 2.0 reach from the probes of `tests/testthat/helper-duckdb-reach.R`.
-# Operators are decided by duckdb_operator_name() instead, and the statements
-# of `duckdb_rewritten_statements` by their keyword.
+# literal constructors, keyword forms, UNPIVOT, a Parquet file named as a
+# relation, and `duckdb_log_contexts` and `row_number`, which DuckDB's
+# `duckdb_logs()` binds by name. A caller macro of such a name replaces the
+# function wherever that syntax stands, which a head scan cannot see.
+# `test-duckdb-implicit-reach.R` holds the names against what DuckDB 1.5 and
+# 2.0 reach, and names the ones it cannot measure. Operators are decided by
+# duckdb_operator_name() instead, and the statements of
+# `duckdb_rewritten_statements` by their keyword.
 duckdb_implicit_functions <- c(
   "count_star", "list_value", "struct_pack", "row", "map", "date_part",
   "timezone", "ltrim", "rtrim", "regexp_full_match", "like_escape",
   "ilike_escape", "not_like_escape", "not_ilike_escape", "list_apply",
-  "list_filter", "contains", "array_agg", "to_millennia", "to_centuries",
-  "to_decades", "to_years", "to_quarters", "to_months", "to_weeks", "to_days",
-  "to_hours", "to_minutes", "to_seconds", "to_milliseconds", "to_microseconds",
-  "trunc", "factorial", "!__postfix", "regexp_matches", "unpivot_list",
-  "parquet_scan"
+  "list_filter", "struct_extract", "contains", "array_agg", "to_millennia",
+  "to_centuries", "to_decades", "to_years", "to_quarters", "to_months",
+  "to_weeks", "to_days", "to_hours", "to_minutes", "to_seconds",
+  "to_milliseconds", "to_microseconds", "trunc", "factorial", "!__postfix",
+  "regexp_matches", "unpivot_list", "parquet_scan", "duckdb_log_contexts",
+  "row_number"
 )
 
-# Statements DuckDB rewrites into a query over functions of its own choosing,
-# which differ between 1.5 and 2.0: `min` and `approx_quantile` behind
-# SUMMARIZE, `duckdb_tables` and `in_search_path` behind SHOW (ADR 0020).
-duckdb_rewritten_statements <- c("show", "describe", "summarize")
+# Keywords of the statements DuckDB rewrites into a query over functions of
+# its own choosing (ADR 0020). `desc` is DuckDB's spelling of `describe`.
+duckdb_rewritten_statements <- c("show", "describe", "desc", "summarize")
 
-# Whether `tokens` hold a rewritten statement's keyword while a caller macro
-# exists for its query to reach. Reads this operation's catalog snapshot only
-# where the keyword stands.
+# Whether `tokens` hold a rewritten statement while a caller macro exists for
+# its query to reach. The three reserved words stand for something else only
+# as an alias after `as` or as a qualified name; `desc` is also a sort
+# direction, so it counts where a statement can start: first, after `(`, or
+# after a set operator. Reads this operation's catalog snapshot only where a
+# statement is found.
 duckdb_rewrite_reaches_macro <- function(tokens, catalog) {
-  any(tokens %in% duckdb_rewritten_statements & !attr(tokens, "quoted")) &&
-    any(duckdb_caller_macros(catalog()))
+  quoted <- attr(tokens, "quoted")
+  # The unquoted token `back` places before each of `at`, or "" before the
+  # first.
+  previous <- function(at, back = 1L) {
+    from <- at - back
+    ifelse(from >= 1L & !quoted[pmax(1L, from)], tokens[pmax(1L, from)], "")
+  }
+  reserved <- which(tokens %in% setdiff(duckdb_rewritten_statements, "desc") &
+                      !quoted)
+  described <- which(tokens == "desc" & !quoted)
+  operators <- c("union", "except", "intersect")
+  # UNION, UNION ALL, UNION BY NAME and UNION ALL BY NAME.
+  after_operator <- previous(described) %in% operators |
+    (previous(described) %in% c("all", "distinct") &
+       previous(described, 2L) %in% operators) |
+    (previous(described) == "name" & previous(described, 2L) == "by" &
+       (previous(described, 3L) %in% operators |
+          previous(described, 4L) %in% operators))
+  statement <- !all(previous(reserved) %in% c("as", ".")) ||
+    any(described == 1L | previous(described) == "(" | after_operator)
+  statement && any(duckdb_caller_macros(catalog()))
 }
 
 # Whether each of `names` consists only of operator characters. DuckDB binds

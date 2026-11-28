@@ -542,23 +542,32 @@ including the comparison operators DuckDB 2.0 does not reach from syntax,
 since excluding them would be a second list measured on one version. The other
 names are one hand-kept constant, `duckdb_implicit_functions`. A test holds it
 from DuckDB's side (#1843): it shadows every function name of the system
-catalog with a caller macro, binds a set of syntax forms, every function name
-and keyword as a bare word and each as a call head, and fails when a
-statement reaches a macro the scan admits, or when a listed name is reached by
-none of them. The same reaches are asked again through a stored view of each
+catalog with a caller macro, binds a set of syntax forms, each of DuckDB's own
+views, every function name and keyword as a bare word and each as a call
+head, and fails when a statement reaches a macro the scan admits, or when a
+listed name is reached by none of them and is not one the test names as beyond
+the version or the extensions it runs with. The same reaches are asked again through a stored view of each
 form, since DuckDB rewrites a view's definition. What stays admitted is a name
 reached only from syntax those forms do not hold.
 
-`SHOW`, `DESCRIBE` and `SUMMARIZE` are decided by their keyword instead: an
-authored statement or a stored view holding one is refused while the snapshot
-holds any caller macro. DuckDB rewrites each into a query over functions of its
+`SHOW`, `DESCRIBE`, its spelling `DESC`, and `SUMMARIZE` are decided by their
+keyword instead: an authored statement or a stored view holding one is refused
+while the snapshot holds any caller macro. The three reserved words stand for
+something else only as an alias after `AS` or as a qualified name. `DESC` is
+also a sort direction, so it counts where a statement can start: first, after
+an opening parenthesis, or after a set operator, which is where DuckDB 2.0
+accepts one. DuckDB rewrites each into a query over functions of its
 own choosing, and the two supported versions choose differently -- `min` and
 `approx_quantile` behind `SUMMARIZE` on both, `in_search_path` and
 `current_database` behind `SHOW` on 1.5, `pragma_show` on 2.0 -- so their names
 are DuckDB's to change. Listing them was rejected for a second reason: a caller
 macro named `current_database` would refuse every statement on the connection,
 where a statement holding none of these keywords does not reach it. The rule
-names three statements rather than a syntax form, so it mirrors no grammar. A name only one supported version reaches from syntax, such as
+names three statements rather than a syntax form, so it mirrors no grammar.
+
+A name of two parts whose schema no search path holds is looked up in DuckDB's
+own catalog last, as DuckDB resolves `information_schema.tables`, so that such
+a view is read as the stored view it is. A name only one supported version reaches from syntax, such as
 `factorial` behind postfix `!` on DuckDB 2.0 (#1818), is listed for every
 version, and the test names the ones the version it runs on does not reach. The check reads only a snapshot the operation already took and adds
 no query, so a statement that names no relation and no call head binds without
