@@ -561,6 +561,7 @@ local_assigned_summary_value <- function(value, name, group_vars,
   # The carrier expands the stored columns of a frame subclass.
   output_names <- if (frame) attr(value, "names", exact = TRUE) else name
   record_local_summary_aliases(output_names, alias_state, position)
+  check_local_share_value(value, if (frame) output_names, alias_state)
   if (frame) {
     # The produced names, not the constructor's argument names, are the
     # earlier aliases a later share source may not read (ADR 0010).
@@ -790,6 +791,7 @@ local_checked_glue_name <- function(name_rules) {
     )
     with_generated_summary_check({
       check_share_alias_reads(names, name_rules$source_reads)
+      check_local_share_value(NULL, names, name_rules$alias_state)
       record_local_summary_aliases(
         names, name_rules$alias_state, name_rules$position
       )

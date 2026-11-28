@@ -935,6 +935,29 @@ check_local_share_bindings <- function(result, bindings, markers, kinds) {
   result
 }
 
+# Refuses one ordinary local summary as it is evaluated, under ADR 0010's
+# amendment *the walk reads the callees it knows, and that set is open*:
+# `value` is what it returned, or `NULL` where only its names are known, and
+# `output_names` the columns it produces. `state` is the branch's selection
+# state, `NULL` or holding no binding when the call has no local share.
+check_local_share_value <- function(value, output_names, state) {
+  bindings <- state$share_bindings
+  if (is.null(bindings)) {
+    return(invisible(NULL))
+  }
+  held <- held_share_marker(value, state$share_markers)
+  if (!is.null(held)) {
+    name <- names(bindings)[match(held, unname(bindings))]
+    abort_earlier_share_use(name, state$share_kinds[[name]])
+  }
+  conflict <- intersect(output_names, names(bindings))
+  if (length(conflict) > 0L) {
+    name <- conflict[[1L]]
+    abort_share_name_conflict(name, state$share_kinds[[name]])
+  }
+  invisible(NULL)
+}
+
 # The alias whose marker `value` holds at any depth of its list structure, or
 # `NULL` when it holds none.
 held_share_marker <- function(value, markers) {

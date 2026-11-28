@@ -743,10 +743,15 @@ Two rules finish the contract:
 - A value made from the token without holding it, such as the text a template
   renders for it, is not a number and is left.
 
-The binding is checked where dplyr leaves it, directly after the alias: a
-same-named column anywhere else, or one not holding the token, was created by
-an ordinary summary, and is the name conflict it was before. The walk stays as
-it is. It is what gives the written spellings their condition before anything
+Both rules, and the name conflict an ordinary summary creating a share's name
+was before, are applied to each ordinary summary as it is evaluated: a frame
+it returns, or the names a top-level `across()` builds. The result alone
+cannot apply them, because dplyr replaces a same-named column where it stands,
+so a later frame re-emitting the token under the share's name leaves the
+binding's own column. The result is checked afterwards for what no evaluated
+summary reported: a binding column not directly after its alias, or not
+holding the token, is the name conflict, and any other column holding a token
+is the earlier-share use. The walk stays as it is. It is what gives the written spellings their condition before anything
 is evaluated, and it no longer has to be complete for the result to be right.
 A `dtplyr` input has no marker and needs none: there the same reads end in
 "object not found" or a Package refusal.

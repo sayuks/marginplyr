@@ -72,6 +72,27 @@ test_that("a later summary whose value holds a share's marker is refused", {
   expect_s3_class(nested, "marginplyr_error")
 })
 
+test_that("a later frame re-emitting a share's marker under its name is refused", {
+  data <- tibble::tibble(g = c("a", "a", "b"), v = c(1, 2, 4),
+                         sh = c(100, 200, 300))
+  error <- expect_error(summarize_with_margins(
+    data, s = sum(v), sh = share_of_total(s),
+    tibble::tibble(sh = glue::identity_transformer("sh", environment())),
+    w = 2, .grouping = rollup(g)
+  ), "cannot use an earlier Total share (`sh`)", fixed = TRUE)
+  expect_s3_class(error, "marginplyr_error")
+
+  # A top-level across() is not wrapped, so the name it builds is what refuses.
+  across <- expect_error(summarize_with_margins(
+    data, s = sum(v), sh = share_of_total(s),
+    dplyr::across(v, ~ glue::identity_transformer("sh", environment()),
+                  .names = "{substr('shx', 1, 2)}"),
+    .grouping = rollup(g)
+  ), "Total-share output name `sh` conflicts with an ordinary summary",
+  fixed = TRUE)
+  expect_s3_class(across, "marginplyr_error")
+})
+
 test_that("a frame creating a share's name is still a name conflict", {
   plain <- tibble::tibble(g = c("a", "a", "b"), v = c(1, 2, 4))
   shadowed <- tibble::tibble(g = c("a", "a", "b"), v = c(1, 2, 4),
