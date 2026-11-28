@@ -917,8 +917,16 @@ check_local_share_bindings <- function(result, bindings, markers, kinds) {
     ))) {
       abort_share_name_conflict(name, kinds[[name]])
     }
-    names(result)[names(result) == name] <- alias
   }
+  # Copied and subset rather than renamed: `[.sf` keeps an sf result's
+  # attribute-geometry relation, which `names<-` leaves stale and
+  # `rename.sf()` misaligns when the geometry column comes first.
+  columns <- names(result)
+  for (name in names(bindings)) {
+    result[[bindings[[name]]]] <- result[[name]]
+  }
+  columns[match(names(bindings), columns)] <- unname(bindings)
+  result <- result[columns]
   for (column in setdiff(names(result), unname(bindings))) {
     held <- held_share_marker(result[[column]], markers)
     if (!is.null(held)) {
