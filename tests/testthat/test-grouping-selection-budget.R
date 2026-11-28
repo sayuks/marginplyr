@@ -668,7 +668,7 @@ test_that("unknown constructors suspend before unsafe dtplyr work", {
       }, caller)
     } else if (binding == "promise") {
       delayedAssign("rollup", {
-        calls <<- calls + 1L
+        calls <- calls + 1L
         choose
       }, assign.env = caller)
     } else {

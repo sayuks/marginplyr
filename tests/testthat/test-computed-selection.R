@@ -404,3 +404,41 @@ test_that("a predicate's condition with no message stays its own", {
     class = "registry_offline"
   )
 })
+
+# `tolower(key)` resolves here to `value`, a column (#1840).
+test_that("a rename refusal is kept beside a computed-looking part", {
+  data <- data.frame(
+    region = c("E", "W"), store = c("A", "B"), value = 1:2, key = 1:2
+  )
+  key <- "value"
+  for (verb in names(forwarded_verbs)) {
+    expect_error(
+      forwarded_verbs[[verb]](
+        data, c(r = region, tolower(key)), rollup(store)
+      ),
+      "Can't rename `.by` column:", fixed = TRUE, class = "marginplyr_error"
+    )
+  }
+  for (constructor in grouping_constructor_names()) {
+    spec <- rlang::inject(rlang::call2(
+      constructor, quote(c(r = region, tolower(key)))
+    ))
+    expect_error(
+      inspect_grouping(data, .grouping = !!spec),
+      "Can't rename Margin dimension:", fixed = TRUE,
+      class = "marginplyr_error"
+    )
+  }
+  nested <- rlang::exprs(
+    grouping_sets(rollup(c(r = region, tolower(key)))),
+    grouping_sets(store, rollup(c(r = region, tolower(key)))),
+    cube(store, c(r = region, tolower(key)))
+  )
+  for (spec in nested) {
+    expect_error(
+      inspect_grouping(data, .grouping = !!spec),
+      "Can't rename Margin dimension:", fixed = TRUE,
+      class = "marginplyr_error"
+    )
+  }
+})

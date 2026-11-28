@@ -54,7 +54,7 @@ test_that("typed derived metadata does not look up active or lazy brackets", {
         binding_env <- new.env(parent = environment())
         if (lazy) {
           delayedAssign(binding, {
-            lookups <<- lookups + 1L
+            lookups <- lookups + 1L
             base::`[`
           }, assign.env = binding_env)
         } else {
