@@ -432,6 +432,14 @@ new_grouping_spec <- function(type, args) {
 #' @exportS3Method
 #' @noRd
 print.margin_grouping_spec <- function(x, ...) {
+  cat(paste0(format(x), "\n"), sep = "")
+  invisible(x)
+}
+
+# The printed lines: a header naming the kind, then the constructor call.
+#' @exportS3Method
+#' @noRd
+format.margin_grouping_spec <- function(x, ...) {
   # The kind is read through `grouping_spec_kind()`, the reader the two guards
   # that can be handed an unvalidated object share, because this site asks
   # their question of the same field: whether the object can be asked for a
@@ -453,16 +461,14 @@ print.margin_grouping_spec <- function(x, ...) {
   # amendment for a specification the printer could not read decides that
   # count, and states what reading through a shared function costs.
   kind <- grouping_spec_kind(x)
-  printed <- grouping_kind_printed_name(kind)
-  cat(
-    "<marginplyr Grouping specification: ",
-    printed,
-    ">\n",
-    sep = ""
+  c(
+    paste0(
+      "<marginplyr Grouping specification: ",
+      grouping_kind_printed_name(kind),
+      ">"
+    ),
+    grouping_spec_call_lines(x, kind)
   )
-  call_lines <- grouping_spec_call_lines(x, kind)
-  cat(paste0(call_lines, "\n", recycle0 = TRUE), sep = "")
-  invisible(x)
 }
 
 # The constructor call a specification was written as, as the lines it
@@ -470,18 +476,55 @@ print.margin_grouping_spec <- function(x, ...) {
 # Where the lines are written, and why the argument list is read inside a
 # catch, are ADR 0008's amendment for a printed specification's call.
 grouping_spec_call_lines <- function(x, kind) {
+  call <- grouping_spec_call(x, kind)
+  if (is.null(call) || length(call) == 1L) {
+    return(character())
+  }
+  rlang::expr_deparse(call)
+}
+
+# The constructor call `x` was written as, or `NULL` where no rule names `kind`
+# or its argument list cannot be read. `kind` is a value already read from `x`.
+grouping_spec_call <- function(x, kind) {
   rule <- find_grouping_kind_rule(kind)
   if (is.null(rule)) {
-    return(character())
+    return(NULL)
   }
   args <- tryCatch(x$args, error = function(cnd) NULL)
-  if (!is.list(args) || length(args) == 0L ||
-        !all(vapply(args, rlang::is_quosure, logical(1)))) {
-    return(character())
+  if (!is.list(args) || !all(vapply(args, rlang::is_quosure, logical(1)))) {
+    return(NULL)
   }
-  rlang::expr_deparse(
-    rlang::call2(rule$constructor, !!!lapply(args, rlang::quo_squash))
+  rlang::call2(
+    rule$constructor,
+    !!!lapply(args, function(arg) {
+      inline_grouping_spec_calls(rlang::quo_squash(arg))
+    })
   )
+}
+
+# `expr` with each specification injected into it as a value replaced by that
+# specification's own call, at any depth. rlang deparses such a value as a
+# placeholder that names no constructor and does not parse (#1823); one whose
+# call cannot be read keeps it. Parts are replaced in place, so the parentheses
+# the caller wrote stay where they were.
+inline_grouping_spec_calls <- function(expr) {
+  if (inherits(expr, "margin_grouping_spec")) {
+    call <- grouping_spec_call(expr, grouping_spec_kind(expr))
+    if (is.null(call)) {
+      return(expr)
+    }
+    return(call)
+  }
+  if (!is.call(expr)) {
+    return(expr)
+  }
+  for (index in seq_along(expr)) {
+    if (inherits(expr[[index]], "margin_grouping_spec") ||
+          is.call(expr[[index]])) {
+      expr[[index]] <- inline_grouping_spec_calls(expr[[index]])
+    }
+  }
+  expr
 }
 
 # The name a kind prints under, or the empty string where it has none. The

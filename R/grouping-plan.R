@@ -229,9 +229,9 @@ abort_invalid_grouping_spec <- function() {
 # and the non-colliding spelling answering that question differently is the
 # asymmetry #262 was found through. Every other reader of a kind in this file
 # sits behind the guard above, which is what establishes there is one to read.
-# The third sharer is `print.margin_grouping_spec()`, in `R/grouping-spec.R`,
-# which sits behind no guard because a print method has none to sit behind: it
-# joined the two this comment was written for in #264.
+# The third sharer is `format.margin_grouping_spec()`, in `R/grouping-spec.R`,
+# which the print method reads through and which sits behind no guard because a
+# printer has none to sit behind.
 #
 # The catch is narrow in what it decides and not in what it swallows, exactly
 # as the evaluation catch in `check_ambiguous_nested_name()` is: an object that
@@ -339,9 +339,9 @@ resolve_by_selection <- function(by_quo, data_proxy) {
           cnd
         )
       }
-      computed <- computed_selection_leaf(
+      computed <- computed_selection_failure(computed_selection_leaves(
         rlang::quo_get_expr(by_quo), selection_proxy_names(data_proxy)
-      )
+      ), cnd, rlang::quo_get_env(by_quo))
       if (!is.null(computed)) {
         abort_computed_by(computed)
       }
@@ -3529,9 +3529,9 @@ resolve_grouping_selection <- function(arg, data_proxy) {
         if (is_unsupported_predicate(cnd)) {
           abort_selection_predicate(label, cnd)
         }
-        computed <- computed_selection_leaf(
+        computed <- computed_selection_failure(computed_selection_leaves(
           nested_arg_expr(arg), selection_proxy_names(data_proxy)
-        )
+        ), cnd, rlang::quo_get_env(arg))
         if (!is.null(computed)) {
           abort_computed_grouping_arg(computed)
         }
@@ -3545,7 +3545,9 @@ resolve_grouping_selection <- function(arg, data_proxy) {
 # Whether a name `arg` reads is bound, where its quosure looks it up, to a
 # Grouping specification. A binding is read only where reading it evaluates
 # nothing tidyselect has not: an active binding is passed over, since reading
-# it would call it again.
+# it would call it again, and so is a promise, which tidyselect has not forced
+# -- a wrapper's argument named like a column it resolved as that column
+# (#1803).
 selection_names_grouping_spec <- function(arg) {
   env <- rlang::quo_get_env(arg)
   any(vapply(all.vars(nested_arg_expr(arg)), function(name) {
@@ -3555,6 +3557,7 @@ selection_names_grouping_spec <- function(arg) {
     }
     !identical(owner, emptyenv()) &&
       !rlang::env_binding_are_active(owner, name) &&
+      !rlang::env_binding_are_lazy(owner, name) &&
       inherits(rlang::env_get(owner, name), "margin_grouping_spec")
   }, logical(1)))
 }
@@ -3868,27 +3871,22 @@ selection_proxy_names <- function(data_proxy) {
   names(tidyselect::tidyselect_data_proxy(data_proxy))
 }
 
-# The first part of a failed selection that computes a value from columns of
-# the input, as `list(expr, columns)`, or `NULL` where there is none. tidyselect
-# evaluates such a call without the columns in scope, so it failed for a
-# reason its own message cannot name. The walk descends the operators
+# Every part of a failed selection that computes a value from columns of the
+# input, each as `list(expr, columns)`, in the order tidyselect evaluates them.
+# This reads the spelling alone; which part, if any, explains the failure is
+# `computed_selection_failure()`'s question. The walk descends the operators
 # tidyselect walks. A selection helper, a constructor, a pronoun subscript, an
 # operator whatever its qualification -- whose failure is tidyselect's own --
 # and a call naming no column are not computed columns.
-computed_selection_leaf <- function(expr, data_vars) {
+computed_selection_leaves <- function(expr, data_vars) {
   expr <- unparenthesized_value(expr)
   if (is_selection_walk_call(expr)) {
-    parts <- static_call_args(expr)
-    for (index in seq_along(parts)) {
-      found <- computed_selection_leaf(parts[[index]], data_vars)
-      if (!is.null(found)) {
-        return(found)
-      }
-    }
-    return(NULL)
+    return(unlist(lapply(
+      static_call_args(expr), computed_selection_leaves, data_vars = data_vars
+    ), recursive = FALSE))
   }
   if (!is_nameable_call(expr)) {
-    return(NULL)
+    return(list())
   }
   name <- static_call_name(expr)
   if (!is.null(name) && name %in% c(
@@ -3896,19 +3894,118 @@ computed_selection_leaf <- function(expr, data_vars) {
     selection_walk_operators(), selection_refused_operators(),
     "(", "$", "[[", "~"
   )) {
-    return(NULL)
+    return(list())
   }
   columns <- intersect(all.vars(expr), data_vars)
   if (length(columns) == 0L) {
+    return(list())
+  }
+  list(list(expr = expr, columns = columns))
+}
+
+# The part among `computed` (from `computed_selection_leaves()`) that the
+# computed-expression refusal explains `cnd`, the selection's failure, by, or
+# `NULL`; `env` is where the selection's quosure is evaluated. Where
+# `failed_selection_part()` names the part that raised the failure, that part
+# alone is decided; where it finds that no computed part raised it, none is;
+# otherwise every part is. R's unbound-object error ending
+# the chain is explained by the first decided part naming that column. Any
+# other failure is explained by the first decided part only when no decided
+# part's head is the caller's own: a primitive, a `pkg::fun` spelling, or a
+# function closing over a namespace, such as `format(dt)` over a column named
+# like a function. Where a caller's own function is among them, the failure
+# may be its own condition and is re-raised (#1802).
+#
+# R's unbound-object error carries no class, so it is recognised by the message
+# R gives for the same symbol in `emptyenv()`, which follows the session's
+# language as the original did. The head is read through
+# `selection_argument_function()`, which forces no caller binding and answers
+# `NULL`, read here as the caller's, for one it would have to force.
+computed_selection_failure <- function(computed, cnd, env) {
+  if (length(computed) == 0L) {
     return(NULL)
   }
-  list(expr = expr, columns = columns)
+  failed <- failed_selection_part(computed, cnd)
+  if (isFALSE(failed)) {
+    return(NULL)
+  }
+  if (!is.null(failed)) {
+    computed <- list(failed)
+  }
+  chain <- condition_chain(cnd)
+  message <- conditionMessage(chain[[length(chain)]])
+  for (part in computed) {
+    unbound <- vapply(part$columns, function(column) {
+      tryCatch(
+        eval(as.symbol(column), emptyenv()),
+        error = conditionMessage
+      )
+    }, character(1))
+    # A condition need not carry a message string.
+    if (rlang::is_string(message) && message %in% unbound) {
+      return(part)
+    }
+  }
+  callers <- vapply(computed, function(part) {
+    if (!is.null(static_call_ns(part$expr))) {
+      return(FALSE)
+    }
+    fn <- selection_argument_function(part$expr, env, character())
+    is.null(fn) || !(is.primitive(fn) || isNamespace(environment(fn)))
+  }, logical(1))
+  if (any(callers)) NULL else computed[[1L]]
+}
+
+# The part among `computed` that tidyselect reports as the one whose evaluation
+# failed; `FALSE` where its chain shows that none of them raised it; `NULL`
+# where it cannot tell. A value a part returned and tidyselect refused carries
+# the part's label as the subscript error's `subscript_arg`; an error raised
+# while evaluating a part is wrapped by tidyselect in an "In argument"
+# condition whose message is rebuilt here as tidyselect builds it, since the
+# label is held nowhere else. Either naming another part answers `FALSE`. A
+# chain holding neither cannot tell: a `where()` predicate's error and the
+# error of a function a namespace part returned, which tidyselect applies as a
+# predicate, both reach it unwrapped. tidyselect leaves the wrapper's message
+# empty for a condition whose call is the bare head, so such a failure names
+# no part.
+failed_selection_part <- function(computed, cnd) {
+  labels <- vapply(
+    computed, function(part) rlang::as_label(part$expr), character(1)
+  )
+  wrapper <- function(code) {
+    cli::ansi_strip(cli::format_inline("In argument: {.code {code}}."))
+  }
+  wrapped <- vapply(labels, wrapper, character(1))
+  around <- strsplit(wrapper("\u0001"), "\u0001", fixed = TRUE)[[1L]]
+  chain <- condition_chain(cnd)
+  for (link in chain) {
+    if (inherits(link, "vctrs_error_subscript")) {
+      arg <- link$subscript_arg
+      found <- match(arg, labels)
+      named <- is.character(arg) && length(arg) == 1L && nzchar(arg)
+    } else if (is.character(link$message) && length(link$message) == 1L) {
+      message <- cli::ansi_strip(link$message)
+      found <- match(message, wrapped)
+      named <- length(around) == 2L && startsWith(message, around[[1L]]) &&
+        endsWith(message, around[[2L]])
+    } else {
+      next
+    }
+    if (length(found) == 1L && !is.na(found)) {
+      return(computed[[found]])
+    }
+    if (isTRUE(named)) {
+      return(FALSE)
+    }
+  }
+  NULL
 }
 
 # Two refusals rather than one with the subject interpolated, because the
 # subject is markup in one and prose in the other. The failure they replace is
-# not carried as a cause: it is the lookup of a column the expression names,
-# which is what the refusal explains.
+# not carried as a cause: `computed_selection_failure()` admits only a
+# failure the expression's own spelling explains, which is what the refusal
+# states.
 abort_computed_by <- function(computed) {
   # Read only from the cli template below, which codetools cannot see.
   # nolint start: object_usage_linter.

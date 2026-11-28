@@ -1,16 +1,44 @@
+# Code points beyond ASCII that DuckDB 1.5 and 2.0 read as whitespace between
+# tokens, as measured there; every other character from U+0080 up is an
+# identifier character in both.
+duckdb_unicode_spaces <- c(
+  0xa0, 0x2000:0x200b, 0x202f, 0x205f, 0x2060, 0x3000, 0xfeff
+)
+
+# PCRE fragments for those spaces and for the identifier characters DuckDB
+# reads unquoted. A pattern using them starts with `(*UTF)`.
+duckdb_unicode_space_class <- function() {
+  paste0(sprintf("\\x{%x}", duckdb_unicode_spaces), collapse = "")
+}
+duckdb_identifier_pattern <- function() {
+  wide <- paste0(
+    "(?![", duckdb_unicode_space_class(), "])[\\x{80}-\\x{10ffff}]"
+  )
+  paste0("(?:[A-Za-z_]|", wide, ")(?:[A-Za-z0-9_$]|", wide, ")*")
+}
+
+# Whether each unquoted token is an identifier DuckDB reads unquoted.
+duckdb_identifier_token <- function(tokens) {
+  grepl(paste0("(*UTF)^", duckdb_identifier_pattern(), "$"), tokens,
+        perl = TRUE)
+}
+
 # SQL lexical tokens for reader metadata guards, using ASCII identifier keys.
 # Quoted values stay opaque and nested comments are discarded. A string
 # continued across a line break, which DuckDB concatenates, is one token. A
 # backtick span is a quoted identifier where duckdb_backtick_identifiers() says
-# DuckDB reads it as one.
+# DuckDB reads it as one. SQL that is not valid UTF-8 after conversion is
+# refused rather than read.
 duckdb_metadata_tokens <- function(sql) {
+  sql <- enc2utf8(sql)
+  if (!all(validUTF8(sql))) abort_duckdb_unreadable_sql()
   # Whitespace holding a line break, optionally after a line comment.
   continue <- "(?:[ \\t\\f]*(?:--[^\\r\\n]*)?[\\r\\n])+[[:space:]]*"
   escaped <- "'(?:[^'\\\\]|\\\\.|'')*'"
   plain <- "'(?:[^']|'')*'"
   backtick <- duckdb_backtick_identifiers()
   pattern <- paste0(
-    "(?s)",
+    "(*UTF)(?s)",
     "(?<comment>/\\*(?:[^*/]|/(?!\\*)|\\*(?!/)|(?&comment))*\\*/)",
     "|--[^\\r\\n]*",
     "|[eE]", escaped, "(?:", continue, escaped, ")*",
@@ -18,7 +46,8 @@ duckdb_metadata_tokens <- function(sql) {
     "|(?<tag>\\$[A-Za-z_0-9]*\\$).*?\\k<tag>",
     '|"(?:[^"]|"")*"',
     if (backtick) "|`(?:[^`]|``)*`",
-    "|[[:alpha:]_][[:alnum:]_$]*|:=|[^[:space:]]"
+    "|", duckdb_identifier_pattern(),
+    "|:=|[^[:space:]", duckdb_unicode_space_class(), "]"
   )
   tokens <- regmatches(sql, gregexpr(pattern, sql, perl = TRUE))[[1L]]
   tokens <- tokens[!startsWith(tokens, "/*") & !startsWith(tokens, "--")]
@@ -154,7 +183,7 @@ duckdb_metadata_relations <- function(tokens, functions = FALSE) {
     frame <- frames[[n]]
     # WITH's final definition precedes the main query's TABLE/SELECT position.
     if (i %in% query_starts) frame$start <- TRUE
-    qualified <- grepl("^[[:alpha:]_][[:alnum:]_$]*$", token) &&
+    qualified <- duckdb_identifier_token(token) &&
       ((i > 1L && tokens[[i - 1L]] == "." && !quoted[[i - 1L]]) ||
          (frame$expect && i < length(tokens) &&
             tokens[[i + 1L]] == "." && !quoted[[i + 1L]]))
@@ -331,9 +360,8 @@ duckdb_relation_parts <- function(tokens, position, functions = FALSE) {
   while (last + 2L <= length(tokens) && tokens[[last + 1L]] == "." &&
            !quoted[[last + 1L]]) {
     part <- tokens[[last + 2L]]
-    if (!quoted[[last + 2L]] && !grepl(
-      "^[[:alpha:]_][[:alnum:]_$]*$|^e?'|^\\$[a-z_0-9]*\\$", part
-    )) break
+    if (!quoted[[last + 2L]] && !duckdb_identifier_token(part) &&
+          !grepl("^e?'|^\\$[a-z_0-9]*\\$", part)) break
     last <- last + 2L
   }
   function_head <- last < length(tokens) && tokens[[last + 1L]] == "(" &&
@@ -571,24 +599,33 @@ duckdb_value_function_heads <- function(tokens) {
           !unquoted(-1L, "as"))
 }
 
-# Functions DuckDB binds from syntax with no call head: operators, literal
-# constructors and keyword forms, as measured on DuckDB 1.5 and 2.0. A caller
-# macro of such a name replaces the function wherever that syntax stands,
-# which a head scan cannot see.
+# Functions DuckDB binds from syntax with no call head: literal constructors
+# and keyword forms, as measured on DuckDB 1.5 and 2.0. A caller macro of
+# such a name replaces the function wherever that syntax stands, which a head
+# scan cannot see. Operators are decided by duckdb_operator_name() instead.
 duckdb_implicit_functions <- c(
-  "+", "-", "*", "/", "%", "//", "^", "**", "||", "<<", ">>", "&", "|", "~",
-  "@", "^@", "&&", "@>", "<@", "<->", "<=>", "~~", "!~~", "~~*", "!~~*", "~~~",
   "count_star", "list_value", "struct_pack", "row", "map", "date_part",
   "timezone", "ltrim", "rtrim", "regexp_full_match", "like_escape",
   "ilike_escape", "list_apply", "contains", "to_millennia", "to_centuries",
   "to_decades", "to_years", "to_quarters", "to_months", "to_weeks", "to_days",
-  "to_hours", "to_minutes", "to_seconds", "to_milliseconds", "to_microseconds"
+  "to_hours", "to_minutes", "to_seconds", "to_milliseconds", "to_microseconds",
+  "trunc", "factorial", "regexp_matches"
 )
 
-# Table functions that bind SQL text passed as a value, refused by name in
-# authored SQL and in stored views alike (ADR 0020). Other table functions are
-# admitted; macros and inferring readers are refused by their own checks.
-duckdb_opaque_table_functions <- c("query", "query_table")
+# Whether each of `names` consists only of operator characters. DuckDB binds
+# an operator token it has no rule of its own for as the function of that
+# name, so a caller can name a macro any such token reaches (ADR 0020).
+duckdb_operator_name <- function(names) {
+  grepl("^[-+*/<>=~!@#%^&|`?]+$", names)
+}
+
+# Table functions that bind a statement passed as a value, as SQL text or in
+# the json extension's serialized form, refused by name in authored SQL and in
+# stored views alike (ADR 0020). Other table functions are admitted; macros and
+# inferring readers are refused by their own checks.
+duckdb_opaque_table_functions <- c(
+  "query", "query_table", "json_execute_serialized_sql"
+)
 
 # Refuse view work whose safety cannot be established from captured definitions.
 abort_duckdb_view_metadata <- function() {
@@ -621,13 +658,28 @@ abort_duckdb_unstored_view <- function() {
   ))
 }
 
+# Refuse SQL the metadata scan cannot read as DuckDB does, before binding it.
+abort_duckdb_unreadable_sql <- function() {
+  abort_marginplyr(c(
+    "Can't safely determine column metadata for this DuckDB query.",
+    i = paste0(
+      "Its SQL is not valid UTF-8, so it can't be checked for source work ",
+      "without binding it."
+    ),
+    i = paste0(
+      "Convert the SQL to UTF-8, or collect the input explicitly with ",
+      "{.code dplyr::collect()} and pass the resulting data frame."
+    )
+  ))
+}
+
 # Refuse authored calls whose source dependencies are opaque before binding.
 abort_duckdb_call_metadata <- function() {
   abort_marginplyr(c(
     "Can't safely determine column metadata for this DuckDB call.",
     i = paste0(
-      "A macro, query() or query_table() call could hide source work ",
-      "during binding."
+      "A macro, or a table function such as query() that binds a statement ",
+      "given as a value, could hide source work during binding."
     ),
     i = paste0(
       "Call {.code dplyr::compute()} on the input first, so the Margin verb ",
@@ -637,21 +689,24 @@ abort_duckdb_call_metadata <- function() {
   ))
 }
 
+# Keywords an unquoted, unqualified head before `(` spells as syntax, which no
+# caller macro of that name replaces there on DuckDB 1.5 or 2.0. `by` is not
+# one: 2.0 binds `by(v)` as a call.
+duckdb_call_syntax <- c(
+  "select", "from", "where", "on", "having", "qualify", "in", "exists", "as",
+  "with", "values", "using", "group", "order", "distinct", "not", "and", "or"
+)
+
 # Identify authored function calls without treating SQL declarations as calls.
 # The caller supplies this operation's catalog-only snapshot, never a binding.
 validate_duckdb_authored_calls <- function(tokens, catalog) {
   quoted <- attr(tokens, "quoted")
   heads <- which(c(tokens[-1L], "") == "(" & !c(quoted[-1L], FALSE))
-  identifier <- grepl(paste0(
-    "(*UTF)^[a-z_\\x{80}-\\x{10ffff}]",
-    "[a-z_0-9$\\x{80}-\\x{10ffff}]*$"
-  ), tokens[heads], perl = TRUE)
-  syntax <- c("select", "from", "where", "on", "having", "qualify", "in",
-              "exists", "as", "with", "values", "using",
-              "group", "by", "order", "distinct", "not", "and", "or")
+  identifier <- duckdb_identifier_token(tokens[heads])
   qualified <- heads > 1L & tokens[pmax(1L, heads - 1L)] == "."
   heads <- heads[quoted[heads] | (identifier &
-                                    (!tokens[heads] %in% syntax | qualified))]
+                                    (!tokens[heads] %in% duckdb_call_syntax |
+                                       qualified))]
   declarations <- attr(duckdb_metadata_ctes(tokens), "column_declarations")
   relations <- duckdb_metadata_relations(tokens, functions = TRUE)
   for (position in attr(relations, "positions")) {
@@ -665,8 +720,26 @@ validate_duckdb_authored_calls <- function(tokens, catalog) {
   materialized <- tokens[heads] == "materialized" & !quoted[heads] &
     tokens[previous] == "not" & heads > 2L &
     tokens[pmax(1L, heads - 2L)] == "as"
+  # A star stands where a select item starts, qualified or not; elsewhere `*`
+  # multiplies, and its right operand is a call. A numeric literal is lexed in
+  # pieces -- `1_0.` as `1`, `_0`, `.` -- so a name before the dot is a
+  # qualifier only where the item starts before it.
+  item_start <- function(position) {
+    position >= 1L && !quoted[[position]] &&
+      tokens[[position]] %in% c("select", "distinct", "all", ",", "(")
+  }
+  before <- pmax(1L, heads - 2L)
+  qualifier <- heads - 3L
+  qualified_star <- tokens[before] == "." & heads > 4L &
+    vapply(qualifier, function(position) {
+      position >= 1L &&
+        (quoted[[position]] || duckdb_identifier_token(tokens[[position]])) &&
+        item_start(position - 1L)
+    }, logical(1))
   modifier <- tokens[heads] %in% c("exclude", "replace", "rename") &
-    !quoted[heads] & tokens[previous] == "*" & !quoted[previous]
+    !quoted[heads] & tokens[previous] == "*" & !quoted[previous] &
+    heads > 2L & !quoted[before] &
+    (vapply(before, item_start, logical(1)) | qualified_star)
   # Alias column lists and OVER/FILTER clauses follow closing expressions.
   implicit_alias <- heads > 1L & tokens[previous] == ")" & !quoted[previous]
   heads <- heads[!alias & !materialized & !modifier &
@@ -683,7 +756,8 @@ validate_duckdb_authored_calls <- function(tokens, catalog) {
   snapshot <- catalog(read = FALSE)
   if (!is.null(snapshot) && any(
     duckdb_caller_macros(snapshot) &
-      sql_ascii_lower(snapshot$relation_name) %in% duckdb_implicit_functions
+      (sql_ascii_lower(snapshot$relation_name) %in% duckdb_implicit_functions |
+         duckdb_operator_name(snapshot$relation_name))
   )) {
     abort_duckdb_call_metadata()
   }
@@ -713,10 +787,7 @@ validate_duckdb_view_metadata <- function(index, catalog, seen) {
                    !c(attr(body, "quoted")[-1L], FALSE))
   grammar <- catalog()
   noncall <- grammar$relation_name[grammar$kind == "keyword"]
-  identifier <- grepl(paste0(
-    "(*UTF)^[a-z_\\x{80}-\\x{10ffff}]",
-    "[a-z_0-9$\\x{80}-\\x{10ffff}]*$"
-  ), body[heads], perl = TRUE)
+  identifier <- duckdb_identifier_token(body[heads])
   # Stored FunctionExpression names quote every keyword (ADR 0020).
   heads <- heads[attr(body, "quoted")[heads] |
                    (identifier & !body[heads] %in% noncall)]
@@ -807,8 +878,10 @@ validate_duckdb_csv_metadata <- function(
   ))) {
     abort_duckdb_reader_metadata("CSV")
   }
+  # The suffixes naming a JSON replacement scan (ADR 0020).
+  json_suffix <- "[.](json|jsonl|ndjson|geojson|geojsonl)"
   if (any(grepl(
-    "[.](json|jsonl|ndjson)([.](gz|zst))?$|[.](json|jsonl|ndjson)[?]",
+    paste0(json_suffix, "([.](gz|zst))?$|", json_suffix, "[?]"),
     relation_paths
   ))) {
     abort_duckdb_reader_metadata("JSON")

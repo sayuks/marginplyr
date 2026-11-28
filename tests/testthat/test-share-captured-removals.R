@@ -346,6 +346,59 @@ test_that("rlang removals and enclosure setters read as their base spellings", {
   ), reverse_message = "depends on earlier summary alias `prior`")
 })
 
+test_that("rlang's scoped and active binders given zap() remove (#1822)", {
+  reads <- alist(
+    (function(prior) {
+      f <- function() sum(prior)
+      rlang::local_bindings(prior = rlang::zap())
+      f()
+    })(1),
+    (function(prior) {
+      rlang::local_bindings(prior = rlang::zap())
+      sum(prior)
+    })(1),
+    (function(prior) {
+      f <- function() sum(prior)
+      rlang::local_bindings(prior = rlang::zap())
+      7
+    })(1),
+    (function(prior) {
+      rlang::local_bindings(prior = rlang::zap(), .env = environment())
+      sum(prior)
+    })(1),
+    (function(prior) {
+      rlang::local_bindings(prior = rlang::zap(), .frame = environment())
+      sum(prior)
+    })(1),
+    (function(prior) {
+      f <- function() sum(prior)
+      rlang::with_bindings(f(), prior = rlang::zap())
+    })(1),
+    # `.expr` runs after the removal.
+    (function(prior) rlang::with_bindings(sum(prior), prior = rlang::zap()))(1),
+    (function(prior) {
+      rlang::with_bindings(.expr = sum(prior), prior = rlang::zap())
+    })(1),
+    {
+      prior <- 1
+      rlang::with_bindings(sum(prior), prior = rlang::zap())
+    },
+    (function(prior) {
+      rlang::env_bind_active(environment(), prior = rlang::zap())
+      sum(prior)
+    })(1)
+  )
+  expect_share_dependencies(
+    captured_removal_data(), reads,
+    reverse_message = "depends on earlier summary alias `prior`"
+  )
+  skip_if_suggest_absent("data.table")
+  expect_share_dependencies(
+    data.table::as.data.table(captured_removal_data()), reads,
+    reverse_message = "depends on earlier summary alias `prior`"
+  )
+})
+
 # Each source, as `value` after any summaries in `...`, computes `expected`
 # under both share helpers.
 expect_share_source_values <- function(data, sources, expected, ...) {
@@ -387,6 +440,35 @@ test_that("rlang removals without a captured alias stay shareable", {
       prior
     })(1)
   ), 2)
+})
+
+test_that("rlang's scoped binders keep values that remove nothing", {
+  expect_share_dependency_values(captured_removal_data(), alist(
+    (function(prior) {
+      f <- function() sum(prior)
+      rlang::local_bindings(prior = 2)
+      f()
+    })(1),
+    (function(prior) {
+      f <- function() sum(prior)
+      rlang::with_bindings(f(), prior = 2)
+    })(1),
+    (function(prior) rlang::with_bindings(sum(prior), prior = 2))(1),
+    (function(prior) {
+      rlang::env_bind_active(environment(), prior = function() 2)
+      prior
+    })(1)
+  ), 2)
+  data <- data.frame(g = c("a", "b"), x = c(10, 20))
+  expect_share_source_values(data, alist(
+    (function(p) {
+      rlang::local_bindings(p = rlang::zap())
+      sum(x)
+    })(1),
+    (function(p) {
+      rlang::with_bindings(sum(x), p = rlang::zap())
+    })(1)
+  ), c(10, 20, 30))
 })
 
 test_that("a removal or setter held as a value is not followed (#1652)", {

@@ -379,8 +379,6 @@ markers <- list(
     "show_query",
     "collect",
     "Parent shares use a staged lazy query",
-    # The SQL cardinality boundary the share reference links here for.
-    "causes a database error on execution",
     "share_of_total",
     "Completion stays in the lazy input pipeline",
     "Record the SQL marginplyr prepares",
@@ -514,6 +512,10 @@ markers <- list(
     # It reaches the page as prose, so the run quoted carries no apostrophe.
     "packs both results into one data-frame-valued",
     "Lazy execution boundaries",
+    # The SQL cardinality boundary: which source the lazy check catches, and
+    # what every other direct SQL source must return (#1817).
+    "surfaces as a database error when the",
+    "direct SQL source must itself return one",
     # The page documents both denominators, and states that neither completes
     # keys. Losing either would leave one helper without a contract.
     "share_of_total",

@@ -20,12 +20,28 @@ test_that("bulk environment reads retain eager share dependencies", {
   expect_share_dependencies(tibble::as_tibble(data), reads)
 })
 
+# The `as.list()` method and the base functionals that coerce or walk an
+# environment read the mask as `as.list()` does (#1825).
+materialized_mask_reads <- function() {
+  alist(
+    sum(as.list(parent.env(environment()))$prior),
+    sum(base::as.list(parent.env(environment()))[["prior"]]),
+    sum(as.list.environment(parent.env(environment()))$prior),
+    sum(base::as.list.environment(parent.env(environment()))$prior),
+    {
+      mask <- parent.env(environment())
+      sum(as.list.environment(mask)$prior)
+    },
+    sum(lapply(parent.env(environment()), identity)$prior),
+    sum(sapply(parent.env(environment()), identity, simplify = FALSE)$prior),
+    sum(vapply(parent.env(environment()), sum, numeric(1))[["prior"]]),
+    sum(eapply(parent.env(environment()), identity)$prior)
+  )
+}
+
 test_that("environment materialization retains eager share dependencies", {
   data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(100, 300))
-  reads <- alist(
-    sum(as.list(parent.env(environment()))$prior),
-    sum(base::as.list(parent.env(environment()))[["prior"]])
-  )
+  reads <- materialized_mask_reads()
   expect_share_dependencies(data, reads)
   expect_share_dependencies(tibble::as_tibble(data), reads)
 })
@@ -34,10 +50,7 @@ test_that("bulk and materialized mask reads retain data.table dependencies", {
   skip_if_suggest_absent("data.table")
   data <- data.table::data.table(g = c("a", "b"), x = c(1, 3),
                                  prior = c(100, 300))
-  reads <- c(bulk_mask_reads(), alist(
-    sum(as.list(parent.env(environment()))$prior),
-    sum(as.list(parent.env(environment()))[["prior"]])
-  ))
+  reads <- c(bulk_mask_reads(), materialized_mask_reads())
   expect_share_dependencies(data, reads)
 })
 
@@ -49,7 +62,17 @@ expect_independent_bulk_reads <- function(data) {
     (function(prior) {
       sum(rlang::env_get_list(environment(), "prior", inherit = TRUE)$prior)
     })(7),
-    (function(prior) sum(as.list(environment())$prior))(7)
+    (function(prior) sum(as.list(environment())$prior))(7),
+    sum(as.list.environment(external)[["prior"]]),
+    sum(lapply(external, identity)$prior),
+    sum(lapply(list(prior = 7), identity)$prior),
+    sum(eapply(external, identity)$prior),
+    sum(sapply(list(prior = 7), identity, simplify = FALSE)$prior),
+    sum(sapply(external, identity, simplify = FALSE)$prior),
+    sum(vapply(external, sum, numeric(1))[["prior"]]),
+    sum(vapply(list(prior = 7), sum, numeric(1))[["prior"]]),
+    (function(prior) sum(as.list.environment(environment())$prior))(7),
+    (function(prior) sum(lapply(environment(), identity)$prior))(7)
   )
   for (kind in c("parent", "total")) {
     for (read in reads) {

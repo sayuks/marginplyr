@@ -40,6 +40,174 @@ test_that("non-ASCII catalog and CTE names cannot admit a distinct CSV file", {
   }
 })
 
+test_that("unquoted non-ASCII relation names are read as DuckDB does (#1834)", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  writeLines(c("k", "101"), path)
+  quoted <- DBI::dbQuoteString(con, path)
+  DBI::dbWriteTable(con, "t", data.frame(g = c("a", "b"), v = 1:2))
+  sources <- paste0("SELECT g, k AS y FROM t, read_csv_auto(", quoted, ")")
+  # A letter, a Japanese name, and a non-letter identifier character.
+  for (name in c("vüe", "売上", "v×e")) {
+    DBI::dbExecute(con, enc2utf8(paste0(
+      "CREATE VIEW ", DBI::dbQuoteIdentifier(con, name), " AS ", sources
+    )))
+  }
+  DBI::dbExecute(con, enc2utf8('CREATE SCHEMA "sché"'))
+  DBI::dbExecute(con, enc2utf8(paste0(
+    'CREATE VIEW "sché".plainv AS ', sources
+  )))
+  authored <- function(sql) {
+    dplyr::tbl(con, dbplyr::sql(enc2utf8(sql)), vars = c("g", "y"))
+  }
+  file <- function(relation) {
+    authored(paste0("SELECT 'a' AS g, k AS y FROM", relation))
+  }
+  inputs <- list(
+    authored("SELECT g, y FROM vüe"),
+    authored("SELECT g, y FROM 売上"),
+    authored("SELECT g, y FROM main.vüe"),
+    authored("SELECT g, y FROM memory.main.vüe"),
+    authored("SELECT g, y FROM main.v×e"),
+    authored("SELECT g, y FROM sché.plainv"),
+    authored("SELECT t.g, s.y FROM t JOIN vüe AS s ON true"),
+    # Code points DuckDB strips as whitespace separate tokens.
+    file(paste0(" read_csv_auto\u3000(", quoted, ")")),
+    file(paste0(" read_csv_auto\u00a0(", quoted, ")")),
+    file(paste0("\u3000", quoted)),
+    file(paste0("\ufeff", quoted))
+  )
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  refused <- function(input) {
+    expect_error(inspect_grouping(
+      input, .grouping = grouping_set(where(is.numeric))
+    ), "source rows", fixed = TRUE, class = "marginplyr_error")
+    # A reader call is refused before the catalog query, any other after it.
+    sent <- last_sent_queries(details = TRUE)
+    expect_true(all(sent$purpose == "relation_catalog"))
+  }
+  for (value in c("101", "source_tail")) {
+    writeLines(c("k", value), path)
+    for (input in inputs) {
+      # The native zero-row statement infers its type from the data row.
+      expect_identical(is.numeric(dplyr::collect(utils::head(input, 0L))$y),
+                       identical(value, "101"))
+      refused(input)
+    }
+  }
+  # Refused before binding: an absent file would otherwise reach an IO error.
+  unlink(path)
+  for (input in inputs) refused(input)
+  writeLines(c("k", "101"), path)
+  # A search path naming a non-ASCII schema is searched for a plain name.
+  DBI::dbExecute(con, enc2utf8("SET search_path = 'sché'"))
+  for (input in list(authored("SELECT g, y FROM plainv"),
+                     dplyr::tbl(con, "plainv"))) {
+    refused(input)
+  }
+})
+
+test_that("non-ASCII names DuckDB reads unquoted keep typed metadata (#1834)", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  DBI::dbWriteTable(con, "t", data.frame(g = c("a", "b"), v = 1:2))
+  DBI::dbWriteTable(con, enc2utf8("tä"), stats::setNames(
+    data.frame(g = "a", v = 1L), c("g", enc2utf8("wé"))
+  ))
+  DBI::dbExecute(con, enc2utf8(
+    'CREATE VIEW "vé" AS SELECT g, v AS y FROM t'
+  ))
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  for (sql in c(
+    "SELECT g, wé AS y FROM tä",
+    "SELECT g, y FROM vé",
+    "SELECT g, yé AS y FROM (SELECT g, v AS yé FROM t)",
+    "WITH cé AS (SELECT g, v AS y FROM t) SELECT g, y FROM cé",
+    "SELECT 'é\u3000.csv' AS g, v AS y FROM t"
+  )) {
+    input <- dplyr::tbl(con, dbplyr::sql(enc2utf8(sql)), vars = c("g", "y"))
+    expect_identical(inspect_grouping(
+      input, .grouping = grouping_set(where(is.numeric))
+    )$included, "(y)", label = sql)
+    expect_identical(last_sent_queries(details = TRUE)$purpose,
+                     c("relation_catalog", "selection_proxy"))
+  }
+  # An unquoted non-ASCII schema key is one column, as DuckDB reads it.
+  key <- enc2utf8("名前")
+  input <- dplyr::tbl(con, dbplyr::sql(enc2utf8(paste0(
+    "SELECT * FROM read_csv(", DBI::dbQuoteString(con, path), ", columns = {",
+    key, ": 'BIGINT'}, auto_detect = false, header = true)"
+  ))), vars = key)
+  for (value in c("101", "202")) {
+    writeLines(enc2utf8(c(key, value)), path, useBytes = TRUE)
+    expect_identical(inspect_grouping(
+      input, .grouping = grouping_set(where(is.numeric))
+    )$included, paste0("(", key, ")"))
+    expect_identical(last_sent_queries(details = TRUE)$purpose,
+                     c("relation_catalog", "selection_proxy"))
+  }
+})
+
+test_that("SQL that is not valid UTF-8 is refused before it is read (#1834)", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  DBI::dbWriteTable(con, "t", data.frame(g = c("a", "b"), v = 1:2))
+  sql <- "SELECT g, v AS y FROM t WHERE g <> '\xff'"
+  Encoding(sql) <- "bytes"
+  input <- dplyr::tbl(con, dbplyr::sql(sql), vars = c("g", "y"))
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  expect_error(inspect_grouping(
+    input, .grouping = grouping_set(where(is.numeric))
+  ), "UTF-8", fixed = TRUE, class = "marginplyr_error")
+  expect_equal(nrow(last_sent_queries()), 0L)
+  # A string in another declared encoding is read after conversion.
+  latin1 <- "SELECT g, v AS y FROM t WHERE g <> '\xe9'"
+  Encoding(latin1) <- "latin1"
+  input <- dplyr::tbl(con, dbplyr::sql(latin1), vars = c("g", "y"))
+  expect_identical(inspect_grouping(
+    input, .grouping = grouping_set(where(is.numeric))
+  )$included, "(y)")
+})
+
+test_that("the code points read as whitespace are DuckDB's own (#1834)", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  alias <- function(sql) {
+    tryCatch(names(DBI::dbGetQuery(con, enc2utf8(sql))),
+             error = function(cnd) "error")
+  }
+  for (cp in duckdb_unicode_spaces) {
+    space <- intToUtf8(cp)
+    label <- sprintf("U+%04X", cp)
+    spaced <- paste0("SELECT", space, "1", space, "AS", space, "a")
+    expect_identical(alias(spaced), "a", label = label)
+    # Whitespace ends the alias `a`, leaving `b` a syntax error.
+    expect_identical(alias(paste0("SELECT 1 AS a", space, "b")), "error",
+                     label = label)
+  }
+  # Unicode spaces and neighbours DuckDB does not strip are identifier
+  # characters there.
+  for (cp in c(0x85, 0x9f, 0xa1, 0x1680, 0x1fff, 0x200c, 0x2028, 0x2029,
+               0x202e, 0x2030, 0x205e, 0x2061, 0x2fff, 0x3001, 0xfefe, 0xff00,
+               0x1f600)) {
+    name <- paste0("a", intToUtf8(cp), "b")
+    expect_identical(alias(paste("SELECT 1 AS", name)), enc2utf8(name),
+                     label = sprintf("U+%04X", cp))
+  }
+})
+
+
 test_that("view admission cannot hide source-value CSV inference", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()

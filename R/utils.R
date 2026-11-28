@@ -778,6 +778,16 @@ rebuild_static_call <- function(expr, args, head = static_call_head(expr)) {
   # arguments `static_call_args()` gave them one to one, and the ones that
   # change an argument count are named `across()` and `pick()` calls.
   stopifnot(!rlang::is_quosure(expr) || length(args) == 1L)
+  # On a pipe's right the caller's pair selects applying a function value
+  # rather than inserting `.` into it, so a pair the rebuilt argument lost goes
+  # back however its head reads (ADR 0019, *a rebuilt call keeps the caller's
+  # pair*).
+  if (!is.null(static_spelling_name(expr, "data_pipe")) &&
+        length(args) == 2L &&
+        is_parenthesized(static_call_args(expr)[[2L]]) &&
+        !is_parenthesized(args[[2L]])) {
+    args[[2L]] <- rlang::call2("(", args[[2L]])
+  }
   rebuilt <- rlang::call2(head, !!!args)
   # Argument names live in the call's own pairlist tags rather than in an
   # attribute, so this replaces nothing `call2()` just set.
@@ -1264,10 +1274,21 @@ static_callee_name <- function(callee) {
 # knowable. One that is not leaves the head unnamed, which is the answer for
 # any other computed head: the walk reports the head's own reads and treats the
 # call as the ordinary call it cannot recognize.
+#
+# `match.fun()` returns a function it is handed, so its `FUN` is read as
+# `do.call()`'s `what` is: `match.fun(get)` names `get` as `match.fun("get")`
+# does (#1830). The other primitives take a string, and a name handed to one is
+# a variable holding the name to look up. `rlang::as_function()` and
+# `rlang::as_closure()` handed a function are that function under another name,
+# as `identity(get)` is, and stay outside the walk with every other function
+# held as a value (#1652).
 static_callee_name_from <- function(callee, formal) {
   argument <- call_formal_argument(callee, formal)
   if (length(argument) == 0L) {
     return(NULL)
+  }
+  if (identical(formal, "FUN")) {
+    return(static_callee_name(argument[[1L]]))
   }
   named <- static_character_value(argument[[1L]])
   if (is.null(named) || length(named) != 1L) {
@@ -1314,7 +1335,7 @@ is_reflective_lookup <- function(callee_name) {
 # under it -- adding it here would answer the same thing twice.
 is_reflective_evaluation <- function(callee_name) {
   !is.null(callee_name) &&
-    callee_name %in% c("eval", "eval_tidy", "eval_bare")
+    callee_name %in% c("eval", "eval.parent", "eval_tidy", "eval_bare")
 }
 
 # The function a call reaches, read from its own name where it has one and from

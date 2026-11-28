@@ -110,55 +110,77 @@ static_spelling_rules <- function() {
         names = "data.frame"
       )
     },
+    # The pipes ADR 0019's *Amendment: independent data-mask ownership* reads
+    # as supplying the input of the operation on their right.
     data_pipe = function() {
       list(
         namespaces = c("magrittr", "dplyr"),
         contextual = FALSE,
-        names = "%>%"
+        names = c("%>%", "%!>%", "%T>%")
       )
     },
+    # The dplyr verbs ADR 0019's *Amendment: independent data-mask ownership*
+    # selects, each with its input formal. `test-nested-data-masks.R` holds
+    # this list against a written set.
     dplyr_mask = function() {
-      list(
-        namespaces = "dplyr",
-        contextual = FALSE,
-        input = ".data",
-        names = c(
+      scoped <- c(
+        "mutate", "transmute", "summarise", "summarize", "filter", "arrange",
+        "group_by", "distinct", "select", "rename"
+      )
+      inputs <- c(
+        mask_inputs(".data", c(
           "mutate", "transmute", "summarise", "summarize", "reframe",
-          "filter", "arrange", "group_by", "distinct",
-          "select", "rename", "rename_with", "relocate", "slice",
-          "slice_head", "slice_tail", "slice_min", "slice_max", "slice_sample"
-        )
+          "filter", "filter_out", "arrange", "group_by", "distinct",
+          "select", "rename", "rename_with", "relocate", "pull", "slice",
+          "slice_head", "slice_tail", "slice_min", "slice_max",
+          "slice_sample", "nest_by", "do"
+        )),
+        mask_inputs(".tbl", c(
+          "group_nest", "group_split",
+          paste0(rep(scoped, each = 3L), c("_all", "_at", "_if"))
+        )),
+        mask_inputs("x", c(
+          "count", "tally", "add_count", "add_tally", "top_n", "top_frac",
+          "ungroup"
+        )),
+        mask_inputs("tbl", c("sample_n", "sample_frac")),
+        mask_inputs("data", "rowwise")
       )
-    },
-    dplyr_rowwise_mask = function() {
       list(
         namespaces = "dplyr",
         contextual = FALSE,
-        input = "data",
-        names = "rowwise"
+        inputs = inputs,
+        names = names(inputs)
       )
     },
-    dplyr_count_mask = function() {
+    tidyr_mask = function() {
+      inputs <- mask_inputs("data", "uncount")
       list(
-        namespaces = "dplyr",
+        namespaces = "tidyr",
         contextual = FALSE,
-        input = "x",
-        names = c("count", "tally", "add_count", "add_tally")
+        inputs = inputs,
+        names = names(inputs)
       )
     },
     margin_mask = function() {
+      inputs <- mask_inputs(".data", c(
+        "summarize_with_margins", "summarise_with_margins",
+        "expand_with_margins", "nest_with_margins", "nest_by_with_margins",
+        "inspect_grouping"
+      ))
       list(
         namespaces = "marginplyr",
         contextual = FALSE,
-        input = ".data",
-        names = c(
-          "summarize_with_margins", "summarise_with_margins",
-          "expand_with_margins", "nest_with_margins", "nest_by_with_margins",
-          "inspect_grouping"
-        )
+        inputs = inputs,
+        names = names(inputs)
       )
     }
   )
+}
+
+# The input formal of each independent data-mask operation, keyed by its name.
+mask_inputs <- function(formal, operations) {
+  rlang::set_names(rep(formal, length(operations)), operations)
 }
 
 # Arguments owned by an independent data-mask operation. Its input is evaluated
@@ -167,10 +189,9 @@ static_spelling_rules <- function() {
 independent_mask_call_parts <- function(expr) {
   args <- static_call_args(expr)
   owned <- rep(FALSE, length(args))
-  rule <- independent_mask_rule(expr)
-  if (!is.null(rule)) {
+  formal <- independent_mask_input(expr)
+  if (!is.null(formal)) {
     owned[] <- TRUE
-    formal <- rule$input
     arg_names <- argument_names(args)
     input <- match(formal, arg_names, nomatch = 0L)
     if (input == 0L) {
@@ -181,7 +202,7 @@ independent_mask_call_parts <- function(expr) {
     if (input > 0L) owned[[input]] <- FALSE
   } else if (!is.null(static_spelling_name(expr, "data_pipe")) &&
                length(args) == 2L &&
-               !is.null(independent_mask_rule(args[[2L]]))) {
+               !is.null(independent_mask_input(args[[2L]]))) {
     # A pipe supplies the input implicitly; its RHS arguments belong to the
     # nested operation even when the first written argument is a selection.
     owned[[2L]] <- TRUE
@@ -189,13 +210,13 @@ independent_mask_call_parts <- function(expr) {
   owned
 }
 
-# The registry rule for a statically named independent data-mask operation.
-independent_mask_rule <- function(expr) {
-  for (family in c(
-    "margin_mask", "dplyr_mask", "dplyr_rowwise_mask", "dplyr_count_mask"
-  )) {
-    if (!is.null(static_spelling_name(expr, family))) {
-      return(static_spelling_rule(family))
+# The input formal of a statically named independent data-mask operation, or
+# `NULL` where the call names none.
+independent_mask_input <- function(expr) {
+  for (family in c("margin_mask", "dplyr_mask", "tidyr_mask")) {
+    name <- static_spelling_name(expr, family)
+    if (!is.null(name)) {
+      return(static_spelling_rule(family)$inputs[[name]])
     }
   }
   NULL

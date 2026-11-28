@@ -434,3 +434,34 @@ test_that("cleanup failure retains interrupts before and after failure", {
     }
   }
 })
+
+# The limit expires inside the probe's statement and must still end the call,
+# leaving no table (#1805).
+test_that("a time limit in SQLite's destination name probe ends compute()", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  DBI::dbWriteTable(con, "t", data.frame(g = c("a", "a", "b"), v = c(1, 2, 5)))
+  query <- summarize_with_margins(
+    dplyr::tbl(con, "t"), s = sum(v, na.rm = TRUE), .grouping = rollup(g),
+    .sort = "last"
+  )
+  get_query <- DBI::dbGetQuery
+  delivered <- FALSE
+  testthat::local_mocked_bindings(
+    dbGetQuery = function(conn, statement, ...) {
+      if (!delivered && startsWith(statement, "EXPLAIN SELECT 1 FROM")) {
+        delivered <<- TRUE
+        expire_time_limit()
+      }
+      get_query(conn, statement, ...)
+    },
+    .package = "DBI"
+  )
+  expect_s3_class(
+    catch_time_limited(dplyr::compute(query, name = "res", temporary = TRUE)),
+    "error"
+  )
+  expect_true(delivered)
+  expect_false(DBI::dbExistsTable(con, DBI::Id(schema = "temp", table = "res")))
+})

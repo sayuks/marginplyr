@@ -350,13 +350,16 @@ scope_literal_kind <- function(value) {
 
 # Whether a standard package function is the callee, without invoking it.
 # The caller supplies its static name; unresolved bindings prove no exemption.
+# A bare name can hold the owner's function only once its namespace is loaded,
+# so an owner that is a Suggest is neither loaded nor required here.
 is_known_package_call <- function(expr, name, bound, lookup, owner = "base") {
   namespace <- static_call_ns(expr)
   if (!is.null(namespace)) {
     return(identical(namespace, owner))
   }
   rebound <- lookup$function_rebound %||% lookup$rebound
-  if (is.null(lookup$env) || name %in% c(bound, rebound) ||
+  if (is.null(lookup$env) || !isNamespaceLoaded(owner) ||
+        name %in% c(bound, rebound) ||
         unresolved_lookup_name() %in% rebound) {
     return(FALSE)
   }
@@ -377,6 +380,14 @@ scope_mutation_call <- function(expr, bound, lookup) {
   name <- resolved_callee_name(expr)
   if (!is.null(name) && name %in% names(rlang_scope_mutations())) {
     return(rlang_scope_mutation_call(expr, name, bound, lookup))
+  }
+  deferred <- call_builder_as_do_call(expr, name, function(expr, name) {
+    is_known_call_builder(expr, name, function(owner) {
+      is_known_package_call(expr, name, bound, lookup, owner)
+    })
+  })
+  if (!is.null(deferred)) {
+    return(scope_mutation_call(deferred, bound, lookup))
   }
   if (is.null(name) ||
         !name %in% c(scope_mutation_names(), "do.call")) {
@@ -433,8 +444,9 @@ scope_mutation_call <- function(expr, bound, lookup) {
 
 # rlang's removals and enclosure setters, each translating its matched
 # arguments into the base call it performs, or NULL when the call removes or
-# replaces nothing (#1677): `env_unbind()`, and `env_bind()` or `env_poke()`
-# given `zap()`, are `rm()`; `fn_env<-` and `set_env()` are `environment<-`;
+# replaces nothing (#1677): `env_unbind()`, and `env_bind()`, `env_poke()`,
+# `env_bind_active()`, `local_bindings()` or `with_bindings()` given `zap()`,
+# are `rm()`; `fn_env<-` and `set_env()` are `environment<-`;
 # and `env_poke_parent()` is `parent.env<-`. A `zap()` that is not a named
 # argument's whole value removes names the walk cannot read.
 rlang_scope_mutations <- function() {
@@ -474,6 +486,20 @@ rlang_scope_mutations <- function() {
       if (length(removed) > 0L && ".env" %in% names(parts)) {
         rlang::call2("rm", !!!removed, envir = parts[[".env"]])
       }
+    },
+    # The removal is read as permanent, though rlang restores the binding when
+    # the frame or `.expr` ends (#1822).
+    local_bindings = function(parts, bound, lookup) {
+      parts[[".env"]] <- parts[[".env"]] %||% parts[[".frame"]] %||%
+        quote(base::environment())
+      rlang_scope_mutations()$env_bind(parts, bound, lookup)
+    },
+    with_bindings = function(parts, bound, lookup) {
+      parts[[".env"]] <- parts[[".env"]] %||% quote(base::environment())
+      rlang_scope_mutations()$env_bind(parts, bound, lookup)
+    },
+    env_bind_active = function(parts, bound, lookup) {
+      rlang_scope_mutations()$env_bind(parts, bound, lookup)
     },
     `fn_env<-` = function(parts, bound, lookup) {
       rlang::call2("environment<-", !!!rlang_renamed_parts(

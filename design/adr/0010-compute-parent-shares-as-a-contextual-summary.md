@@ -127,9 +127,11 @@ target is placed on a walked frame where the analysis can follow it there:
 frame as its enclosing walked frame, and a local holding such an environment.
 Any other target that is not an existing environment, such as a formal, is one
 it cannot place, and is not taken to be the current frame (#1688). `with()`,
-`rlang::with_env()` and `rlang::inject()` place the environment they evaluate
-in as `eval()` places its own; to `with()` and `rlang::with_env()`, an argument
-the analysis cannot read as a data value counts as that environment (#1684).
+`rlang::with_env()`, `rlang::inject()` and `eval.parent()` place the
+environment they evaluate in as `eval()` places its own; to `with()` and
+`rlang::with_env()`, an argument the analysis cannot read as a data value
+counts as that environment (#1684), and to `eval.parent()` a depth other than
+a literal one is unplaceable (#1808).
 A removal a literal's body makes from the frame that calls it, directly or
 through any evaluator placed as `eval()` is, is attributed where the literal
 is created, since from then it may be called from any frame: each name it
