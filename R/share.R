@@ -687,10 +687,8 @@ confirmed_share_records <- function(records) {
 
 # Refuses an ordinary summary that uses the earlier share `name` of `kind`,
 # whether the dependency walk found the read or a local summary's value holds
-# the share's marker. `call` defaults to the raising site's caller, as
-# `abort_ambiguous_parent()`'s does.
-abort_earlier_share_use <- function(name, kind,
-                                    call = rlang::caller_call()) {
+# the share's marker.
+abort_earlier_share_use <- function(name, kind) {
   # Read only from the cli template below, which codetools cannot see.
   label <- share_kind_label(kind) # nolint: object_usage_linter.
   abort_marginplyr(c(
@@ -699,7 +697,7 @@ abort_earlier_share_use <- function(name, kind,
       "({.var {name}}) in the same {.fun summarize_with_margins} call."
     ),
     i = "Use a following {.fun dplyr::mutate} for derived values."
-  ), call = call)
+  ))
 }
 
 plan_share_expressions <- function(dots,

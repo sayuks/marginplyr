@@ -93,6 +93,27 @@ test_that("a later frame re-emitting a share's marker under its name is refused"
   expect_s3_class(across, "marginplyr_error")
 })
 
+test_that("every earlier-share refusal blames summarize_with_margins()", {
+  data <- tibble::tibble(g = c("a", "a", "b"), v = c(1, 2, 4),
+                         sh = c(100, 200, 300))
+  # The walk, the result check, and the check of an evaluated value.
+  for (text in c(
+    "z = sh + 1",
+    "dplyr::across(v, ~ glue::identity_transformer('sh', environment()))",
+    "z = glue::identity_transformer('sh', environment())"
+  )) {
+    call <- str2lang(paste0(
+      "summarize_with_margins(data, s = sum(v), sh = share_of_total(s), ",
+      text, ", .grouping = rollup(g))"
+    ))
+    error <- expect_error(
+      eval(call), "cannot use an earlier Total share", fixed = TRUE
+    )
+    expect_identical(error$call[[1L]], quote(summarize_with_margins),
+                     label = text)
+  }
+})
+
 test_that("a frame creating a share's name is still a name conflict", {
   plain <- tibble::tibble(g = c("a", "a", "b"), v = c(1, 2, 4))
   shadowed <- tibble::tibble(g = c("a", "a", "b"), v = c(1, 2, 4),
