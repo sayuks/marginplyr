@@ -644,14 +644,17 @@ duckdb_rewrite_reaches_macro <- function(tokens, catalog) {
   reserved <- which(tokens %in% setdiff(duckdb_rewritten_statements, "desc") &
                       !quoted)
   described <- which(tokens == "desc" & !quoted)
-  operators <- c("union", "except", "intersect")
+  # Whether a set operator stands `back` tokens before each `desc`. The word
+  # is an ordinary name after `as` or `.`, as the reserved three are.
+  operator <- function(back) {
+    previous(described, back) %in% c("union", "except", "intersect") &
+      !previous(described, back + 1L) %in% c("as", ".")
+  }
   # UNION, UNION ALL, UNION BY NAME and UNION ALL BY NAME.
-  after_operator <- previous(described) %in% operators |
-    (previous(described) %in% c("all", "distinct") &
-       previous(described, 2L) %in% operators) |
+  after_operator <- operator(1L) |
+    (previous(described) %in% c("all", "distinct") & operator(2L)) |
     (previous(described) == "name" & previous(described, 2L) == "by" &
-       (previous(described, 3L) %in% operators |
-          previous(described, 4L) %in% operators))
+       (operator(3L) | operator(4L)))
   statement <- !all(previous(reserved) %in% c("as", ".")) ||
     any(described == 1L | previous(described) == "(" | after_operator)
   statement && any(duckdb_caller_macros(catalog()))

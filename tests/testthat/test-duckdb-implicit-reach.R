@@ -29,9 +29,9 @@ test_that("every caller macro DuckDB reaches unwritten is refused (#1843)", {
   # A form that stopped binding measures nothing.
   stable <- sweep$probes$stable
   expect_identical(stable$probe[!stable$live], character())
-  # Beside a macro of either body DuckDB binds no PIVOT, and 1.5 no subscript
-  # or field access, so what those reach stays unmeasured; any other form
-  # that stops is a reach the sweep cannot see.
+  # A PIVOT form, and on DuckDB 1.5 a subscript or field access, stops under
+  # both bodies at an error that names no macro; any other form that stops is
+  # a reach the sweep cannot see.
   unbound <- if (utils::packageVersion("duckdb") >= "2.0.0") {
     "PIVOT"
   } else {
@@ -160,7 +160,12 @@ test_that("a statement DuckDB rewrites refuses beside a caller macro (#1843)", {
     "SELECT q.show AS v FROM (SELECT v AS show FROM t) q",
     "SELECT g, v FROM t ORDER BY (v) DESC",
     "SELECT g, v FROM t ORDER BY ALL DESC",
-    "SELECT g AS name, v FROM t UNION ALL SELECT g, v FROM t ORDER BY name DESC"
+    paste("SELECT g AS name, v FROM t UNION ALL SELECT g, v FROM t",
+          "ORDER BY name DESC"),
+    paste("SELECT q.union AS v FROM (SELECT v AS \"union\" FROM t) q",
+          "ORDER BY q.union DESC"),
+    paste("SELECT v AS name, w AS union FROM (SELECT v, v AS w FROM t)",
+          "ORDER BY name DESC")
   ), function(sql) dplyr::tbl(con, dbplyr::sql(sql)))
   old <- options(marginplyr.audit_sql = TRUE)
   on.exit(options(old), add = TRUE)
