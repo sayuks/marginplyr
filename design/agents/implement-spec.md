@@ -24,9 +24,10 @@ Point each implementer at its ticket and at this section.
   A bare `mktemp -d` targets the system temporary directory, which the
   sandbox refuses.
 - **The report** is the final message: branch, the head SHA the `source`
-  result names, that result, and anything the ticket left undecided. It names
-  a finished run; a message sent while the run is going is not the report,
-  and on #1838 a lane that ended on one left a failed `jarl` unreported. A
+  result names, that result, and anything the ticket left undecided. The
+  result is the run's terminal outcome, as
+  [*Observing one invocation*](local-checks.md#observing-one-invocation)
+  defines it, so a message sent while the run is going is not the report. A
   child's sandbox may not let it write a report file outside its worktree.
 
 ## Around the implementers
@@ -35,11 +36,11 @@ The integration branch's Review-ready follows
 [*Boundary and scope*](local-checks.md#boundary-and-scope) before step 8 marks
 the pull request ready.
 
-CI holds what that Review-ready omits: coverage under ADR 0030 and the
-rendered site. Watch the pull request once it is open, and before each push
-and before step 8 marks it ready, read the last pushed SHA's finished checks.
-On #1838 `test-coverage` and `altdoc` stayed red across seven pushes and the
-pull request was marked ready on them.
+CI runs what Review-ready leaves to it
+([*Roles outside the boundary*](local-checks.md#roles-outside-the-boundary)).
+Before each push, read the last pushed SHA's finished checks, leaving any
+still running; step 8 marks the pull request ready only once every check on
+its head has finished and passed.
 
 Before step 7 hands the review's findings to the fixer, disposition each as
 *Answering a review* in `design/architecture.md` requires, and hand on the
