@@ -89,7 +89,7 @@ test_that("full-join metadata leaves active and lazy merge bindings unread", {
         binding_env <- new.env(parent = environment())
         if (lazy) {
           delayedAssign(binding, {
-            lookups <<- lookups + 1L
+            lookups <- lookups + 1L
             base::merge
           }, assign.env = binding_env)
         } else {

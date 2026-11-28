@@ -140,7 +140,7 @@ test_that("unresolved namespace operators are never forced in planning", {
         }, caller)
       } else {
         delayedAssign(operator, {
-          calls <<- calls + 1L
+          calls <- calls + 1L
           get(operator, envir = baseenv())
         }, assign.env = caller, eval.env = environment())
       }
