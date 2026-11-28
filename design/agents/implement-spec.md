@@ -36,8 +36,6 @@ The integration branch's Review-ready follows
 [*Boundary and scope*](local-checks.md#boundary-and-scope) before step 8 marks
 the pull request ready.
 
-CI runs what Review-ready leaves to it
-([*Roles outside the boundary*](local-checks.md#roles-outside-the-boundary)).
 Before each push, read the last pushed SHA's finished checks, leaving any
 still running; step 8 marks the pull request ready only once every check on
 its head has finished and passed.
